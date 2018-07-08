@@ -48,6 +48,7 @@ namespace Neko
         , List(allocator)
         , SupportedMimeTypes(allocator)
         , ContentTypes(allocator)
+        , ThreadsMaxCount(4)
         {
         }
         
@@ -88,6 +89,15 @@ namespace Neko
             char label[255];
             
             json.DeserializeObjectBegin();
+            
+            // shared
+            json.DeserializeLabel(label, 255);
+            json.DeserializeObjectBegin();
+            {
+                json.Deserialize("threadMaxCount", this->ThreadsMaxCount, 0);
+            }
+            json.DeserializeObjectEnd();
+            
             json.DeserializeArrayBegin("applications");
             
             while (!json.IsArrayEnd())

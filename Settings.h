@@ -109,6 +109,9 @@ namespace Neko
             
         public:
             
+            //! Maximum amount of threads that server can use. If 0, we'll machine available cores.
+            int32 ThreadsMaxCount;
+        
             /** Supported content variants. */
             THashMap< String, IContentType* > ContentTypes;
             

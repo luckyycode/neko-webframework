@@ -143,9 +143,6 @@ namespace Neko
             //! List of active sockets which listen for incoming connections.
             TArray< Net::INetSocket > Listeners;
             
-            //! Maximum amount of threads that server can use. If 0, we'll machine available cores.
-            int32 ThreadsMaxCount;
-            
             typedef THashMap<uint32, void*> TlsMap;
             //! Ssl contexts map.
             TlsMap TlsData;

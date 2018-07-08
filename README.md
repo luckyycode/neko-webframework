@@ -1,6 +1,6 @@
 # Neko web framework
 
-Neko server with Mvc framework (work in progress).
+Neko server with Mvc framework. Work in progress, not ready for production in any way.
 
 ![alt text](https://d.radikal.ru/d34/1806/1b/a9e011b101ec.png)
 
@@ -10,7 +10,7 @@ To build this you'll need
 
 ```
 Neko Framework (no sub-dependencies!) - will be available soon in my repositories
-OpenSSL (optional!)
+OpenSSL (optional)
 ```
 
 ### Installing
@@ -19,14 +19,14 @@ You'll need premake5. Launch the following commands:
 
 ```
 1. cd ../project_dir/
-2. premake5 --file=Neko.lua (see lua file for customizable flags, e.g. USE_OPENSSL)
+2. premake5 --file=Neko.lua (see lua file for customizable flags, e.g. use-openssl)
 3. Open with desired ide
 ```
 Sample project is also available in this repository, check out SampleModule folder.
 
 ## Roadmap
 
-There are still a lot of things to do, this framework is not yet ready for production in anyway.
+There are still a lot of things to do, this framework is not yet ready for production in any way.
 
 * HTTP/2 support - *wip* 
 * GnuTLS support instead of OpenSSL (I will keep these together)
@@ -34,6 +34,15 @@ There are still a lot of things to do, this framework is not yet ready for produ
 * Mvc - database
 * Mvc - user 
 * Mvc - session
+
+## About
+
+``` 
+/Mvc/ - contains higher level logic (e.g. controllers)
+/Server/ - contains lower level logic for processing requests
+/ContentTypes/ - supported content data parsers for content-type
+/SampleModule/ - sample project
+``` 
 
 ## License
 

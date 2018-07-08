@@ -92,7 +92,6 @@ namespace Neko
         , TlsData(allocator)
         , SocketsList(Allocator)
         , Settings(fileSystem, allocator)
-        , ThreadsMaxCount(4)
         {
             
         };
@@ -516,13 +515,15 @@ namespace Neko
             
             MT::Event threadsProcessEvent(true);
             
+            const uint32& threadMaxCount = Settings.ThreadsMaxCount;
+            
             // check thread count
-            assert (ThreadsMaxCount != 0);
+            assert (threadMaxCount != 0);
 
-            GLogInfo.log("Http") << "Using " << ThreadsMaxCount << " threads.";
+            GLogInfo.log("Http") << "Using " << threadMaxCount << " threads.";
             
             TArray<MT::Task*> activeTasks(Allocator);
-            activeTasks.Reserve(ThreadsMaxCount);
+            activeTasks.Reserve(threadMaxCount);
             
             // For update applications Modules
             do
@@ -537,7 +538,7 @@ namespace Neko
                 {
                     // create initial threads
                     while (activeTasks.GetSize() == ThreadsWorkingCount.GetValue()
-                           && activeTasks.GetSize() < ThreadsMaxCount && !sockets.IsEmpty())
+                           && activeTasks.GetSize() < threadMaxCount && !sockets.IsEmpty())
                     {
                         RequestTask* task = NEKO_NEW(Allocator, RequestTask)(*this, Allocator, sockets, threadsProcessEvent);
                         if (task->Create("Server worker task"))
