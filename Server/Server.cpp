@@ -414,6 +414,8 @@ namespace Neko
             
             virtual int32 DoTask() override
             {
+                SetDefaultAllocator(Allocator);
+                
                 while (true)
                 {
                     Net::INetSocket socket;

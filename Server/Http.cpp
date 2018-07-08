@@ -33,6 +33,7 @@
 #include "WebSocket.h"
 
 #include "../../Engine/Core/Log.h"
+#include "../../Engine/Data/Blob.h"
 #include "../../Engine/Utilities/NekoString.h"
 #include "../../Engine/Utilities/Cache.h"
 #include "../../Engine/Platform/Platform.h"
@@ -55,6 +56,34 @@ namespace Neko
             
         }
 
+        bool ProtocolHttp::WriteRequestParameters(TArray<char>& buffer, const Net::Http::Request& request, const ApplicationSettings& applicationSettings) const
+        {
+            OutputBlob blob((void* )buffer.GetData(), buffer.GetCapacity());
+            
+            // version
+            blob.Write((int8)Net::Http::Version::Http_1);
+            // request data
+            blob << request.Host;
+            blob << request.Path;
+            blob << request.Method;
+            // app
+            blob << applicationSettings.RootDirectory;
+            
+            Net::Http::WriteHeaderContainer(blob, request.IncomingHeaders);
+            Net::Http::WriteHeaderContainer(blob, request.IncomingData);
+            // files
+            Net::Http::WriteFilesIncoming(blob, request.IncomingFiles);
+            
+            return true;
+        }
+        
+        void ProtocolHttp::ReadResponseParameters(Net::Http::Request& request, Net::Http::ResponseData& responseData) const
+        {
+            InputBlob blob(responseData.Data, INT_MAX);
+            
+            Net::Http::ReadHeaderContainer(request.OutgoingHeaders, blob);
+        }
+        
         IProtocol* ProtocolHttp::Process()
         {
             String buffer(Allocator);
@@ -322,7 +351,7 @@ namespace Neko
         bool ProtocolHttp::SendHeaders(const Net::Http::StatusCode status, TArray< std::pair<String, String> >& headers,
                                      const uint32& timeout, const bool end) const
         {
-            String string = "HTTP/1.1 " ;
+            String string("HTTP/1.1 ", Allocator);
             string += (int)status;
             
             const auto it = GetStatusList().Find((int)status);
@@ -640,29 +669,6 @@ namespace Neko
                 // will do something only if x-sendfile header is set (or if partial content)
                 SendfileExtension::Send(*this, request, Settings->SupportedMimeTypes, Allocator);
             }
-        }
-        
-        bool ProtocolHttp::WriteRequestParameters(TArray<char>& buffer, const Net::Http::Request& request, const ApplicationSettings& applicationSettings) const
-        {
-            Net::Http::WriteHeaderNumber(buffer, (int)Net::Http::Version::Http_1);
-            
-            Net::Http::WriteHeaderString(buffer, *request.Host);
-            Net::Http::WriteHeaderString(buffer, *request.Path);
-            Net::Http::WriteHeaderString(buffer, *request.Method);
-            Net::Http::WriteHeaderString(buffer, *applicationSettings.RootDirectory);
-            
-            Net::Http::WriteHeaderContainer(buffer, request.IncomingHeaders);
-            Net::Http::WriteHeaderContainer(buffer, request.IncomingData);
-            // files
-            Net::Http::WriteFilesIncoming(buffer, request.IncomingFiles);
-            
-            return true;
-        }
-        
-        void ProtocolHttp::ReadResponseParameters(Net::Http::Request& request, Net::Http::ResponseData& responseData) const
-        {
-            const uint8* data = (const uint8* )responseData.Data;
-            Net::Http::ReadHeaderContainer(request.OutgoingHeaders, data);
         }
         
         void ProtocolHttp::Close()

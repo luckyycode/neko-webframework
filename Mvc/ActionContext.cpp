@@ -36,6 +36,7 @@
 #include "../../Engine/Network/Http/Extensions/Extensions.h"
 #include "../../Engine/Network/NetSocket.h"
 
+#include "../../Engine/Data/Blob.h"
 #include "../../Engine/Platform/Platform.h"
 
 #include "../Server/IProtocol.h"
@@ -196,6 +197,8 @@ namespace Neko
             response.SetBodyData((uint8* )*body, body.Length());
         }
         
+
+
         int32 ActionContext::Execute(Net::Http::RequestData& requestData, Net::Http::ResponseData& responseData)
         {
             uint8 stack[sizeof(SocketSSL)]; // large socket object
@@ -205,14 +208,15 @@ namespace Neko
             ISocket* socket = CreateSocket(netSocket, &requestData, &stack, secure);
             
             const uint8* data = (const uint8* )requestData.Data;
-     
+            InputBlob blob(data, INT_MAX);
+            
             // Read incoming header info
             
             String documentRoot(Allocator);
             THashMap<String, String> requestCookies(Allocator);
             // http version
-            ulong protocolVersion;
-            data = Net::Http::ReadHeaderNumber(&protocolVersion, data);
+            int8 protocolVersion;
+            blob.Read(protocolVersion);
             
             // request
             Net::Http::Request request(Allocator);
@@ -230,15 +234,15 @@ namespace Neko
             {
                 case Net::Http::Version::Http_1:
                 {
-                    data = Net::Http::ReadHeaderString(request.Host, data);
-                    data = Net::Http::ReadHeaderString(request.Path, data);
-                    data = Net::Http::ReadHeaderString(request.Method, data);
-                    data = Net::Http::ReadHeaderString(documentRoot, data);
+                    blob >> request.Host;
+                    blob >> request.Path;
+                    blob >> request.Method;
+                    blob >> documentRoot;
                     
-                    data = Net::Http::ReadHeaderContainer(request.IncomingHeaders, data);
-                    data = Net::Http::ReadHeaderContainer(request.IncomingData, data);
+                    Net::Http::ReadHeaderContainer(request.IncomingHeaders, blob);
+                    Net::Http::ReadHeaderContainer(request.IncomingData, blob);
                     
-                    data = Net::Http::ReadFilesIncoming(request.IncomingFiles, data);
+                    ReadFilesIncoming(request.IncomingFiles, blob);
                     
                     auto cookieIt = request.IncomingFiles.Find("cookie");
                     if (cookieIt.IsValid())
@@ -342,7 +346,9 @@ namespace Neko
                 responseData.Data = (void* )data;
                 responseData.Size = size;
                 
-                Net::Http::WriteHeaderContainer(responseData.Data, outHeaders);
+                OutputBlob blob(responseData.Data, INT_MAX);
+                
+                Net::Http::WriteHeaderContainer(blob, outHeaders);
             }
             
             NEKO_DELETE(Allocator, protocol);

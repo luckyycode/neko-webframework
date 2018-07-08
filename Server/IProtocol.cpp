@@ -116,7 +116,7 @@ namespace Neko
             {
                 Socket.GetNativeHandle(),
                 Socket.GetTlsSession(),
-                &buffer[0]
+                buffer.GetData()
             };
             
             // output
