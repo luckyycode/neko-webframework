@@ -48,7 +48,7 @@
 #include "../Engine/Network/NetSocket.h"
 #include "../Engine/Network/NetSocketV6.h"
 
-#include "Server/Protocol.h"
+#include "Server/IProtocol.h"
 #include "SocketDefault.h"
 #include "SocketSSL.h"
 

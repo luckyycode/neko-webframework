@@ -31,22 +31,22 @@
 
 #pragma once
 
-#include "Protocol.h"
+#include "IProtocol.h"
 
 namespace Neko
 {
     namespace Http
     {
         /// Websockets
-        class ServerWebSocket : public IServerProtocol
+        class ProtocolWebSocket : public IProtocol
         {
         public:
             
-            // @see comments in IServerProtocol
+            // @see comments in IProtocol
             
-            ServerWebSocket(class ISocket& socket, const ServerSettings* settings, class IAllocator& allocator);
+            ProtocolWebSocket(class ISocket& socket, const ServerSettings* settings, class IAllocator& allocator);
 
-            ServerWebSocket(const IServerProtocol& protocol);
+            ProtocolWebSocket(const IProtocol& protocol);
             
             virtual bool SendHeaders(const Net::Http::StatusCode status, TArray< std::pair<String, String> >& headers, const uint32& timeout, bool end) const override;
             virtual long SendData(const void* source, uint32 size, const uint32& timeout, Net::Http::DataCounter* dataCounter) const override;
@@ -54,7 +54,7 @@ namespace Neko
             virtual bool WriteRequestParameters(TArray<char>& buffer, const Net::Http::Request& repuest, const ApplicationSettings& applicationSettings) const override;
             virtual void ReadResponseParameters(Net::Http::Request& request, Net::Http::ResponseData& responseData) const override;
             
-            virtual IServerProtocol* Process() override;
+            virtual IProtocol* Process() override;
             virtual void Close() override;
         };
     }

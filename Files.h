@@ -31,7 +31,7 @@
 
 #pragma once
 
-#include "Server/Protocol.h"
+#include "Server/IProtocol.h"
 #include "../Engine/Network/Http/Request.h"
 
 #include "../Engine/Utilities/Date.h"
@@ -48,18 +48,18 @@ namespace Neko
             /**
              * Sends a file. Can use partial send.
              *
-             * @param protocol  Currently used protocol (i.e. http/websocket)
+             * @param protocol  Currently used server protocol (i.e. http/websocket)
              * @param request   Request containing outgoing information set (e.g. x-sendfile)
              * @param mimeTypes Supported mime types list.
              */
-            static bool Send(const IServerProtocol& protocol, Net::Http::Request& request, const THashMap<String, String>& mimeTypes, IAllocator& allocator);
+            static bool Send(const IProtocol& protocol, Net::Http::Request& request, const THashMap<String, String>& mimeTypes, IAllocator& allocator);
             
         private:
             
             /**
              * Sends a file. Can use partial send.
              *
-             * @param protocol  Currently used protocol (i.e. http/websocket)
+             * @param protocol  Currently used server protocol (i.e. http/websocket)
              * @param request   Request containing outgoing information set (e.g. x-sendfile)
              * @param extraHeaders  Postprocessed headers
              * @param fileName  Requested file name.
@@ -68,10 +68,10 @@ namespace Neko
              *
              * @return True if processing succeeded.
              */
-            static bool Send(const IServerProtocol& protocol, const Net::Http::Request& request, TArray<std::pair<String, String> >& extraHeaders, const String& fileName, const THashMap<String, String>& mimeTypes, const bool headersOnly, IAllocator& allocator);
+            static bool Send(const IProtocol& protocol, const Net::Http::Request& request, TArray<std::pair<String, String> >& extraHeaders, const String& fileName, const THashMap<String, String>& mimeTypes, const bool headersOnly, IAllocator& allocator);
             
             // partial file send
-            static bool SendPartial(const IServerProtocol& protocol, const Net::Http::Request& request, const String& fileName, CDateTime fileTime, const ulong fileSize, const String& rangeHeader, TArray<std::pair<String, String> >& extraHeaders, const THashMap<String, String>& mimeTypes, const bool headersOnly, IAllocator& allocator);
+            static bool SendPartial(const IProtocol& protocol, const Net::Http::Request& request, const String& fileName, CDateTime fileTime, const ulong fileSize, const String& rangeHeader, TArray<std::pair<String, String> >& extraHeaders, const THashMap<String, String>& mimeTypes, const bool headersOnly, IAllocator& allocator);
         };
     }
 }

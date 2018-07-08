@@ -44,7 +44,7 @@
 
 #include "Server.h"
 #include "Http.h"
-#include "Protocol.h"
+#include "IProtocol.h"
 
 #include <signal.h> // commands
 
@@ -349,9 +349,9 @@ namespace Neko
             {
             }
             
-            IServerProtocol* CreateProtocol(ISocket& socket, void* stream, IAllocator& allocator) const
+            IProtocol* CreateProto(ISocket& socket, void* stream, IAllocator& allocator) const
             {
-                IServerProtocol* protocol = nullptr;
+                IProtocol* protocol = nullptr;
   
                 if (socket.GetTlsSession() != nullptr)
                 {
@@ -367,11 +367,11 @@ namespace Neko
                         if (protocolName == "h2")
                         {
                             // @todo
-                            protocol = NEKO_NEW(allocator, ServerHttp)(socket, &Settings, allocator);
+                            protocol = NEKO_NEW(allocator, ProtocolHttp)(socket, &Settings, allocator);
                         }
                         else if (protocolName == "http/1.1")
                         {
-                            protocol = NEKO_NEW(allocator, ServerHttp)(socket, &Settings, allocator);
+                            protocol = NEKO_NEW(allocator, ProtocolHttp)(socket, &Settings, allocator);
                         }
                         
                         return protocol;
@@ -380,19 +380,19 @@ namespace Neko
                     GLogWarning.log("Http") << "Tls session data found, but couldn't negotiate needed protocol";
                 }
                 
-                protocol = NEKO_NEW(allocator, ServerHttp)(socket, &Settings, allocator);
+                protocol = NEKO_NEW(allocator, ProtocolHttp)(socket, &Settings, allocator);
                 
                 return protocol;
             }
             
             void ThreadRequestProc(ISocket& socket, Net::SocketsQueue& sockets, void* stream) const
             {
-                IServerProtocol* protocol = CreateProtocol(socket, stream, Allocator);
+                IProtocol* protocol = CreateProto(socket, stream, Allocator);
                 
                 if (protocol)
                 {
                     // Check if switching protocol
-                    for (IServerProtocol* result = nullptr; ;)
+                    for (IProtocol* result = nullptr; ;)
                     {
                         // This may return a new instance if switching protocols
                         result = protocol->Process();

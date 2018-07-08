@@ -29,7 +29,7 @@
 //  Copyright © 2018 Neko Vision. All rights reserved.
 //
 
-#include "../Server/Protocol.h"
+#include "../Server/IProtocol.h"
 
 #include "ControllerFactory.h"
 #include "IController.h"
@@ -45,7 +45,7 @@ namespace Neko
         {
         }
        
-        void ControllerFactory::ExecuteController(const Routing& routing, IServerProtocol& protocol, Net::Http::Request& request, Net::Http::Response& response)
+        void ControllerFactory::ExecuteController(const Routing& routing, IProtocol& protocol, Net::Http::Request& request, Net::Http::Response& response)
         {
             // get controller context
             auto contextIt = ControllerDispatcher.Find(*routing.Controller);

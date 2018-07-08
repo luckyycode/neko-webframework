@@ -49,13 +49,13 @@ namespace Neko
 {
     namespace Http
     {
-        ServerHttp::ServerHttp(ISocket& socket, const ServerSettings* settings, IAllocator& allocator)
-        : IServerProtocol(socket, settings, allocator)
+        ProtocolHttp::ProtocolHttp(ISocket& socket, const ServerSettings* settings, IAllocator& allocator)
+        : IProtocol(socket, settings, allocator)
         {
             
         }
 
-        IServerProtocol* ServerHttp::Process()
+        IProtocol* ProtocolHttp::Process()
         {
             String buffer(Allocator);
             
@@ -91,13 +91,13 @@ namespace Neko
             {
                 GLogInfo.log("Http") << "Switching to websocket..";
                 
-                return NEKO_NEW(Allocator, ServerWebSocket)(*this);
+                return NEKO_NEW(Allocator, ProtocolWebSocket)(*this);
             }
             
             return this;
         }
       
-        const ApplicationSettings* ServerHttp::GetApplicationSettings(Net::Http::Request& request, const bool secure) const
+        const ApplicationSettings* ProtocolHttp::GetApplicationSettings(Net::Http::Request& request, const bool secure) const
         {
             // Get domain or address from incoming request
             auto hostIt = request.IncomingHeaders.Find("host");
@@ -250,7 +250,7 @@ namespace Neko
             return result;
         }
         
-        Net::Http::StatusCode ServerHttp::GetRequestData(Net::Http::Request& request, String& stringBuffer,
+        Net::Http::StatusCode ProtocolHttp::GetRequestData(Net::Http::Request& request, String& stringBuffer,
                                                         const ApplicationSettings& applicationSettings) const
         {
             // Get content type and check if we have any data
@@ -319,7 +319,7 @@ namespace Neko
             return Net::Http::StatusCode::Empty;
         }
         
-        bool ServerHttp::SendHeaders(const Net::Http::StatusCode status, TArray< std::pair<String, String> >& headers,
+        bool ProtocolHttp::SendHeaders(const Net::Http::StatusCode status, TArray< std::pair<String, String> >& headers,
                                      const uint32& timeout, const bool end) const
         {
             String string = "HTTP/1.1 " ;
@@ -348,7 +348,7 @@ namespace Neko
             return Socket.SendAllPacketsWait(*string, string.Length(), timeout) > 0;
         }
         
-        long ServerHttp::SendData(const void* source, uint32 size, const uint32& timeout, Net::Http::DataCounter* dataCounter/* = nullptr*/) const
+        long ProtocolHttp::SendData(const void* source, uint32 size, const uint32& timeout, Net::Http::DataCounter* dataCounter/* = nullptr*/) const
         {
             long sendSize = Socket.SendAllPacketsWait(source, size, timeout);
             // check if no error returned
@@ -589,7 +589,7 @@ namespace Neko
             }
         }
         
-        void ServerHttp::RunHttpProtocol(Net::Http::Request& request, TArray<char>& buffer, String& stringBuffer) const
+        void ProtocolHttp::RunHttpProtocol(Net::Http::Request& request, TArray<char>& buffer, String& stringBuffer) const
         {
             // these can be null
             assert(this->Settings != nullptr);
@@ -642,7 +642,7 @@ namespace Neko
             }
         }
         
-        bool ServerHttp::WriteRequestParameters(TArray<char>& buffer, const Net::Http::Request& request, const ApplicationSettings& applicationSettings) const
+        bool ProtocolHttp::WriteRequestParameters(TArray<char>& buffer, const Net::Http::Request& request, const ApplicationSettings& applicationSettings) const
         {
             Net::Http::WriteHeaderNumber(buffer, (int)Net::Http::Version::Http_1);
             
@@ -659,13 +659,13 @@ namespace Neko
             return true;
         }
         
-        void ServerHttp::ReadResponseParameters(Net::Http::Request& request, Net::Http::ResponseData& responseData) const
+        void ProtocolHttp::ReadResponseParameters(Net::Http::Request& request, Net::Http::ResponseData& responseData) const
         {
             const uint8* data = (const uint8* )responseData.Data;
             Net::Http::ReadHeaderContainer(request.OutgoingHeaders, data);
         }
         
-        void ServerHttp::Close()
+        void ProtocolHttp::Close()
         {
             Socket.Close();
         }

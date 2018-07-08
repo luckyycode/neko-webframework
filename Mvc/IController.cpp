@@ -29,7 +29,7 @@
 //  Copyright © 2018 Neko Vision. All rights reserved.
 //
 
-#include "../Server/Protocol.h"
+#include "../Server/IProtocol.h"
 
 #include "IController.h"
 #include "Router.h"

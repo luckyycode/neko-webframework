@@ -41,7 +41,7 @@ namespace Neko
 {
     namespace Http
     {
-        bool SendfileExtension::Send(const IServerProtocol &protocol, const Net::Http::Request &request, TArray<std::pair<String, String> >& extraHeaders, const String& fileName, const THashMap<String, String>& mimeTypes, const bool headersOnly, IAllocator& allocator)
+        bool SendfileExtension::Send(const IProtocol& protocol, const Net::Http::Request &request, TArray<std::pair<String, String> >& extraHeaders, const String& fileName, const THashMap<String, String>& mimeTypes, const bool headersOnly, IAllocator& allocator)
         {
             // Current time in Gmt
             const auto now = CDateTime::GmtNow().ToRfc882();
@@ -289,7 +289,7 @@ namespace Neko
             return ranges;
         }
         
-        bool SendfileExtension::SendPartial(const IServerProtocol& protocol, const Net::Http::Request& request, const String& fileName, CDateTime fileTime, const ulong fileSize, const String& rangeHeader, TArray<std::pair<String, String> >& extraHeaders, const THashMap<String, String>& mimeTypes, const bool headersOnly, IAllocator& allocator)
+        bool SendfileExtension::SendPartial(const IProtocol& protocol, const Net::Http::Request& request, const String& fileName, CDateTime fileTime, const ulong fileSize, const String& rangeHeader, TArray<std::pair<String, String> >& extraHeaders, const THashMap<String, String>& mimeTypes, const bool headersOnly, IAllocator& allocator)
         {
             const int32 valuePos = rangeHeader.Find("=", ESearchCase::IgnoreCase, ESearchDir::FromStart);
             
@@ -394,7 +394,7 @@ namespace Neko
             
             return true;
         }
-        bool SendfileExtension::Send(const IServerProtocol& protocol, Net::Http::Request& request, const THashMap<String, String>& mimeTypes, IAllocator& allocator)
+        bool SendfileExtension::Send(const IProtocol& protocol, Net::Http::Request& request, const THashMap<String, String>& mimeTypes, IAllocator& allocator)
         {
             auto sendfileIt = request.OutgoingHeaders.Find("x-sendfile");
             

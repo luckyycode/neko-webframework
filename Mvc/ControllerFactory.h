@@ -98,7 +98,7 @@ namespace Neko
             /**
              * Instantiates a new controller on request.
              */
-            void ExecuteController(const Routing& routing, class IServerProtocol& protocol, Net::Http::Request& request, Net::Http::Response& response);
+            void ExecuteController(const Routing& routing, class IProtocol& protocol, Net::Http::Request& request, Net::Http::Response& response);
             
             /**
              * Removes controller data.

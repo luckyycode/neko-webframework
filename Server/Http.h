@@ -31,7 +31,7 @@
 
 #pragma once
 
-#include "Protocol.h"
+#include "IProtocol.h"
 #include "../../Engine/Network/NetSocket.h"
 #include "../../Engine/Network/Http/HttpStatusCodes.h"
 #include "../../Engine/Network/Http/Request.h"
@@ -40,16 +40,16 @@ namespace Neko
 {
     namespace Http
     {
-        /// Http 1.1 capable server.
-        class ServerHttp : public IServerProtocol
+        /// Http 1.1 capable server protocol.
+        class ProtocolHttp : public IProtocol
         {
         public:
             
-            // See comments in IServerProtocol.
+            // See comments in IProtocol.
             
-            ServerHttp(class ISocket& socket, const ServerSettings* settings, IAllocator& allocator);
+            ProtocolHttp(class ISocket& socket, const ServerSettings* settings, IAllocator& allocator);
             
-            virtual IServerProtocol* Process() override;
+            virtual IProtocol* Process() override;
             
             virtual long SendData(const void* source, uint32 size, const uint32& timeout, Net::Http::DataCounter* dataCounter) const override;
             

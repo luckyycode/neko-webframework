@@ -23,13 +23,13 @@
 // | |\  |  __/   < (_) | |  _|| | | (_| | | | | | |  __/\ V  V / (_) | |  |   <
 // |_| \_|\___|_|\_\___/  |_|  |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
 //
-//  IServerProtocol.cpp
+//  IProtocol.cpp
 //  Neko Framework
 //
 //  Copyright © 2018 Neko Vision. All rights reserved.
 //
 
-#include "Protocol.h"
+#include "IProtocol.h"
 #include "../ContentTypes/ContentDesc.h"
 #include "../ISocket.h"
 #include "../Utils.h"
@@ -42,21 +42,21 @@ namespace Neko
 {
     namespace Http
     {
-        IServerProtocol::IServerProtocol(ISocket& socket, const ServerSettings* settings, IAllocator& allocator)
+        IProtocol::IProtocol(ISocket& socket, const ServerSettings* settings, IAllocator& allocator)
         : Socket(socket)
         , Settings(settings)
         , Allocator(allocator)
         , Timer()
         { }
         
-        IServerProtocol::IServerProtocol(const IServerProtocol& protocol)
+        IProtocol::IProtocol(const IProtocol& protocol)
         : Socket(protocol.Socket)
         , Settings(protocol.Settings)
         , Allocator(protocol.Allocator)
         , Timer()
         { }
    
-        bool IServerProtocol::SendResponse(Net::Http::Response& response, const uint32 timeout) const
+        bool IProtocol::SendResponse(Net::Http::Response& response, const uint32 timeout) const
         {
             const auto& responseBody = response.GetBodyData();
             
@@ -76,7 +76,7 @@ namespace Neko
             return result;
         }
         
-        bool IServerProtocol::SendHeaders(Net::Http::Response& response, const TArray<std::pair<String, String> >* extra, const uint32& timeout, const bool end) const
+        bool IProtocol::SendHeaders(Net::Http::Response& response, const TArray<std::pair<String, String> >* extra, const uint32& timeout, const bool end) const
         {
             TArray<std::pair<String, String> > headers(Allocator);
             
@@ -100,7 +100,7 @@ namespace Neko
             return this->SendHeaders(response.Status, headers, timeout, end);
         }
         
-        void IServerProtocol::RunApplication(Net::Http::Request& request, const ApplicationSettings& applicationSettings) const
+        void IProtocol::RunApplication(Net::Http::Request& request, const ApplicationSettings& applicationSettings) const
         {
             TArray<char> buffer(Allocator);
             buffer.Reserve(REQUEST_BUFFER_SIZE);
@@ -146,7 +146,7 @@ namespace Neko
             }
         }
         
-        ContentDesc* IServerProtocol::CreateContentDesc(const Net::Http::RequestDataInternal* requestData, const THashMap<String, IContentType* >& contentTypes, IAllocator& allocator)
+        ContentDesc* IProtocol::CreateContentDesc(const Net::Http::RequestDataInternal* requestData, const THashMap<String, IContentType* >& contentTypes, IAllocator& allocator)
         {
             auto it = requestData->IncomingHeaders.Find("content-type");
             
@@ -230,7 +230,7 @@ namespace Neko
             return contentDesc;
         }
         
-        void IServerProtocol::DestroyContentDesc(void* source, IAllocator& allocator)
+        void IProtocol::DestroyContentDesc(void* source, IAllocator& allocator)
         {
             ContentDesc* content = (ContentDesc* )source;
             

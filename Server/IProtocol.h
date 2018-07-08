@@ -23,7 +23,7 @@
 // | |\  |  __/   < (_) | |  _|| | | (_| | | | | | |  __/\ V  V / (_) | |  |   <
 // |_| \_|\___|_|\_\___/  |_|  |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
 //
-//  Protocol.h
+//  IProtocol.h
 //  Neko Framework
 //
 //  Copyright © 2018 Neko Vision. All rights reserved.
@@ -53,29 +53,29 @@ namespace Neko
     {
         const static uint32 REQUEST_BUFFER_SIZE = 4096;
         
-        /// Protocol interface capable for http, websockets, etc.
-        class IServerProtocol
+        /// Interface capable for http, websockets, etc.
+        class IProtocol
         {
         public:
             
             /**
-             * Server protocol instance.
+             * Server interface instance.
              *
              * @param socket    Currently active connection socket.
              * @param settings  Shared server settings.
              * @param controls  Shared server controls.
              */
-            IServerProtocol(class ISocket& socket, const ServerSettings* settings, class IAllocator& allocator);
+            IProtocol(class ISocket& socket, const ServerSettings* settings, class IAllocator& allocator);
             
-            IServerProtocol(const IServerProtocol& protocol);
+            IProtocol(const IProtocol& protocol);
             
             /** Virtual destructor. */
-            virtual ~IServerProtocol() = default;
+            virtual ~IProtocol() = default;
             
         public:
             
             /** Processes the request. */
-            virtual IServerProtocol* Process() = 0;
+            virtual IProtocol* Process() = 0;
             
             /**
              * Sends headers with status code.

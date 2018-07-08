@@ -23,7 +23,7 @@
 // | |\  |  __/   < (_) | |  _|| | | (_| | | | | | |  __/\ V  V / (_) | |  |   <
 // |_| \_|\___|_|\_\___/  |_|  |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
 //
-//  ServerWebSocket.cpp
+//  WebSocket.cpp
 //  Neko Framework
 //
 //  Copyright © 2018 Neko Vision. All rights reserved.
@@ -38,40 +38,40 @@ namespace Neko
     {
         // empty
         
-        ServerWebSocket::ServerWebSocket(ISocket& socket, const ServerSettings* settings, IAllocator& allocator)
-        : IServerProtocol(socket, settings, allocator)
+        ProtocolWebSocket::ProtocolWebSocket(ISocket& socket, const ServerSettings* settings, IAllocator& allocator)
+        : IProtocol(socket, settings, allocator)
         { }
         
-        ServerWebSocket::ServerWebSocket(const IServerProtocol& protocol)
-        : IServerProtocol(protocol)
+        ProtocolWebSocket::ProtocolWebSocket(const IProtocol& protocol)
+        : IProtocol(protocol)
         { }
         
-        IServerProtocol* ServerWebSocket::Process()
+        IProtocol* ProtocolWebSocket::Process()
         {
             return this;
         }
         
-        long ServerWebSocket::SendData(const void* src,uint32 size, const uint32& timeout, Net::Http::DataCounter* dataCounter) const
+        long ProtocolWebSocket::SendData(const void* src,uint32 size, const uint32& timeout, Net::Http::DataCounter* dataCounter) const
         {
             return 0;
         }
         
-        bool ServerWebSocket::SendHeaders(const Net::Http::StatusCode status, TArray< std::pair<String, String> >& headers, const uint32& timeout, bool end) const
+        bool ProtocolWebSocket::SendHeaders(const Net::Http::StatusCode status, TArray< std::pair<String, String> >& headers, const uint32& timeout, bool end) const
         {
             return false;
         }
         
-        bool ServerWebSocket::WriteRequestParameters(TArray<char>& buffer, const Net::Http::Request& repuest, const ApplicationSettings& applicationSettings) const
+        bool ProtocolWebSocket::WriteRequestParameters(TArray<char>& buffer, const Net::Http::Request& repuest, const ApplicationSettings& applicationSettings) const
         {
             return false;
         }
         
-        void ServerWebSocket::ReadResponseParameters(Net::Http::Request& request, Net::Http::ResponseData& responseData) const
+        void ProtocolWebSocket::ReadResponseParameters(Net::Http::Request& request, Net::Http::ResponseData& responseData) const
         {
             
         }
         
-        void ServerWebSocket::Close()
+        void ProtocolWebSocket::Close()
         {
             
         }

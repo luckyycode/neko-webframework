@@ -38,7 +38,7 @@
 
 #include "../../Engine/Platform/Platform.h"
 
-#include "../Server/Protocol.h"
+#include "../Server/IProtocol.h"
 #include "../Server/Http.h"
 
 #include "../SocketSSL.h"
@@ -218,7 +218,7 @@ namespace Neko
             Net::Http::Request request(Allocator);
     
             // incoming protocol type by request
-            IServerProtocol* protocol = nullptr;
+            IProtocol* protocol = nullptr;
             
             auto version = (Net::Http::Version)protocolVersion;
             request.ProtocolVersion = version;
@@ -247,7 +247,7 @@ namespace Neko
                     }
                     
                     // instantiate protocol
-                    protocol = NEKO_NEW(Allocator, ServerHttp)(*socket, nullptr, Allocator);
+                    protocol = NEKO_NEW(Allocator, ProtocolHttp)(*socket, nullptr, Allocator);
                     
                     break;
                 }
