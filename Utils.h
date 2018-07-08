@@ -1,0 +1,70 @@
+//
+//          *                  *
+//             __                *
+//           ,db'    *     *
+//          ,d8/       *        *    *
+//          888
+//          `db\       *     *
+//            `o`_                    **
+//               *                 / )
+//             *    /\__/\ *       ( (  *
+//           ,-.,-.,)    (.,-.,-.,-.) ).,-.,-.
+//          | @|  ={      }= | @|  / / | @|o |
+//         _j__j__j_)     `-------/ /__j__j__j_
+//          ________(               /___________
+//          |  | @| \              || o|O | @|
+//          |o |  |,'\       ,   ,'"|  |  |  |  hjw
+//          vV\|/vV|`-'\  ,---\   | \Vv\hjwVv\//v
+//                     _) )    `. \ /
+//                    (__/       ) )
+//  _   _      _           _____                                            _
+// | \ | | ___| | _____   |  ___| __ __ _ _ __ ___   _____      _____  _ __| | __
+// |  \| |/ _ \ |/ / _ \  | |_ | '__/ _` | '_ ` _ \ / _ \ \ /\ / / _ \| '__| |/ /
+// | |\  |  __/   < (_) | |  _|| | | (_| | | | | | |  __/\ V  V / (_) | |  |   <
+// |_| \_|\___|_|\_\___/  |_|  |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
+//
+//  Utils.h
+//  Neko Framework
+//
+//  Copyright © 2018 Neko Vision. All rights reserved.
+//
+
+#pragma once
+
+#include "../Engine/Network/Http/Request.h"
+
+namespace Neko
+{
+	namespace Http
+    {
+        // binary
+        static const char* DefaultMimeType = "application/octet-stream";
+        
+        /** Gets mime type (e.g. image/jpeg) from file name. */
+        String GetMimeByFileName(const String& fileName, const THashMap<String, String>& mimes);
+        
+        /**
+         * Parser url with query to hashmap (e.g. /get?fileId=14&access=read..).
+         */
+        void GetIncomingQueryVars(THashMap<String, String>& incomingData, const String& uri, IAllocator& allocator);
+        
+        /**
+         * Removes query params from url.
+         */
+        void ClearRequestUri(const String& path, String& clean);
+      
+        NEKO_FORCE_INLINE bool IsConnectionLeaveOpen(const Net::Http::Request& request)
+        {
+            return (request.ConnectionParams & Net::Http::ConnectionParams::Connection_LeaveOpen)
+            == Net::Http::ConnectionParams::Connection_LeaveOpen;
+        }
+        
+        NEKO_FORCE_INLINE bool IsConnectionReuse(const Net::Http::Request& request)
+        {
+            return (request.ConnectionParams & Net::Http::ConnectionParams::Connection_Reuse)
+            == Net::Http::ConnectionParams::Connection_Reuse;
+        }
+        
+        
+    }
+}
