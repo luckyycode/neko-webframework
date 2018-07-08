@@ -1,4 +1,4 @@
-# Neko server / Mvc
+# Neko web framework
 
 Neko server with Mvc framework (work in progress).
 
