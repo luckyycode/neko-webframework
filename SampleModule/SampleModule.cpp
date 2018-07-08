@@ -10,6 +10,7 @@
 #include "../../Engine/Core/Log.h"
 
 #include "../Mvc/ActionContext.h"
+#include "../ApplicationSettings.h"
 
 #include "Controllers/TelegramController.h"
 #include "Controllers/FileController.h"
@@ -23,21 +24,21 @@ extern "C"
     /**
      * This is called on early module initialization.
      */
-    bool OnApplicationInit(const char* rootDirectory)
+    bool OnApplicationInit(Neko::Http::ApplicationInitDesc desc)
     {
-        GLogInfo.log("Http") << "Core module init";
+        GLogInfo.log("Http") << "Sample module init";
         
+        const char* rootDirectory = desc.RootDirectory;
         SampleModule::DocumentRoot.Assign(rootDirectory);
         
         context = new Http::ActionContext();
-        
         return context != nullptr;
     }
     
     /**
      * This is called when requested application has been found.
      */
-    int OnApplicationCall(Neko::Net::Http::RequestData* request, Neko::Net::Http::ResponseData * response)
+    int OnApplicationRequest(Neko::Net::Http::RequestData* request, Neko::Net::Http::ResponseData * response)
     {
         return context->Execute(*request, *response);
     }
@@ -45,12 +46,12 @@ extern "C"
     /**
      * Called when request has finished.
      */
-    void OnApplicationClear(Neko::Net::Http::ResponseData * response)
+    void OnApplicationPostRequest(Neko::Net::Http::ResponseData * response)
     {
         context->CleanupResponseData(response->Data, response->Size);
     }
     
-    void OnApplicationExit(const char* rootDirectory)
+    void OnApplicationExit()
     {
         printf("FINAL KEK WAVE\n");
         delete context;

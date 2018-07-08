@@ -85,6 +85,7 @@ namespace Neko
         
         Server::Server(IAllocator& allocator, FS::FileSystem& fileSystem)
         : Mutex(false)
+        , QueueNotFullEvent(true)
         , Allocator(allocator)
         , Modules(allocator)
         , Listeners(allocator)
@@ -147,12 +148,12 @@ namespace Neko
         }
 #   endif
         
-        void* Server::InitSsl(const ServerApplicationSettings& application)
+        void* Server::InitSsl(const ApplicationSettings& application)
         {
 #   if USE_OPENSSL
             SSL_CTX* context = nullptr;
             
-            const auto& certificate = application.CertFile;
+            const auto& certificate = application.CertificateFile;
             const auto& privateKey = application.KeyFile;
             
             context = SSL_CTX_new(SSLv23_server_method());
@@ -190,7 +191,7 @@ namespace Neko
         void Server::PrepareApplications()
         {
             // Applications settings list
-            TArray< ServerApplicationSettings* > applications(Allocator);
+            TArray< ApplicationSettings* > applications(Allocator);
             
             // Get full applications settings list
             Settings.List.GetAllApplicationSettings(applications);
@@ -305,12 +306,12 @@ namespace Neko
                     if (sockets.GetSize() >= Net::QueueMaxLength)
                     {
                         GLogInfo.log("Http") << "Queue length " << Net::QueueMaxLength << " exceeded.";
-                        Controls.QueueNotFullEvent.Reset();
+                        QueueNotFullEvent.Reset();
                     }
                     
                     socketsToAccept.Clear();
                     
-                    Controls.QueueNotFullEvent.Wait();
+                    QueueNotFullEvent.Wait();
                 }
             }
             while (Controls.Active || Controls.UpdateModulesEvent.poll());
@@ -340,6 +341,7 @@ namespace Neko
             : MT::Task(allocator)
             , Sockets(sockets)
             , ThreadRequestEvent(threadRequestEvent)
+            , QueueNotFullEvent(server.QueueNotFullEvent)
             , Settings(server.Settings)
             , Controls(server.Controls)
             , ThreadsWorkingCount(server.ThreadsWorkingCount)
@@ -351,13 +353,7 @@ namespace Neko
             IServerProtocol* CreateProtocol(ISocket& socket, void* stream, IAllocator& allocator) const
             {
                 IServerProtocol* protocol = nullptr;
-                
-                // If request is HTTP/2 Stream
-                if (stream != nullptr)
-                {
-                    return protocol; // @todo
-                }
-                
+  
                 if (socket.GetTlsSession() != nullptr)
                 {
                     void* session = socket.GetTlsSession();
@@ -381,6 +377,8 @@ namespace Neko
                         
                         return protocol;
                     }
+                    
+                    GLogWarning.log("Http") << "Tls session data found, but couldn't negotiate needed protocol";
                 }
                 
                 protocol = NEKO_NEW(allocator, ServerHttp)(socket, &Settings, allocator);
@@ -441,7 +439,7 @@ namespace Neko
                     if (Sockets.IsEmpty())
                     {
                         ThreadRequestEvent.Reset();
-                        Controls.QueueNotFullEvent.Trigger();
+                        QueueNotFullEvent.Trigger();
                     }
                     
                     Sockets.Mutex.Unlock();
@@ -499,6 +497,7 @@ namespace Neko
             Net::SocketsQueue& Sockets;
             
             MT::Event& ThreadRequestEvent;
+            MT::Event& QueueNotFullEvent;
             
             IAllocator& Allocator;
             
@@ -576,7 +575,7 @@ namespace Neko
                     activeTasks.Clear();
                 }
                 
-                Controls.QueueNotFullEvent.Trigger();
+                QueueNotFullEvent.Trigger();
             }
             while (Controls.UpdateModulesEvent.poll(false));
             
@@ -588,7 +587,7 @@ namespace Neko
         void Server::UpdateModules()
         {
             // Applications settings list
-            TArray< ServerApplicationSettings* > applications(Allocator);
+            TArray< ApplicationSettings* > applications(Allocator);
             // Get full applications settings list
             Settings.List.GetAllApplicationSettings(applications);
             
@@ -648,7 +647,7 @@ namespace Neko
             // setup socket
             Net::INetSocket socket;
             
-            if (socket.Init("", port, Net::ESocketType::TCP) == false)
+            if (!socket.Init("", port, Net::ESocketType::TCP))
             {
                 GLogError.log("Http") << "Server couldn't start at port " << port << ". " << strerror(errno);
                 return false;
@@ -675,9 +674,9 @@ namespace Neko
             return true;
         }
         
-        bool Server::UpdateModule(Module& module, TArray<ServerApplicationSettings* >& applications, const uint32 index)
+        bool Server::UpdateModule(Module& module, TArray<ApplicationSettings* >& applications, const uint32 index)
         {
-            TArray<ServerApplicationSettings* > existing(Allocator);
+            TArray<ApplicationSettings* > existing(Allocator);
             
             for (auto& application : applications)
             {
@@ -686,18 +685,16 @@ namespace Neko
                 {
                     existing.Push(application);
                     
-                    // @todo errors
-                    if (application->OnApplicationExit)
+                    assert (application->OnApplicationExit);
                     {
-                        String root = application->RootDirectory;
-                        application->OnApplicationExit(*root);
+                        application->OnApplicationExit();
                     }
                     
                     // @todo get rid of std function
-                    application->OnApplicationInit = std::function<bool(const char* )>();
-                    application->OnApplicationCall = std::function<int(Net::Http::RequestData* , Net::Http::ResponseData* )>();
-                    application->OnApplicationClear = std::function<void(Net::Http::ResponseData* )>();
-                    application->OnApplicationExit = std::function<void(const char* )>();
+                    application->OnApplicationInit = std::function<bool(ApplicationInitDesc)>();
+                    application->OnApplicationRequest = std::function<int(Net::Http::RequestData* , Net::Http::ResponseData* )>();
+                    application->OnApplicationPostRequest = std::function<void(Net::Http::ResponseData* )>();
+                    application->OnApplicationExit = std::function<void()>();
                 }
             }
             
@@ -778,16 +775,18 @@ namespace Neko
             for (auto& app : existing)
             {
                 app->OnApplicationInit = application->OnApplicationInit;
-                app->OnApplicationCall = application->OnApplicationCall;
-                app->OnApplicationClear = application->OnApplicationClear;
+                app->OnApplicationRequest = application->OnApplicationRequest;
+                app->OnApplicationPostRequest = application->OnApplicationPostRequest;
                 app->OnApplicationExit = application->OnApplicationExit;
                 
                 // @todo errors
-                if (app->OnApplicationInit)
+                assert (app->OnApplicationInit);
+                
+                ApplicationInitDesc items
                 {
-                    String root = app->RootDirectory;
-                    app->OnApplicationInit(*root);
-                }
+                    *app->RootDirectory
+                };
+                app->OnApplicationInit(items);
             }
             
             return true;
@@ -803,6 +802,8 @@ namespace Neko
         
         void Server::Stop()
         {
+            QueueNotFullEvent.Trigger();
+            
             Controls.StopProcess();
             CloseListeners();
         }
@@ -810,6 +811,8 @@ namespace Neko
         void Server::Restart()
         {
             Controls.SetRestartFlag();
+            
+            QueueNotFullEvent.Trigger();
             Controls.StopProcess();
             
             CloseListeners();
@@ -944,6 +947,8 @@ namespace Neko
         
         void Server::Clear()
         {
+            QueueNotFullEvent.Reset();
+            
             Controls.Clear();
             
             Settings.Clear();

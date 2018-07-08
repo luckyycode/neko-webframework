@@ -62,120 +62,8 @@ namespace Neko
             ContentTypes.Insert(contentType->GetName(), contentType);
         }
         
-        void ServerSettings::Clear()
-        {
-            if (!List.IsEmpty())
-            {
-                TArray< ServerApplicationSettings* > applications(Allocator);
-                
-                for (auto app : applications)
-                {
-                    assert(app->OnApplicationExit != nullptr);
-                    
-                    if (app->OnApplicationExit)
-                    {
-                        const String root = app->RootDirectory;
-                        app->OnApplicationExit(*root);
-                    }
-                    
-                    NEKO_DELETE(Allocator, app) ;
-                }
-                
-                applications.Clear();
-            }
-            
-            if (!ContentTypes.IsEmpty())
-            {
-                for (auto type : ContentTypes)
-                {
-                    NEKO_DELETE(Allocator, type) ;
-                }
-                
-                ContentTypes.Clear();
-            }
-        }
-        
-        bool ServerSettings::SetApplicationModuleMethods(ServerApplicationSettings& settings, Module& module)
-        {
-            assert(module.IsOpen());
-            
-            bool success = true;
-            
-            // @todo get rid of std function
-            
-            std::function<int(Net::Http::RequestData* , Net::Http::ResponseData* )> appCallMethod;
-            appCallMethod = module.GetMethod<int(*)(Net::Http::RequestData* , Net::Http::ResponseData* )>("OnApplicationCall");
-            success = appCallMethod != nullptr;
-            
-            std::function<void(Net::Http::ResponseData* )> appClearMethod;
-            appClearMethod = module.GetMethod<void(*)(Net::Http::ResponseData* )>("OnApplicationClear");
-            success = appClearMethod != nullptr;
-            
-            std::function<bool(const char* )> appInitMethod;
-            appInitMethod = module.GetMethod<bool(*)(const char* )>("OnApplicationInit");
-            success = appInitMethod != nullptr;
-            
-            std::function<void(const char* )> appFinalMethod;
-            appFinalMethod = module.GetMethod<void(*)(const char* )>("OnApplicationExit");
-            success = appFinalMethod != nullptr;
-            
-            settings.OnApplicationCall = Neko::Move(appCallMethod);
-            settings.OnApplicationClear = Neko::Move(appClearMethod);
-            settings.OnApplicationInit = Neko::Move(appInitMethod);
-            settings.OnApplicationExit = Neko::Move(appFinalMethod);
-            
-            return success;
-        }
-        
-        int32 ServerSettings::LoadModule(const String& name, const String& rootDirectory, TArray<Module>& modules, ServerApplicationSettings& settings)
-        {
-            bool success = true;
-            Module module(name);
-            
-            if (!module.IsOpen())
-            {
-                GLogError.log("Http") << "Couldn't open '" << *name << "' application module";
-                return false;
-            }
-            
-            success = SetApplicationModuleMethods(settings, module);
-            
-            assert(settings.OnApplicationInit != nullptr);
-            success = settings.OnApplicationInit(*rootDirectory);
-            
-            // Calculate module index
-            int32 moduleIndex = INDEX_NONE;
-            
-            for (int32 i = 0; i < modules.GetSize(); ++i)
-            {
-                if (modules[i] == module)
-                {
-                    moduleIndex = i;
-                    break;
-                }
-            }
-            
-            if (moduleIndex == INDEX_NONE)
-            {
-                moduleIndex = modules.GetSize();
-                modules.Emplace(Neko::Move(module));
-            }
-            
-            return moduleIndex;
-        }
-        
-        bool ServerSettings::AddApplication(const String& application, ServerApplicationSettings* settings)
-        {
-            // Add application in server application list
-            List.AddApplication(application, settings);
-            
-            return true;
-        }
-        
         bool ServerSettings::LoadAppSettings(const String& fileName, TArray<Module>& modules)
         {
-            // @todo Load appsettings from Lua instead of json?
-            
             Neko::CPath path(*fileName);
             IStream* file = FileSystem.Open(FileSystem.GetDiskDevice(), path, FS::Mode::READ);
             
@@ -191,7 +79,7 @@ namespace Neko
             const uint32 requestMaxSize = 10485760;
             
             // Create appsettings
-            TArray< ServerApplicationSettings* > applicationSettingItems(Allocator);
+            TArray< ApplicationSettings* > applicationSettingItems(Allocator);
             TArray< String > applicationNames(Allocator);
             
             // Load from json
@@ -204,7 +92,7 @@ namespace Neko
             
             while (!json.IsArrayEnd())
             {
-                ServerApplicationSettings* settings = NEKO_NEW(Allocator, ServerApplicationSettings) ();
+                ApplicationSettings* settings = NEKO_NEW(Allocator, ApplicationSettings) ();
                 applicationSettingItems.Push(settings);
                 
                 json.DeserializeObjectBegin();
@@ -233,12 +121,8 @@ namespace Neko
                     else if (EqualStrings(label, "ssl"))
                     {
                         json.DeserializeObjectBegin();
-                        json.Deserialize("certFile", settings->CertFile, empty);
+                        json.Deserialize("certFile", settings->CertificateFile, empty);
                         json.Deserialize("keyFile", settings->KeyFile, empty);
-                        json.Deserialize("chainFile", settings->ChainFile, empty);
-                        json.Deserialize("crlFile", settings->CrlFile, empty);
-                        json.Deserialize("staplingFile", settings->StaplingFile, empty);
-                        json.Deserialize("dhFile", settings->DhFile, empty);
                         json.DeserializeObjectEnd();
                     }
                     else
@@ -291,7 +175,7 @@ namespace Neko
             SupportedMimeTypes.Insert("webm", "video/webm");
             SupportedMimeTypes.Insert("mp4", "video/mp4");
             SupportedMimeTypes.Insert("3gp", "video/3gp");
-
+            
             // @todo More data content types (e.g. multipart/form-data).
             AddContentType(NEKO_NEW(Allocator, TextPlain) (Allocator));
             AddContentType(NEKO_NEW(Allocator, FormUrlencoded) (Allocator));
@@ -300,6 +184,116 @@ namespace Neko
             return true;
         }
         
+        void ServerSettings::Clear()
+        {
+            if (!List.IsEmpty())
+            {
+                TArray< ApplicationSettings* > applications(Allocator);
+                
+                for (auto app : applications)
+                {
+                    assert(app->OnApplicationExit != nullptr);
+                
+                    app->OnApplicationExit();
+                    
+                    NEKO_DELETE(Allocator, app) ;
+                }
+                
+                applications.Clear();
+            }
+            
+            if (!ContentTypes.IsEmpty())
+            {
+                for (auto type : ContentTypes)
+                {
+                    NEKO_DELETE(Allocator, type) ;
+                }
+                
+                ContentTypes.Clear();
+            }
+        }
+        
+        bool ServerSettings::SetApplicationModuleMethods(ApplicationSettings& settings, Module& module)
+        {
+            assert(module.IsOpen());
+            
+            bool success = true;
+            
+            // @todo get rid of std function
+            
+            std::function<int(Net::Http::RequestData* , Net::Http::ResponseData* )> appRequestMethod;
+            appRequestMethod = module.GetMethod<int(*)(Net::Http::RequestData* , Net::Http::ResponseData* )>("OnApplicationRequest");
+            success = appRequestMethod != nullptr;
+            
+            std::function<void(Net::Http::ResponseData* )> appPostRequestMethod;
+            appPostRequestMethod = module.GetMethod<void(*)(Net::Http::ResponseData* )>("OnApplicationPostRequest");
+            success = appPostRequestMethod != nullptr;
+            
+            std::function<bool(ApplicationInitDesc)> appInitMethod;
+            appInitMethod = module.GetMethod<bool(*)(ApplicationInitDesc)>("OnApplicationInit");
+            success = appInitMethod != nullptr;
+            
+            std::function<void()> appExitMethod;
+            appExitMethod = module.GetMethod<void(*)()>("OnApplicationExit");
+            success = appExitMethod != nullptr;
+            
+            settings.OnApplicationRequest = Neko::Move(appRequestMethod);
+            settings.OnApplicationPostRequest = Neko::Move(appPostRequestMethod);
+            settings.OnApplicationInit = Neko::Move(appInitMethod);
+            settings.OnApplicationExit = Neko::Move(appExitMethod);
+            
+            return success;
+        }
+        
+        int32 ServerSettings::LoadModule(const String& name, const String& rootDirectory, TArray<Module>& modules, ApplicationSettings& settings)
+        {
+            bool success = true;
+            Module module(name);
+            
+            if (!module.IsOpen())
+            {
+                GLogError.log("Http") << "Couldn't open '" << *name << "' application module";
+                return false;
+            }
+            
+            success = SetApplicationModuleMethods(settings, module);
+            
+            assert(settings.OnApplicationInit != nullptr);
+            
+            ApplicationInitDesc items
+            {
+                *rootDirectory
+            };
+            success = settings.OnApplicationInit(items);
+            
+            // Calculate module index
+            int32 moduleIndex = INDEX_NONE;
+            
+            for (int32 i = 0; i < modules.GetSize(); ++i)
+            {
+                if (modules[i] == module)
+                {
+                    moduleIndex = i;
+                    break;
+                }
+            }
+            
+            if (moduleIndex == INDEX_NONE)
+            {
+                moduleIndex = modules.GetSize();
+                modules.Emplace(Neko::Move(module));
+            }
+            
+            return moduleIndex;
+        }
+        
+        bool ServerSettings::AddApplication(const String& application, ApplicationSettings* settings)
+        {
+            // Add application in server application list
+            List.AddApplication(application, settings);
+            
+            return true;
+        }
         
         
         ServerSettings::ApplicationsList::ApplicationsList(IAllocator& allocator)
@@ -309,7 +303,7 @@ namespace Neko
             
         }
         
-        ServerApplicationSettings* ServerSettings::ApplicationsList::Find(const String& name) const
+        ApplicationSettings* ServerSettings::ApplicationsList::Find(const String& name) const
         {
             auto it = List.Find(name);
             if (!it.IsValid())
@@ -324,7 +318,7 @@ namespace Neko
             return nullptr;
         }
         
-        void ServerSettings::ApplicationsList::GetAllApplicationSettings(TArray< ServerApplicationSettings* >& applications) const
+        void ServerSettings::ApplicationsList::GetAllApplicationSettings(TArray< struct ApplicationSettings* >& applications) const
         {
             for (auto node : List)
             {
@@ -339,7 +333,7 @@ namespace Neko
             }
         }
         
-        void ServerSettings::ApplicationsList::AddApplication(const String& name, ServerApplicationSettings* settings)
+        void ServerSettings::ApplicationsList::AddApplication(const String& name, struct ApplicationSettings* settings)
         {
             ServerSettings::ApplicationsList* list = nullptr;
             

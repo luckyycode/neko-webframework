@@ -88,7 +88,7 @@ namespace Neko
         
         long SocketSSL::SendAllPacketsWait(const void* buffer, const uint32 length, const uint32& timeout) const
         {
-            size_t checkSize = length;
+            ulong checkSize = length;
             
             if (checkSize == 0)
             {
@@ -98,7 +98,7 @@ namespace Neko
             Net::INetSocket socket;
             socket.Init(this->GetNativeHandle(), Net::ESocketType::TCP);
             
-            size_t total = 0;
+            ulong total = 0;
             int innerError;
             
             while (total < length)

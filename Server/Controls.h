@@ -46,7 +46,6 @@ namespace Neko
             
             ServerSharedControls()
             : ProcessQueueEvent(false)
-            , QueueNotFullEvent(true)
             , UpdateModulesEvent(true)
             {
             }
@@ -58,7 +57,6 @@ namespace Neko
             
             void Clear()
             {
-                QueueNotFullEvent.Reset();
                 ProcessQueueEvent.Reset();
                 UpdateModulesEvent.Reset();
             }
@@ -87,15 +85,12 @@ namespace Neko
             {
                 Active = false;
                 
-                QueueNotFullEvent.Trigger();
-                
                 ProcessQueue();
             }
             
         public:
             
             MT::Event ProcessQueueEvent;
-            MT::Event QueueNotFullEvent;
             MT::Event UpdateModulesEvent;
             
             //! Says whether the server is active and has active threads.

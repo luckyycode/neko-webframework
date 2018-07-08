@@ -34,7 +34,7 @@
 #include "../Engine/Core/Module.h"
 #include "ContentTypes/IContentType.h"
 
-#include "ServerApplicationSettings.h"
+#include "ApplicationSettings.h"
 
 namespace Neko
 {
@@ -56,13 +56,13 @@ namespace Neko
                 ApplicationsList(IAllocator& allocator);
                 
                 /** Adds application in the list */
-                void AddApplication(const String& name, ServerApplicationSettings* settings);
+                void AddApplication(const String& name, ApplicationSettings* settings);
                 
                 /** Recursively looks up for appsettings. */
-                ServerApplicationSettings* Find(const String& name) const;
+                ApplicationSettings* Find(const String& name) const;
                 
                 /** Collects all settings from every node. */
-                void GetAllApplicationSettings(TArray< ServerApplicationSettings* >& applications) const;
+                void GetAllApplicationSettings(TArray< ApplicationSettings* >& applications) const;
                 
                 void Clear();
                 
@@ -70,7 +70,7 @@ namespace Neko
                 
             public:
                 
-                ServerApplicationSettings* ApplicationSettings;
+                struct ApplicationSettings* ApplicationSettings;
                 
                 THashMap< String, ApplicationsList* > List;
                 
@@ -91,7 +91,7 @@ namespace Neko
         private:
             
             /** Adds application which will be used by server to lookup. */
-            bool AddApplication(const String& application, ServerApplicationSettings* settings);
+            bool AddApplication(const String& application, ApplicationSettings* settings);
             
         public:
             
@@ -103,9 +103,9 @@ namespace Neko
              */
             bool LoadAppSettings(const String& file, TArray<Module>& modules);
             
-            bool SetApplicationModuleMethods(ServerApplicationSettings& settings, Module& module);
+            bool SetApplicationModuleMethods(ApplicationSettings& settings, Module& module);
             
-            int32 LoadModule(const String& name, const String& rootDirectory, TArray<Module>& modules, ServerApplicationSettings& settings);
+            int32 LoadModule(const String& name, const String& rootDirectory, TArray<Module>& modules, ApplicationSettings& settings);
             
         public:
             

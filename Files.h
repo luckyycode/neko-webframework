@@ -71,7 +71,7 @@ namespace Neko
             static bool Send(const IServerProtocol& protocol, const Net::Http::Request& request, TArray<std::pair<String, String> >& extraHeaders, const String& fileName, const THashMap<String, String>& mimeTypes, const bool headersOnly, IAllocator& allocator);
             
             // partial file send
-            static bool SendPartial(const IServerProtocol& protocol, const Net::Http::Request& request, const String& fileName, CDateTime fileTime, const size_t fileSize, const String& rangeHeader, TArray<std::pair<String, String> >& extraHeaders, const THashMap<String, String>& mimeTypes, const bool headersOnly, IAllocator& allocator);
+            static bool SendPartial(const IServerProtocol& protocol, const Net::Http::Request& request, const String& fileName, CDateTime fileTime, const ulong fileSize, const String& rangeHeader, TArray<std::pair<String, String> >& extraHeaders, const THashMap<String, String>& mimeTypes, const bool headersOnly, IAllocator& allocator);
         };
     }
 }

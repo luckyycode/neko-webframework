@@ -47,15 +47,15 @@ namespace Neko
             
             // See comments in IServerProtocol.
             
-            virtual IServerProtocol* Process() override;
-            
             ServerHttp(class ISocket& socket, const ServerSettings* settings, IAllocator& allocator);
+            
+            virtual IServerProtocol* Process() override;
             
             virtual long SendData(const void* source, uint32 size, const uint32& timeout, Net::Http::DataCounter* dataCounter) const override;
             
             virtual bool SendHeaders(const Net::Http::StatusCode status, TArray<std::pair<String, String> >& headers, const uint32& timeout, bool end/* = true*/) const override;
             
-            virtual bool WriteRequestParameters(TArray<char>& data, const Net::Http::Request& request, const ServerApplicationSettings& applicationSettings) const override;
+            virtual bool WriteRequestParameters(TArray<char>& data, const Net::Http::Request& request, const ApplicationSettings& applicationSettings) const override;
             
             virtual void ReadResponseParameters(Net::Http::Request& request, Net::Http::ResponseData& responseData) const override;
             
@@ -63,9 +63,9 @@ namespace Neko
             
         private:
             
-            const ServerApplicationSettings* GetApplicationSettings(Net::Http::Request& request, const bool secure) const;
+            const ApplicationSettings* GetApplicationSettings(Net::Http::Request& request, const bool secure) const;
             
-            Net::Http::StatusCode GetRequestData(Net::Http::Request& request, String& buffer, const ServerApplicationSettings& applicationSettings) const;
+            Net::Http::StatusCode GetRequestData(Net::Http::Request& request, String& buffer, const ApplicationSettings& applicationSettings) const;
             
         protected:
             

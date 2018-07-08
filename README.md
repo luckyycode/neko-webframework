@@ -26,6 +26,8 @@ Sample project is also available in this repository, check out SampleModule fold
 
 ## Roadmap
 
+There are still a lot of things to do, this framework is not yet ready for production in anyway.
+
 * HTTP/2 support - *wip* 
 * GnuTLS support instead of OpenSSL (I will keep these together)
 * More samples

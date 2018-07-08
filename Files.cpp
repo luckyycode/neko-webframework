@@ -57,6 +57,7 @@ namespace Neko
             if (!fileInfo.bIsValid)
             {
                 GLogInfo.log("Http") << "Send: Requested file " << *fileName << " not found.";
+                
                 protocol.SendHeaders(Net::Http::StatusCode::NotFound, extraHeaders, request.Timeout);
                 
                 return false;
@@ -65,6 +66,7 @@ namespace Neko
             {
                 fileSize = fileInfo.FileSize;
                 fileModificationTime = fileInfo.ModificationTime;
+                
                 GLogInfo.log("Http") << "Send: Requested file " << *fileName << " - " << (fileSize / 1024UL) << " kb.";
             }
             
@@ -161,12 +163,12 @@ namespace Neko
         
         // helpers
         
-        static TArray< Tuple<size_t, size_t> > GetRanges(const String& rangeHeader, const uint32 valuePos, const uint32 fileSize, String* resultRangeHeader, size_t* contentLength, IAllocator& allocator)
+        static TArray< Tuple<ulong, ulong> > GetRanges(const String& rangeHeader, const uint32 valuePos, const uint32 fileSize, String* resultRangeHeader, ulong* contentLength, IAllocator& allocator)
         {
             // supported range units
-            static const THashMap< String, size_t > rangesUnits({ { "bytes", 1 } }, allocator);
+            static const THashMap< String, ulong > rangesUnits({ { "bytes", 1 } }, allocator);
             
-            TArray< Tuple<size_t, size_t> > ranges(allocator);
+            TArray< Tuple<ulong, ulong> > ranges(allocator);
             
             int32 delimiter = valuePos;
             const String rangeUnitString(rangeHeader, 0, delimiter);
@@ -175,6 +177,7 @@ namespace Neko
             if (!unitIt.IsValid())
             {
                 GLogWarning.log("Http") << "GetRanges: Unsupported range unit type \"" << *rangeUnitString << "\"";
+                
                 return ranges;
             }
             
@@ -200,7 +203,7 @@ namespace Neko
                     
                     if (!rangeStrBegin.IsEmpty())
                     {
-                        const size_t rangeBeginValue = ::strtoul(*rangeStrBegin, nullptr, 10) * rangeUnit;
+                        const ulong rangeBeginValue = StringToUnsignedLong(*rangeStrBegin) * rangeUnit;
                         
                         // we have something get
                         if (rangeBeginValue < fileSize)
@@ -208,7 +211,7 @@ namespace Neko
                             // end value is set..
                             if (!rangeStrEnd.IsEmpty())
                             {
-                                size_t rangeEndValue = ::strtoul(*rangeStrEnd, nullptr, 10) * rangeUnit;
+                                ulong rangeEndValue = StringToUnsignedLong(*rangeStrEnd) * rangeUnit;
                                 // end value always should have more length than begin value
                                 if (rangeEndValue >= rangeBeginValue)
                                 {
@@ -218,7 +221,7 @@ namespace Neko
                                         rangeEndValue = fileSize;
                                     }
                                     
-                                    const size_t length = rangeEndValue - rangeBeginValue + 1;
+                                    const ulong length = rangeEndValue - rangeBeginValue + 1;
                                     
                                     *contentLength += length;
                                     
@@ -228,12 +231,12 @@ namespace Neko
                                     resultRangeHeader->Append((uint64)rangeEndValue);
                                     resultRangeHeader->Append(",");
                                     
-                                    ranges.Emplace(Tuple< size_t, size_t > { rangeBeginValue, length });
+                                    ranges.Emplace(Tuple< ulong, ulong > { rangeBeginValue, length });
                                 }
                             }
                             else // if range end value is empty, use full file size value
                             {
-                                const size_t length = fileSize - rangeBeginValue;
+                                const ulong length = fileSize - rangeBeginValue;
                                 
                                 *contentLength += length;
                                 
@@ -243,16 +246,16 @@ namespace Neko
                                 resultRangeHeader->Append((uint64)fileSize - 1);
                                 resultRangeHeader->Append(",");
                                 
-                                ranges.Emplace(Tuple< size_t, size_t > { rangeBeginValue, length });
+                                ranges.Emplace(Tuple< ulong, ulong > { rangeBeginValue, length });
                             }
                         }
                     }
                     else if (!rangeStrEnd.IsEmpty())
                     {
-                        size_t rangeEndValue = ::strtoul(*rangeStrEnd, nullptr, 10) * rangeUnit; // convert
+                        ulong rangeEndValue = StringToUnsignedLong(*rangeStrEnd) * rangeUnit; // convert
                         
-                        const size_t length = (rangeEndValue < fileSize) ? fileSize - rangeEndValue : fileSize;
-                        const size_t rangeBeginValue = fileSize - length;
+                        const ulong length = (rangeEndValue < fileSize) ? fileSize - rangeEndValue : fileSize;
+                        const ulong rangeBeginValue = fileSize - length;
                         
                         rangeEndValue = fileSize - rangeBeginValue - 1;
                         
@@ -264,7 +267,7 @@ namespace Neko
                         resultRangeHeader->Append((uint64)rangeEndValue);
                         resultRangeHeader->Append(",");
                         
-                        ranges.Emplace(Tuple<size_t, size_t> { rangeBeginValue, length });
+                        ranges.Emplace(Tuple< ulong, ulong > { rangeBeginValue, length });
                     }
                 }
             }
@@ -286,7 +289,7 @@ namespace Neko
             return ranges;
         }
         
-        bool SendfileExtension::SendPartial(const IServerProtocol& protocol, const Net::Http::Request& request, const String& fileName, CDateTime fileTime, const size_t fileSize, const String& rangeHeader, TArray<std::pair<String, String> >& extraHeaders, const THashMap<String, String>& mimeTypes, const bool headersOnly, IAllocator& allocator)
+        bool SendfileExtension::SendPartial(const IServerProtocol& protocol, const Net::Http::Request& request, const String& fileName, CDateTime fileTime, const ulong fileSize, const String& rangeHeader, TArray<std::pair<String, String> >& extraHeaders, const THashMap<String, String>& mimeTypes, const bool headersOnly, IAllocator& allocator)
         {
             const int32 valuePos = rangeHeader.Find("=", ESearchCase::IgnoreCase, ESearchDir::FromStart);
             
@@ -301,9 +304,10 @@ namespace Neko
             String contentRangeHeader(allocator);
             
             // content can be big enough, store in bigger type
-            size_t contentLength = 0;
+            // ulong should be enough
+            ulong contentLength = 0;
             
-            const TArray<Tuple<size_t, size_t> > ranges = GetRanges(rangeHeader, valuePos, fileSize, &contentRangeHeader, &contentLength , allocator);
+            const TArray<Tuple<ulong, ulong> > ranges = GetRanges(rangeHeader, valuePos, fileSize, &contentRangeHeader, &contentLength , allocator);
             
             if (contentLength == 0)
             {
@@ -354,7 +358,7 @@ namespace Neko
                 return true;
             }
             
-            size_t position, length;
+            ulong position, length;
             TArray<char> buffer(allocator);
             
             Net::Http::DataCounter dataCounter { contentLength, 0 };

@@ -51,7 +51,7 @@ namespace Neko
             virtual bool SendHeaders(const Net::Http::StatusCode status, TArray< std::pair<String, String> >& headers, const uint32& timeout, bool end) const override;
             virtual long SendData(const void* source, uint32 size, const uint32& timeout, Net::Http::DataCounter* dataCounter) const override;
             
-            virtual bool WriteRequestParameters(TArray<char>& buffer, const Net::Http::Request& repuest, const ServerApplicationSettings& applicationSettings) const override;
+            virtual bool WriteRequestParameters(TArray<char>& buffer, const Net::Http::Request& repuest, const ApplicationSettings& applicationSettings) const override;
             virtual void ReadResponseParameters(Net::Http::Request& request, Net::Http::ResponseData& responseData) const override;
             
             virtual IServerProtocol* Process() override;

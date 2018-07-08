@@ -23,7 +23,7 @@
 // | |\  |  __/   < (_) | |  _|| | | (_| | | | | | |  __/\ V  V / (_) | |  |   <
 // |_| \_|\___|_|\_\___/  |_|  |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
 //
-//  ServerApplicationSettings.h
+//  ApplicationSettings.h
 //  Neko Framework
 //
 //  Copyright © 2018 Neko Vision. All rights reserved.
@@ -38,15 +38,18 @@
 
 #include <functional>
 
-#define APPLICATION_EXIT_SUCCESS EXIT_SUCCESS
-#define APPLICATION_EXIT_FAILURE EXIT_FAILURE
-
 namespace Neko
 {
     namespace Http
     {
+        /** Object used to pass parameters to the application module on init. */
+        struct ApplicationInitDesc
+        {
+            const char* RootDirectory = nullptr;
+        };
+        
         /** Server settings for each application. */
-        struct ServerApplicationSettings
+        struct ApplicationSettings
         {
             // Request settings
             uint32 RequestMaxSize;
@@ -64,18 +67,19 @@ namespace Neko
             String ServerModule;
             String ServerModuleUpdate;
             
-            // Tls
-            String CertFile;
+            // Ssl
+            String CertificateFile;
             String KeyFile;
-            String CrlFile;
-            String ChainFile;
-            String DhFile;
-            String StaplingFile;
             
-            std::function< int(Net::Http::RequestData* , Net::Http::ResponseData* ) > OnApplicationCall;
-            std::function< void(Net::Http::ResponseData* ) > OnApplicationClear;
-            std::function< bool(const char* ) > OnApplicationInit;
-            std::function< void(const char* ) > OnApplicationExit;
+            /** Called on early server initialization. */
+            std::function< bool(ApplicationInitDesc) > OnApplicationInit;
+            /** Called on server quit. */
+            std::function< void() > OnApplicationExit;
+            
+            /** Called on incoming request. */
+            std::function< int(Net::Http::RequestData* , Net::Http::ResponseData* ) > OnApplicationRequest;
+            /** Called after processing request. */
+            std::function< void(Net::Http::ResponseData* ) > OnApplicationPostRequest;
         };
     }
 }

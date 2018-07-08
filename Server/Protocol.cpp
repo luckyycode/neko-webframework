@@ -61,7 +61,7 @@ namespace Neko
             const auto& responseBody = response.GetBodyData();
             
             const uint8* data = responseBody.Value;
-            const size_t size = responseBody.Size;
+            const ulong size = responseBody.Size;
             
             assert(response.Status != Net::Http::StatusCode::Empty);
             
@@ -100,7 +100,7 @@ namespace Neko
             return this->SendHeaders(response.Status, headers, timeout, end);
         }
         
-        void IServerProtocol::RunApplication(Net::Http::Request& request, const ServerApplicationSettings& applicationSettings) const
+        void IServerProtocol::RunApplication(Net::Http::Request& request, const ApplicationSettings& applicationSettings) const
         {
             TArray<char> buffer(Allocator);
             buffer.Reserve(REQUEST_BUFFER_SIZE);
@@ -125,10 +125,10 @@ namespace Neko
                 nullptr, 0
             };
             
-            assert(applicationSettings.OnApplicationCall != nullptr);
+            assert(applicationSettings.OnApplicationRequest != nullptr);
             
             // Launch application
-            request.ApplicationExitCode = applicationSettings.OnApplicationCall(&requestData, &responseData);
+            request.ApplicationExitCode = applicationSettings.OnApplicationRequest(&requestData, &responseData);
             // check results
             if (request.ApplicationExitCode == APPLICATION_EXIT_SUCCESS)
             {
@@ -137,7 +137,7 @@ namespace Neko
                     ReadResponseParameters(request, responseData);
                     
                     // Clear application outgoing data
-                    applicationSettings.OnApplicationClear(&responseData);
+                    applicationSettings.OnApplicationPostRequest(&responseData);
                 }
             }
             else
@@ -167,8 +167,7 @@ namespace Neko
             // we have somethin
             if (delimiter != INDEX_NONE)
             {
-                contentTypeName = headerValue.Mid(0, delimiter);
-                contentTypeName.Trim();
+                contentTypeName = headerValue.Mid(0, delimiter).Trim();
                 
                 for (int32 paramCur = delimiter + 1, paramEnd = 0; paramEnd != INDEX_NONE; paramCur = paramEnd + 1)
                 {
@@ -206,22 +205,24 @@ namespace Neko
                 return nullptr;
             }
             
-            uint32 dataLength = 0;
+            ulong dataLength = 0;
             
             const IContentType* contentType = contentTypeIt.value();
             const auto contentLengthIt = requestData->IncomingHeaders.Find("content-length");
             
             if (contentLengthIt.IsValid())
             {
-                dataLength = ::strtoul(*contentLengthIt.value(), nullptr, 10);
+                dataLength = StringToUnsignedLong(*contentLengthIt.value());
             }
+            
+            // transient content data
+            void* state = contentType->CreateState(requestData, contentParams);
             
             ContentDesc* contentDesc = NEKO_NEW(allocator, ContentDesc)
             {
                 dataLength,
                 0, 0,
-                // transient content data
-                contentType->CreateState(requestData, contentParams),
+                state,
                 nullptr,
                 contentType,
             };

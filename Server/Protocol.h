@@ -93,7 +93,7 @@ namespace Neko
             
             /** Writes request data to buffer. */
             virtual bool WriteRequestParameters(TArray<char>& buffer, const Net::Http::Request& request,
-                                               const ServerApplicationSettings& applicationSettings) const = 0;
+                                               const ApplicationSettings& applicationSettings) const = 0;
             
             /** Reads request buffer data. */
             virtual void ReadResponseParameters(Net::Http::Request& request, Net::Http::ResponseData& responseData) const = 0;
@@ -131,7 +131,7 @@ namespace Neko
              * @param request   Incoming request.
              * @param applicationSettings   Application.
              */
-            void RunApplication(Net::Http::Request& request, const ServerApplicationSettings& applicationSettings) const;
+            void RunApplication(Net::Http::Request& request, const ApplicationSettings& applicationSettings) const;
             
         protected:
             

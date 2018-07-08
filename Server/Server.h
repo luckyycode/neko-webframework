@@ -95,11 +95,11 @@ namespace Neko
             void UpdateModules();
             
             /** Updates the specified server module. */
-            bool UpdateModule(Module& module, TArray< ServerApplicationSettings* >& applications, const uint32 moduleIndex);
+            bool UpdateModule(Module& module, TArray< ApplicationSettings* >& applications, const uint32 moduleIndex);
             
         private:
             
-            void* InitSsl(const ServerApplicationSettings& application);
+            void* InitSsl(const ApplicationSettings& application);
             
             void CloseListeners();
             
@@ -134,6 +134,8 @@ namespace Neko
             
             //! Global server mutex.
             mutable MT::SpinMutex Mutex;
+            
+            MT::Event QueueNotFullEvent;
             
             //! Loaded server modules.
             TArray< Module > Modules;

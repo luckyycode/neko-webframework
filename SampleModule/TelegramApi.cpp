@@ -1,21 +1,46 @@
 //
+//          *                  *
+//             __                *
+//           ,db'    *     *
+//          ,d8/       *        *    *
+//          888
+//          `db\       *     *
+//            `o`_                    **
+//               *                 / )
+//             *    /\__/\ *       ( (  *
+//           ,-.,-.,)    (.,-.,-.,-.) ).,-.,-.
+//          | @|  ={      }= | @|  / / | @|o |
+//         _j__j__j_)     `-------/ /__j__j__j_
+//          ________(               /___________
+//          |  | @| \              || o|O | @|
+//          |o |  |,'\       ,   ,'"|  |  |  |  hjw
+//          vV\|/vV|`-'\  ,---\   | \Vv\hjwVv\//v
+//                     _) )    `. \ /
+//                    (__/       ) )
+//  _   _      _           _____                                            _
+// | \ | | ___| | _____   |  ___| __ __ _ _ __ ___   _____      _____  _ __| | __
+// |  \| |/ _ \ |/ / _ \  | |_ | '__/ _` | '_ ` _ \ / _ \ \ /\ / / _ \| '__| |/ /
+// | |\  |  __/   < (_) | |  _|| | | (_| | | | | | |  __/\ V  V / (_) | |  |   <
+// |_| \_|\___|_|\_\___/  |_|  |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
+//
 //  TelegramApi.cpp
-//  HttpServer
+//  Neko Framework
 //
 //  Created by Neko on 6/29/18.
 //
 
 #include "../../Engine/Network/Http/Url.h"
 #include "../../Engine/Network/NetSocket.h"
+#include "../../Engine/Containers/HashMap.h"
 #include "../../Engine/Core/Log.h"
 
 #include "TelegramApi.h"
 
 #include "../SocketSSL.h"
+#include "../Utils.h"
 
 namespace Neko
 {
-    static const char* TelegramApiEndpoint = "https://api.telegram.org";
     static const char* TelegramBotApiEndpoint = "https://api.telegram.org/bot";
     static const uint32 TelegramApiPort = 443;
     
@@ -24,13 +49,18 @@ namespace Neko
     : Allocator(allocator)
     {
         // client context
+# if USE_OPENSSL
         this->SslContext = SSL_CTX_new (::SSLv23_client_method());
+# endif
     }
     
     TelegramApi::~TelegramApi()
     {
         assert(this->SslContext != nullptr);
+        
+# if USE_OPENSSL
         SSL_CTX_free((SSL_CTX* )this->SslContext);
+# endif
     }
   
     bool TelegramApi::SendRequest(const Net::Http::Url& url, const TArray<Net::Http::HttpRequestParam>& parameters, String& response)
@@ -84,20 +114,67 @@ namespace Neko
         return true;
     }
     
-    void TelegramApi::SendMessage(long chatId, String message)
+    void TelegramApi::SendMessage(long chatId, String message, const char* parseMode/* = ""*/)
     {
         TArray<Net::Http::HttpRequestParam> args(Allocator);
         
-        args.Reserve(2);
+        args.Reserve(3);
         args.Emplace("chat_id", (int64)chatId);
         args.Emplace("text", *message);
+		args.Emplace("parse_mode", parseMode);
         
         String response(Allocator);
         response.Resize(1024);
         
         SendBotRequest("sendMessage", args, response);
     }
-    
+        
+    void TelegramApi::SendSticker(long chatId, String id)
+    {
+        TArray<Net::Http::HttpRequestParam> args(Allocator);
+        
+        args.Reserve(2);
+        args.Emplace("chat_id", (int64)chatId);
+        args.Emplace("sticker", *id);
+        
+        String response(Allocator);
+        response.Resize(1024);
+        
+        SendBotRequest("sendSticker", args, response);
+    }
+	
+	// temp, get these from shared settings?
+	static THashMap<String, String>& GetPhotoMimeTypes()
+	{
+		static DefaultAllocator allocator;
+		static THashMap<String, String> mimeTypes(allocator);
+		if (mimeTypes.GetSize() == 0)
+		{
+			mimeTypes.Insert("gif", "image/gif");
+			mimeTypes.Insert("jpg", "image/jpeg");
+			mimeTypes.Insert("jpeg", "image/jpeg");
+			mimeTypes.Insert("png", "image/png");
+		}
+		return mimeTypes;
+	}
+	
+	void TelegramApi::SendPhoto(long chatId, const char* filename, uint8* data, ulong size)
+	{ 
+		TArray<Net::Http::HttpRequestParam> args(Allocator);
+        
+        args.Reserve(2);
+        args.Emplace("chat_id", (int64)chatId);
+		
+		const auto mimeType = Http::GetMimeByFileName(filename, GetPhotoMimeTypes());
+		
+        args.Emplace("photo", (const char* )data, true, mimeType, filename);
+		
+        String response(Allocator);
+        response.Resize(1024);
+        
+        SendBotRequest("sendPhoto", args, response);
+	}
+	
     void TelegramApi::SetBotToken(const char* token)
     {
         this->BotToken = String(token, Allocator);
@@ -106,8 +183,10 @@ namespace Neko
     void TelegramApi::SetWebHook(const char* domain, const char* certificate)
     {
         TArray<Net::Http::HttpRequestParam> args(Allocator);
+        
         args.Reserve(2);
         args.Emplace("url", domain);
+        
         if (certificate != nullptr)
         {
             args.Emplace("certificate", certificate);
