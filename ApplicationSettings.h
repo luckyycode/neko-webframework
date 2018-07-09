@@ -52,22 +52,29 @@ namespace Neko
         struct ApplicationSettings
         {
             // Request settings
+            
             uint32 RequestMaxSize;
             
+            //! wwwroot
             String RootDirectory;
+            //! If empty then system default will be used.
             String TempDirectory;
             
             // Ports
+            
             uint32 Port;
+            //! Secure port, if set then secure socket context will be created.
             uint32 TlsPort;
             
             // Module
+            
             int32 ModuleIndex;
             
             String ServerModule;
             String ServerModuleUpdate;
             
             // Ssl
+            
             String CertificateFile;
             String KeyFile;
             

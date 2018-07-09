@@ -48,7 +48,7 @@ namespace Neko
         {
         public:
             
-            // see ISocket for comments
+            // @see ISocket for comments
             
             SocketSSL() = delete;
             
@@ -69,6 +69,7 @@ namespace Neko
             
             virtual NEKO_FORCE_INLINE void* GetTlsSession() const override { return (void* )Connection; };
             
+            /** Higher level SSL connect */
             int Connect();
             
 			bool Handshake();

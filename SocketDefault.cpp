@@ -43,13 +43,11 @@ namespace Neko
         
         long SocketDefault::GetPacketBlocking(void* buffer, const uint32 length, const uint32& timeout) const
         {
-            Net::NetAddress address;
-            bool succeeded = Socket.GetAddress(address);
-            
-            assert(succeeded != false);
+            //Net::NetAddress address;
+            //bool succeeded = Socket.GetAddress(address);
             
             int size = 0;
-            bool result = Socket.GetPacketBlocking(address, buffer, size, length, timeout);
+            bool result = Socket.GetPacketBlocking(nullptr, buffer, size, length, timeout);
             NEKO_UNUSED(result);
             //assert(result != false);
             return size;

@@ -59,7 +59,7 @@ namespace Neko
         public:
             
             /**
-             * Server interface instance.
+             * Server protocol interface.
              *
              * @param socket    Currently active connection socket.
              * @param settings  Shared server settings.
@@ -103,8 +103,10 @@ namespace Neko
             
         private:
             
+            /** Sends ready response headers. */
             bool SendHeaders(Net::Http::Response& response, const TArray<std::pair<String, String> >* extra, const uint32& timeout, const bool end = true) const;
 
+            // shortcut
             NEKO_FORCE_INLINE long SendData(const Net::Http::ObjectResult& data, const uint32& timeout) const
             {
                 return SendData(data.Value, data.Size, timeout, nullptr);
@@ -145,6 +147,15 @@ namespace Neko
             
             //! Used for various timings
             CTimer Timer;
+            
+        public:
+            
+            /**
+             * Sends a file. Can use partial send.
+             *
+             * @param request   Request containing outgoing information set (e.g. x-sendfile)
+             */
+            bool Sendfile(Net::Http::Request& request) const;
         };
         
         static NEKO_FORCE_INLINE const THashMap<int, const char*>& GetStatusList()

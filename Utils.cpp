@@ -99,7 +99,7 @@ namespace Neko
                             
                             ++delimiter;
                             
-                            String value;
+                            String value(allocator);
                             Util::DecodeUrl(uri.Mid(delimiter, paramEnd != INDEX_NONE ? paramEnd - delimiter : INT_MAX), value);
                             
                             incomingData.Insert(Neko::Move(name), Neko::Move(value));

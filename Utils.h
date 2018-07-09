@@ -40,16 +40,27 @@ namespace Neko
         // binary
         static const char* DefaultMimeType = "application/octet-stream";
         
-        /** Gets mime type (e.g. image/jpeg) from file name. */
+        /**
+         * Gets mime type (e.g. image/jpeg) from file name.
+         *
+         * @param fileName  File name with extension.
+         * @param mimes     Supported mime types.
+         */
         String GetMimeByFileName(const String& fileName, const THashMap<String, String>& mimes);
         
         /**
          * Parser url with query to hashmap (e.g. /get?fileId=14&access=read..).
+         *
+         * @param incomingData  Query parameters will be saved in that map.
+         * @param uri           Url to parse.
          */
         void GetIncomingQueryVars(THashMap<String, String>& incomingData, const String& uri, IAllocator& allocator);
         
         /**
          * Removes query params from url.
+         *
+         * @param path  Input path.
+         * @param clean Output.
          */
         void ClearRequestUri(const String& path, String& clean);
       
@@ -64,7 +75,5 @@ namespace Neko
             return (request.ConnectionParams & Net::Http::ConnectionParams::Connection_Reuse)
             == Net::Http::ConnectionParams::Connection_Reuse;
         }
-        
-        
     }
 }

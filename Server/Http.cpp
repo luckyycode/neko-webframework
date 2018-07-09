@@ -40,7 +40,6 @@
 #include "../../Engine/Network/Http/Extensions/Extensions.h"
 
 #include "../ContentTypes/ContentDesc.h"
-#include "../Files.h"
 #include "../ISocket.h"
 #include "../Utils.h"
 
@@ -668,8 +667,9 @@ namespace Neko
             if (request.ApplicationExitCode == APPLICATION_EXIT_SUCCESS)
             {
                 GetConnectionParams(request, secureSession, Allocator);
+                
                 // will do something only if x-sendfile header is set (or if partial content)
-                SendfileExtension::Send(*this, request, Settings->SupportedMimeTypes, Allocator);
+                this->Sendfile(request);
             }
         }
         
