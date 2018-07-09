@@ -56,32 +56,34 @@ namespace Neko
             
         }
 
-        bool ProtocolHttp::WriteRequestParameters(TArray<char>& buffer, const Net::Http::Request& request, const ApplicationSettings& applicationSettings) const
+        void ProtocolHttp::WriteRequestParameters(TArray<char>& buffer, const Net::Http::Request& request, const ApplicationSettings& applicationSettings) const
         {
-            OutputBlob blob((void* )buffer.GetData(), buffer.GetCapacity());
+            Net::Http::OutputProtocolBlob blob((void* )buffer.GetData(), buffer.GetCapacity()/* max size */);
             
             // version
-            blob.Write((int8)Net::Http::Version::Http_1);
+            blob.Write(uint8(Net::Http::Version::Http_1));
+            
             // request data
             blob << request.Host;
             blob << request.Path;
             blob << request.Method;
+            
             // app
             blob << applicationSettings.RootDirectory;
             
-            Net::Http::WriteHeaderContainer(blob, request.IncomingHeaders);
-            Net::Http::WriteHeaderContainer(blob, request.IncomingData);
-            // files
-            Net::Http::WriteFilesIncoming(blob, request.IncomingFiles);
+            // containers
+            blob << request.IncomingHeaders;
+            blob << request.IncomingData;
             
-            return true;
+            // files
+            blob << request.IncomingFiles;
         }
         
         void ProtocolHttp::ReadResponseParameters(Net::Http::Request& request, Net::Http::ResponseData& responseData) const
         {
-            InputBlob blob(responseData.Data, INT_MAX);
+            Net::Http::InputProtocolBlob blob(responseData.Data, INT_MAX);
             
-            Net::Http::ReadHeaderContainer(request.OutgoingHeaders, blob);
+            blob >> request.OutgoingHeaders;
         }
         
         IProtocol* ProtocolHttp::Process()

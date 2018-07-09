@@ -208,14 +208,14 @@ namespace Neko
             ISocket* socket = CreateSocket(netSocket, &requestData, &stack, secure);
             
             const uint8* data = (const uint8* )requestData.Data;
-            InputBlob blob(data, INT_MAX);
+            Net::Http::InputProtocolBlob blob((void* )data, INT_MAX);
             
             // Read incoming header info
             
             String documentRoot(Allocator);
             THashMap<String, String> requestCookies(Allocator);
             // http version
-            int8 protocolVersion;
+            uint8 protocolVersion;
             blob.Read(protocolVersion);
             
             // request
@@ -224,7 +224,7 @@ namespace Neko
             // incoming protocol type by request
             IProtocol* protocol = nullptr;
             
-            auto version = (Net::Http::Version)protocolVersion;
+            const auto version = (Net::Http::Version)protocolVersion;
             request.ProtocolVersion = version;
             
             // response
@@ -239,10 +239,10 @@ namespace Neko
                     blob >> request.Method;
                     blob >> documentRoot;
                     
-                    Net::Http::ReadHeaderContainer(request.IncomingHeaders, blob);
-                    Net::Http::ReadHeaderContainer(request.IncomingData, blob);
+                    blob >> request.IncomingHeaders;
+                    blob >> request.IncomingData;
                     
-                    ReadFilesIncoming(request.IncomingFiles, blob);
+                    blob >> request.IncomingFiles;
                     
                     auto cookieIt = request.IncomingFiles.Find("cookie");
                     if (cookieIt.IsValid())
@@ -340,15 +340,14 @@ namespace Neko
             auto& outHeaders = response.GetHeaders();
             if (!outHeaders.IsEmpty())
             {
-                uint32 size = Net::Http::GetWriteContainerSize(response.GetHeaders());
+                uint32 size = Net::Http::InputProtocolBlob::GetContainerSize(response.GetHeaders());
                 uint8* data = (uint8* )Allocator.Allocate(size * sizeof(uint8));
                 
                 responseData.Data = (void* )data;
                 responseData.Size = size;
                 
-                OutputBlob blob(responseData.Data, INT_MAX);
-                
-                Net::Http::WriteHeaderContainer(blob, outHeaders);
+                Net::Http::OutputProtocolBlob blob(responseData.Data, INT_MAX);
+                blob << outHeaders;
             }
             
             NEKO_DELETE(Allocator, protocol);

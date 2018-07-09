@@ -92,7 +92,7 @@ namespace Neko
                                   const uint32& timeout, Net::Http::DataCounter* dataCounter) const = 0;
             
             /** Writes request data to buffer. */
-            virtual bool WriteRequestParameters(TArray<char>& buffer, const Net::Http::Request& request,
+            virtual void WriteRequestParameters(TArray<char>& buffer, const Net::Http::Request& request,
                                                const ApplicationSettings& applicationSettings) const = 0;
             
             /** Reads request buffer data. */

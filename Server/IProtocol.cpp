@@ -106,10 +106,7 @@ namespace Neko
             buffer.Reserve(REQUEST_BUFFER_SIZE);
             
             // write headers so application can read these
-            if (!WriteRequestParameters(buffer, request, applicationSettings))
-            {
-                return;
-            }
+            WriteRequestParameters(buffer, request, applicationSettings);
             
             // input
             Net::Http::RequestData requestData

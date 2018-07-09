@@ -61,9 +61,8 @@ namespace Neko
             return false;
         }
         
-        bool ProtocolWebSocket::WriteRequestParameters(TArray<char>& buffer, const Net::Http::Request& repuest, const ApplicationSettings& applicationSettings) const
+        void ProtocolWebSocket::WriteRequestParameters(TArray<char>& buffer, const Net::Http::Request& repuest, const ApplicationSettings& applicationSettings) const
         {
-            return false;
         }
         
         void ProtocolWebSocket::ReadResponseParameters(Net::Http::Request& request, Net::Http::ResponseData& responseData) const
