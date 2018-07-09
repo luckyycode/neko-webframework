@@ -197,7 +197,7 @@ namespace Neko
             
             // Bound port list
             TArray<uint32> ports(Allocator);
-            
+         
             // Open applications sockets
             for (auto& application : applications)
             {
@@ -219,6 +219,8 @@ namespace Neko
                 }
                 
                 BindPort(application->Port, ports);
+                
+                GLogInfo.log("Http") << "Content directory: " << *application->RootDirectory;
             }
         }
 
@@ -234,7 +236,7 @@ namespace Neko
             
             if (Listeners.IsEmpty())
             {
-                Debug::DebugColor(Debug::EStdoutColor::Red);
+                Debug::DebugColor(Debug::EStdoutColor::Red); // aesthetics
                 GLogError.log("Http") << "Couldn't run server, no sockets opened.";
                 Debug::DebugColor(Debug::EStdoutColor::White);
                 
@@ -255,7 +257,7 @@ namespace Neko
             Controls.SetActiveFlag();
             
             Debug::DebugColor(Debug::EStdoutColor::Green);
-            GLogInfo.log("Http") << "Server is listening.";
+            GLogInfo.log("Http") << "Server is now listening on " << Settings.ResolvedAddressString << ".";
             Debug::DebugColor(Debug::EStdoutColor::White);
             
             Net::SocketsQueue sockets(Allocator);
@@ -650,9 +652,9 @@ namespace Neko
             // setup socket
             Net::INetSocket socket;
             
-            if (!socket.Init("", port, Net::ESocketType::TCP))
+            if (!socket.Init(*Settings.ResolvedAddressString, port, Net::ESocketType::TCP))
             {
-                GLogError.log("Http") << "Server couldn't start at port " << port << ". " << strerror(errno);
+                GLogError.log("Http") << "Server couldn't start at " << Settings.ResolvedAddressString << ":" << port << ". " << strerror(errno);
                 return false;
             }
             

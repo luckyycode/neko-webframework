@@ -166,6 +166,18 @@ namespace Neko
                 this->AddApplication(applicationNames[i], settings);
             }
             
+            Net::NetAddress address;
+            address.Resolve(*applicationNames[0], Net::NA_IP);
+            if (address.AddressType != Net::NA_BAD)
+            {
+                this->ResolvedAddressString.Set(address.ToString());
+                GLogWarning.log("Http") << "Resolved address: " << *this->ResolvedAddressString;
+            }
+            else
+            {
+                GLogWarning.log("Http") << "Couldn't resolve address of " << *applicationNames[0];
+            }
+            
             if (List.IsEmpty())
             {
                 GLogWarning.log("Http") << "Server does not contain any application";

@@ -419,7 +419,6 @@ namespace Neko
             {
                 return Net::Http::StatusCode::BadRequest;
             }
-            
             // end of line
             stringBuffer[strEnd] = '\0';
             
@@ -663,6 +662,8 @@ namespace Neko
             RunApplication(request, *applicationSettings);
             
             ClearRequestItems(request);
+            
+            // check application state
             
             if (request.ApplicationExitCode == APPLICATION_EXIT_SUCCESS)
             {
