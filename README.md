@@ -1,8 +1,17 @@
-# Neko web framework
-
-Neko server with Mvc framework. Work in progress, not ready for production in any way.
+# Overview
 
 ![alt text](https://c.radikal.ru/c25/1807/13/e500422fd6a7.png)
+
+Neko server with Mvc framework. Work in progress, not ready for production in any way yet.
+
+Fast and efficient server with higher level mvc code for developing web applications.
+
+``` 
+/Mvc/ - contains higher level logic (e.g. controllers, routing)
+/Server/ - contains lower level logic for processing requests
+/ContentTypes/ - supported content data parsers for content-type
+/SampleModule/ - sample project
+``` 
 
 ### Prerequisites
 
@@ -28,6 +37,8 @@ Sample project is also available in this repository, check out SampleModule fold
 
 There are still a lot of things to do, this framework is not yet ready for production in any way.
 
+See Issues for more info, but the most important and global now are the following features:
+
 * HTTP/2 support - *wip* 
 * GnuTLS support instead of OpenSSL (I will keep these together)
 * More samples
@@ -36,13 +47,6 @@ There are still a lot of things to do, this framework is not yet ready for produ
 * Mvc - session
 
 ## About
-
-``` 
-/Mvc/ - contains higher level logic (e.g. controllers)
-/Server/ - contains lower level logic for processing requests
-/ContentTypes/ - supported content data parsers for content-type
-/SampleModule/ - sample project
-``` 
 
 ## License
 
