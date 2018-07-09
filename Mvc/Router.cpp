@@ -201,7 +201,7 @@ namespace Neko
         {
         public:
             
-            RouteMethodStringMap(IAllocator& allocator)
+            explicit RouteMethodStringMap(IAllocator& allocator)
             : TAssociativeArray<String, Net::Http::Method>(allocator)
             {
                 Insert("match",    Net::Http::Any);

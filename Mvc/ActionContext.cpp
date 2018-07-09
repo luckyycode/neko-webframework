@@ -203,15 +203,16 @@ namespace Neko
         {
             uint8 stack[sizeof(SocketSSL)]; // large socket object
             bool secure;
-            
             Net::INetSocket netSocket;
             ISocket* socket = CreateSocket(netSocket, &requestData, &stack, secure);
             
             const uint8* data = (const uint8* )requestData.Data;
             Net::Http::InputProtocolBlob blob((void* )data, INT_MAX);
             
-            // Read incoming header info
+            // incoming protocol type by request
+            IProtocol* protocol = nullptr;
             
+            // Read incoming header info
             String documentRoot(Allocator);
             THashMap<String, String> requestCookies(Allocator);
             // http version
@@ -221,9 +222,6 @@ namespace Neko
             // request
             Net::Http::Request request(Allocator);
     
-            // incoming protocol type by request
-            IProtocol* protocol = nullptr;
-            
             const auto version = (Net::Http::Version)protocolVersion;
             request.ProtocolVersion = version;
             
