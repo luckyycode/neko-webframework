@@ -2,7 +2,7 @@
 
 Neko server with Mvc framework. Work in progress, not ready for production in any way.
 
-![alt text](https://d.radikal.ru/d34/1806/1b/a9e011b101ec.png)
+![alt text](https://c.radikal.ru/c25/1807/13/e500422fd6a7.png)
 
 ### Prerequisites
 
@@ -47,3 +47,4 @@ There are still a lot of things to do, this framework is not yet ready for produ
 ## License
 
 soon
+![alt text](https://d.radikal.ru/d34/1806/1b/a9e011b101ec.png)
