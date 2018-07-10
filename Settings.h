@@ -112,6 +112,9 @@ namespace Neko
             //! Maximum amount of threads that server can use. If 0, we'll machine available cores.
             int32 ThreadsMaxCount;
         
+            //! Memory size in bytes.
+            uint64 MaxMemoryUsage;
+            
             StaticString<INET6_ADDRSTRLEN> ResolvedAddressString;
             
             /** Supported content variants. */

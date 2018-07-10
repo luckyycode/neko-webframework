@@ -5,7 +5,7 @@
 
 namespace Neko
 {
-    class FileController : public Http::IController
+    class FileController : public Mvc::IController
     {
     public:
         
@@ -13,11 +13,8 @@ namespace Neko
                        IAllocator& allocator, const char* name);
         
         void Index();
-        
         void Get();
-        
         void List();
-        
         void Random();
     };
 }

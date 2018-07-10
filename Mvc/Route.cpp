@@ -33,7 +33,7 @@
 
 namespace Neko
 {
-	namespace Http
+    namespace Mvc
     {
         Route::Route(IAllocator& allocator)
         : ComponentList(allocator)

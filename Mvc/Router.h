@@ -39,7 +39,7 @@
 
 namespace Neko
 {
-	namespace Http
+    namespace Mvc
     {
         // Url router for controllers.
         class Router

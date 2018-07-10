@@ -7,7 +7,7 @@
 
 namespace Neko
 {
-    class TelegramController : public Http::IController
+    class TelegramController : public Mvc::IController
     {
     public:
         
@@ -18,6 +18,6 @@ namespace Neko
         
     private:
         
-        TelegramApi telegramApi;
+        TelegramApi TelegramApi;
     };
 }

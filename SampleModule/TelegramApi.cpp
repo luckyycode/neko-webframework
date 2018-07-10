@@ -42,8 +42,7 @@
 namespace Neko
 {
     static const char* TelegramBotApiEndpoint = "https://api.telegram.org/bot";
-    static const uint32 TelegramApiPort = 443;
-    
+    static const uint16 TelegramApiPort = 443;
     
     TelegramApi::TelegramApi(IAllocator& allocator)
     : Allocator(allocator)
@@ -63,6 +62,29 @@ namespace Neko
 # endif
     }
   
+    void TelegramApi::SetBotToken(const char* token)
+    {
+        this->BotToken = token;
+    }
+    
+    void TelegramApi::SetWebHook(const char* domain, const char* certificate/* = nullptr*/)
+    {
+        TArray<Net::Http::HttpRequestParam> args(Allocator);
+        
+        args.Reserve(2);
+        args.Emplace("url", domain);
+        
+        if (certificate != nullptr)
+        {
+            args.Emplace("certificate", certificate);
+        }
+        
+        String response(Allocator);
+        response.Reserve(1024);
+        
+        SendBotRequest("setWebhook", args, response);
+    }
+    
     bool TelegramApi::SendRequest(const Net::Http::Url& url, const TArray<Net::Http::HttpRequestParam>& parameters, String& response)
     {
         GLogInfo.log("Telegram") << "Sending request " << *url.Host;
@@ -175,33 +197,10 @@ namespace Neko
         SendBotRequest("sendPhoto", args, response);
 	}
 	
-    void TelegramApi::SetBotToken(const char* token)
-    {
-        this->BotToken = String(token, Allocator);
-    }
-    
-    void TelegramApi::SetWebHook(const char* domain, const char* certificate)
-    {
-        TArray<Net::Http::HttpRequestParam> args(Allocator);
-        
-        args.Reserve(2);
-        args.Emplace("url", domain);
-        
-        if (certificate != nullptr)
-        {
-            args.Emplace("certificate", certificate);
-        }
-        
-        String response(Allocator);
-        response.Reserve(1024);
-        
-        SendBotRequest("setWebhook", args, response);
-    }
-    
     bool TelegramApi::SendBotRequest(String method, const TArray<Net::Http::HttpRequestParam>& parameters, String& response)
     {
         String stringUrl(TelegramBotApiEndpoint, Allocator);
-        stringUrl += this->BotToken;
+        stringUrl += this->BotToken.data;
         stringUrl += "/";
         stringUrl += method;
         

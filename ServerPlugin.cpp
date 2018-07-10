@@ -61,82 +61,69 @@
 
 namespace Neko
 {
-    namespace Http
+    static Http::Server* ServerInstance = nullptr;
+    
+    class ServerTask : public MT::Task
     {
-        class ServerTask : public MT::Task
+    public:
+        
+        ServerTask(IAllocator& allocator, FS::FileSystem& fileSystem, const char* name)
+        : Task(allocator)
+        , FileSystem(fileSystem)
+        , Name(name)
         {
-        public:
-            
-            ServerTask(IAllocator& allocator, FS::FileSystem& fileSystem, const char* name)
-            : Task(allocator)
-            , FileSystem(fileSystem)
-            , Name(name)
-            {
-                
-            }
-            
-            virtual int32 DoTask() override
-            {
-                this->Server = NEKO_NEW(GetAllocator(), Http::Server )(GetAllocator(), FileSystem);
-                
-                int exitCode = Server->StartCommand(Name);
-                
-                NEKO_DELETE(GetAllocator(), this->Server);
-                
-                return exitCode;
-            }
-            
-        private:
-            
-            const char* Name;
-            
-            Http::Server* Server;
-            
-            FS::FileSystem& FileSystem;
-        };
-         
-        class Network : public IPlugin
+        }
+        
+        virtual int32 DoTask() override
         {
-        public:
+            ServerInstance = NEKO_NEW(GetAllocator(), Http::Server )(GetAllocator(), FileSystem);
+            int32 exitCode = ServerInstance->StartCommand(Name);
             
-            Network(IEngine& engine)
-            : Engine(engine)
-            , Allocator(engine.GetAllocator())
+            NEKO_DELETE(GetAllocator(), ServerInstance);
+            return exitCode;
+        }
+        
+    private:
+        
+        const char* Name;
+        FS::FileSystem& FileSystem;
+    };
+    
+    class Network : public IPlugin
+    {
+    public:
+        
+        Network(IEngine& engine)
+        : Engine(engine)
+        , Allocator(engine.GetAllocator())
+        {
+            ServerTask* task = NEKO_NEW(Allocator, ServerTask)(Allocator, engine.GetFileSystem(), "Nekoo");
+            if (!task->Create("Neko Server"))
             {
-                // temp
-                ServerTask* task = NEKO_NEW(Allocator, ServerTask)(Allocator, engine.GetFileSystem(), "Neko");
-                if (!task->Create("Neko Server"))
-                {
-                    assert(false);
-                }
+                assert(false);
             }
-            
-            ~Network()
-            {
-                
-            }
-            
-        public:
-            
-            NEKO_FORCE_INLINE const char* GetName() const override { return "httpserver"; }
-          
-            void Update(float fDelta) override
-            {
-              
-            }
+        }
+        
+        virtual ~Network()
+        {
+        }
+        
+    public:
+        
+        NEKO_FORCE_INLINE const char* GetName() const override { return "httpserver"; }
+      
+        void Update(float fDelta) override { }
 
-        private:
-            
-            Neko::IAllocator& Allocator;
-            IEngine& Engine;
-        };
-    }
-
+    private:
+        
+        Neko::IAllocator& Allocator;
+        IEngine& Engine;
+    };
 }
 
 NEKO_PLUGIN_ENTRY(httpserver)
 {
-    return NEKO_NEW(engine.GetAllocator(), Neko::Http::Network)(engine);
+    return NEKO_NEW(engine.GetAllocator(), Neko::Network)(engine);
 }
 
 

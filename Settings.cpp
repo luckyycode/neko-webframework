@@ -49,6 +49,7 @@ namespace Neko
         , SupportedMimeTypes(allocator)
         , ContentTypes(allocator)
         , ThreadsMaxCount(4)
+        , MaxMemoryUsage(0)
         {
         }
         
@@ -78,6 +79,7 @@ namespace Neko
             const String empty("", Allocator);
             const String tempDirectory = Neko::Platform::GetTempDirectory();
             const uint32 requestMaxSize = 10485760;
+            const uint64 maxDefaultSize = Megabyte(64);
             
             // Create appsettings
             TArray< ApplicationSettings* > applicationSettingItems(Allocator);
@@ -95,6 +97,7 @@ namespace Neko
             json.DeserializeObjectBegin();
             {
                 json.Deserialize("threadMaxCount", this->ThreadsMaxCount, 0);
+                json.Deserialize("maxMemoryUsage", this->MaxMemoryUsage, maxDefaultSize);
             }
             json.DeserializeObjectEnd();
             

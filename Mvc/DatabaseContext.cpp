@@ -2,7 +2,7 @@
 
 namespace Neko
 {
-	namespace Http
+    namespace Mvc
     {
         DatabaseContext::DatabaseContext()
         {

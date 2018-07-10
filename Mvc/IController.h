@@ -39,9 +39,12 @@
 
 #include "Router.h"
 
+#include "Model.h"
+
 namespace Neko
 {
-	namespace Http
+    using namespace Neko::Http;
+    namespace Mvc
     {
         /// Controller interface.
         class IController
@@ -72,7 +75,7 @@ namespace Neko
             const NEKO_FORCE_INLINE Net::Http::Response& GetHttpResponse() { return HttpResponse; }
             
             /** Parameters from url / arguments tagged as [param] or [params] */
-            const NEKO_FORCE_INLINE TArray<String>& GetParameters() const { return this->Arguments; }
+            const NEKO_FORCE_INLINE TArray<String>& GetUrlParameters() const { return this->Arguments; }
 
             /** Sets this controller arguments for action. */
             void SetUrlParameters(const TArray<String>& arguments)

@@ -16,12 +16,12 @@ namespace Neko
     
     void FileController::Index()
     {
-        PhysicalFile("kek.html");
+        PhysicalFile("index.html");
     }
     
     void FileController::Get()
     {
-        const auto& params = this->GetParameters();
+        const auto& params = this->GetUrlParameters();
         
         if (params.GetSize() == 0)
         {
@@ -34,13 +34,11 @@ namespace Neko
     
     void FileController::List()
     {
-        
         Ok();
     }
     
     void FileController::Random()
     {
-        
     }
 }
 

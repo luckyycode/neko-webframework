@@ -23,51 +23,54 @@
 // | |\  |  __/   < (_) | |  _|| | | (_| | | | | | |  __/\ V  V / (_) | |  |   <
 // |_| \_|\___|_|\_\___/  |_|  |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
 //
-//  TelegramApi.h
+//  Model.h
 //  Neko Framework
 //
-//  Created by Neko on 6/29/18.
+//  Copyright © 2018 Neko Vision. All rights reserved.
 //
 
 #pragma once
 
-#include "../../Engine/Network/Http/Client.h"
 #include "../../Engine/Utilities/NekoString.h"
+#include "../../Engine/RTTI/IReflectable.h"
+#include "../../Engine/RTTI/IReflectionType.h"
 
 namespace Neko
 {
-    /// Provides api for Telegram services.
-    class TelegramApi
+    namespace Mvc
     {
-    public:
+        struct IModel : IReflectable
+        {
+        public:
+            DECLARE_RTTI_BASE(IModel)
+        };
         
-        TelegramApi(IAllocator& allocator);
-        
-        ~TelegramApi();
-        
-        void SetBotToken(const char* token);
-        
-        bool SendBotRequest(String method, const TArray<Net::Http::HttpRequestParam>& parameters, String& response);
-        
-        bool SendRequest(const Net::Http::Url& url, const TArray<Net::Http::HttpRequestParam>& parameters, String& response);
-        
-        void SendMessage(long chatId, String message, const char* parseMode = "");
-        
-        void SendSticker(long chatId, String id);
-		
-		void SendPhoto(long chatId, const char* filename, uint8* data, ulong size);
-        
-        void SetWebHook(const char* domain, const char* certificate = nullptr);
-        
-    private:
-        
-        //! Bot token.
-        StaticString<64> BotToken;
-        
-        IAllocator& Allocator;
-        
-        //! Client ssl context.
-        void* SslContext;
-    };
-
+        class IModelReflection : public IReflectionType<IModel, IReflectable, IModelReflection>
+        {
+        private:
+            
+        public:
+            
+            IModelReflection()
+            {
+            }
+            
+            const String& GetName() override
+            {
+                static String Name = "IModel";
+                return Name;
+            }
+            
+            uint32 GetId() override
+            {
+                return 13337;
+            }
+            
+            TSharedPtr<IReflectable> NewObject() override
+            {
+                assert(false && "Can't create abstract model");
+                return nullptr;
+            }
+        };
+    }
 }

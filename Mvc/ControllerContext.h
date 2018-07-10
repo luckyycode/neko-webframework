@@ -39,7 +39,7 @@
 
 namespace Neko
 {
-    namespace Http
+    namespace Mvc
     {
         /**
          * Points to the function of a controller.

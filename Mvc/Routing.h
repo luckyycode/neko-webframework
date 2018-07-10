@@ -35,7 +35,7 @@
 
 namespace Neko
 {
-    namespace Http
+    namespace Mvc
     {
         /// Transient routing info.
         class Routing

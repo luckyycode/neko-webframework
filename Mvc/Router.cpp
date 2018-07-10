@@ -36,18 +36,22 @@
 
 #include "../Utils.h"
 
+#define ROUTE_PARAMS_TAG    "[params]"
+#define ROUTE_PARAM_TAG     "[param]"
+
 namespace Neko
 {
-	namespace Http
+    using namespace Neko::Http;
+    namespace Mvc
     {
         bool Router::AddRoute(const Net::Http::Method method, const String& path, const String& controllerAction)
         {
             assert(method >= Net::Http::Method::Get && method <= Net::Http::Method::Patch);
             
             // assert
-            if (path.Find("[params]") != INDEX_NONE && !EndsWith(*path, "[params]"))
+            if (path.Find(ROUTE_PARAMS_TAG) != INDEX_NONE && !EndsWith(*path, ROUTE_PARAMS_TAG))
             {
-                GLogError.log("Http") << "[params] tag must be set as last parameter.";
+                GLogError.log("Mvc") << "[params] tag must be set as last parameter.";
                 return false;
             }
             
@@ -61,29 +65,33 @@ namespace Neko
             for (int32 i = 0; i < route.ComponentList.GetSize(); ++i)
             {
                 const auto& item = route.ComponentList[i];
-                if (item == "[param]")
+                
+                // count amount of param tags in url
+                if (item == ROUTE_PARAM_TAG)
                 {
                     route.ParameterNum++;
                 }
             }
             
             // multiple variable params tag
-            route.HasVariableParams = route.ComponentList.Contains("[params]");
+            route.HasVariableParams = route.ComponentList.Contains(ROUTE_PARAMS_TAG);
             
             for (int32 i = 0; i < route.ComponentList.GetSize(); ++i)
             {
                 const String& item = route.ComponentList[i];
+                
                 // assert param tags
                 if (item[0] == '[')
                 {
-                    if (item != "[param]" && item != "[params]")
+                    if (item != ROUTE_PARAM_TAG && item != ROUTE_PARAMS_TAG)
                     {
+                        GLogError.log("Mvc") << "Found tag begin symbol '[' but didn't match any of existing ones.";
                         return false;
                     }
                 }
                 else
                 {
-                    route.KeywordIndexes.Push(i);
+                    route.KeywordIndexes.Push((int16)i);
                 }
             }
             
@@ -103,7 +111,7 @@ namespace Neko
                 }
                 else
                 {
-                    GLogError.log("Http") << "Invalid controller action - " << controllerAction.c_str();
+                    GLogError.log("Mvc") << "Invalid controller action - " << *controllerAction;
                     return false;
                 }
             }
@@ -117,21 +125,21 @@ namespace Neko
             // save
             Routes.Push(route);
             
-            GLogInfo.log("Http") << "Added URL route: method /" << route.Method << ", controller \"" << route.Controller.c_str() << "\", action \"" << route.Action.c_str() << "\", params: " << route.HasVariableParams;
+            GLogInfo.log("Mvc") << "Added URL route: /" << *path << ", method /" << route.Method << ", controller \"" << route.Controller.c_str() << "\", action \"" << route.Action.c_str() << "\", params: " << route.HasVariableParams;
             
             return true;
         }
         
         Routing Router::FindRouting(Net::Http::Method method, TArray<String>& components) const
         {
-            if (Routes.IsEmpty())
+            if (this->Routes.IsEmpty())
             {
-                GLogWarning.log("Http") << "FindRouting: No routes";
+                GLogWarning.log("Mvc") << "FindRouting: No routes";
                 
                 return Routing(Allocator);
             }
             
-            for (auto& route : Routes)
+            for (auto& route : this->Routes)
             {
                 // check lengths
                 if (route.HasVariableParams)
@@ -174,7 +182,7 @@ namespace Neko
                     else
                     {
                         // Remove everything but parameters
-                        TArray<int> it(route.KeywordIndexes);
+                        TArray<int16> it(route.KeywordIndexes);
                         
                         for (int32 i = it.GetSize() - 1; i >= 0; --i)
                         {
@@ -256,7 +264,7 @@ namespace Neko
         {
             for (const auto& route : Routes)
             {
-                GLogInfo.log("Http") << "Route: \n"
+                GLogInfo.log("Mvc") << "Route: \n"
                     << "\tController: " << route.Controller << "\n"
                     << "\tAction: " << route.Action << "\n"
                     << "\t# of parameters: " << route.ParameterNum << " (variable params: " << route.HasVariableParams << ")";

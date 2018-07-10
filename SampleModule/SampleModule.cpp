@@ -9,18 +9,41 @@
 
 #include "../../Engine/Core/Log.h"
 
-#include "../Mvc/ActionContext.h"
+#include "../Mvc/RequestContext.h"
 #include "../ApplicationSettings.h"
 
 #include "Controllers/TelegramController.h"
 #include "Controllers/FileController.h"
 
 using namespace Neko;
+using namespace Neko::Mvc;
 
-Http::ActionContext* context = nullptr;
+Mvc::RequestContext* context = nullptr;
 
 extern "C"
 {
+    static void CreateControllers(ControllerFactory& cf, IAllocator& allocator)
+    {
+        ControllerContext fileContext(allocator);
+        cf.CreateControllerContext<FileController>(fileContext, "files", "/api/files");
+        {
+            cf.RouteAction<FileController, &FileController::Index>(fileContext, Net::Http::Method::Get, "index");
+            cf.RouteAction<FileController, &FileController::Get>(fileContext, Net::Http::Method::Get, "get", "[params]");
+            cf.RouteAction<FileController, &FileController::List>(fileContext, Net::Http::Method::Get, "list");
+            
+            cf.Save(fileContext);
+        }
+        
+        ControllerContext telegramContext(allocator);
+        cf.CreateControllerContext<TelegramController>(telegramContext, "telegram", "/api/telegram");
+        {
+            cf.RouteAction<TelegramController, &TelegramController::Update>(telegramContext, Net::Http::Method::Post, "update");
+            cf.RouteAction<TelegramController, &TelegramController::Update>(telegramContext, Net::Http::Method::Get, "update");
+            
+            cf.Save(telegramContext);
+        }
+    }
+    
     /**
      * This is called on early module initialization.
      */
@@ -31,7 +54,13 @@ extern "C"
         const char* rootDirectory = desc.RootDirectory;
         SampleModule::DocumentRoot.Assign(rootDirectory);
         
-        context = new Http::ActionContext();
+        context = new Mvc::RequestContext(GetDefaultAllocator());
+        
+        auto& controllerFactory = context->GetControllerFactory();
+        auto& allocator = context->GetAllocator();
+        
+        CreateControllers(controllerFactory, allocator); // temp
+        
         return context != nullptr;
     }
     

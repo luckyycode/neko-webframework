@@ -31,6 +31,11 @@
 
 #include "Utils.h"
 
+#include "../Engine/Network/Http/Request.h"
+#include "../Engine/Network/Http/Response.h"
+
+#include "../Engine/Platform/Platform.h"
+
 #include "../Engine/Utilities/Templates.h"
 #include "../Engine/Utilities/Utilities.h"
 #include "../Engine/Core/Log.h"
@@ -116,6 +121,97 @@ namespace Neko
             Util::DecodeUrl(index == INDEX_NONE ? path : path.Mid(0, index), clean);
         }
         
+        void ShowDirectoryList(const String& documentRoot, const Net::Http::Request& request, Net::Http::Response& response, bool secure, IAllocator& allocator)
+        {
+            auto fullHost = request.IncomingHeaders.Find("host"); // get host with port (request.Host may have no port)
+            
+            String body(allocator);
+            body += R"(
+                <head>
+                    <style>
+                    body {
+                        background-color: #7E7D7D;
+                    }
+                    </style>
+                </head>
+            
+                <body>
+                    <p style="color:white"> Exploring: <i><font size=4>)";
+            
+                    body += documentRoot;
+            
+                    body += R"(</font></i>
+                    <table style="width:75%">
+                    <tr>
+                    <th style="text-align:left">Name</th>
+                    <th style="text-align:left">Last modified</th>
+                    <th style="text-align:left">Size</th>
+                    </tr><hr>
+                )";
+            
+            Platform::FileInfo info;
+            Platform::FileStatData fileStat;
+            bool isDirectory;
+            
+            auto* it = Platform::CreateFileIterator(*documentRoot, allocator);
+            
+            while (Neko::Platform::GetNextFile(it, &info))
+            {
+                StaticString<MAX_PATH_LENGTH> fullPath(*documentRoot, "/", info.Filename);
+                fileStat = Platform::GetFileData(*fullPath);
+                
+                if (info.Filename[0] == '.')
+                {
+                    continue;
+                }
+                
+                isDirectory = fileStat.bIsDirectory;
+                
+                // name
+                String fileUrl = secure ? "https://" : "http://";
+                fileUrl += fullHost.value();
+                fileUrl += request.Path;
+                fileUrl += "/";
+                fileUrl += info.Filename;
+                
+                body += "<tr><td><a href=\"";
+                body += fileUrl;
+                body += "\">";
+                body += info.Filename;
+                body += "</a></td>";
+                
+                // last modification
+                body += "<td>";
+                body += fileStat.ModificationTime.ToString("%d-%m-%y %H:%M");
+                body += "</td>";
+                
+                // size
+                if (!isDirectory)
+                {
+                    body += "<td>";
+                    char unit[4];
+                    Neko::BestUnit(unit, fileStat.FileSize); // size
+                    body += unit;
+                    body += "</td></tr>";
+                }
+                else
+                {
+                    body += "<td></td></tr>";
+                }
+            }
+            Platform::DestroyFileIterator(it);
+            
+            body += R"(</table></p><hr>
+                <footer>
+                    <p>
+                        <a href="https://github.com/luckyycode/neko-webframework">Powered by <i>Neko Framework</i></a>
+                    </p>
+                </footer>
+            </body>)";
+            
+            response.SetStatusCode(Net::Http::StatusCode::Ok);
+            response.SetBodyData((uint8* )*body, body.Length());
+        }
     }
 }
 

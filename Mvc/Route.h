@@ -38,7 +38,7 @@
 
 namespace Neko
 {
-	namespace Http
+    namespace Mvc
     {
         /// Url route.
         struct Route
@@ -54,7 +54,7 @@ namespace Neko
             Net::Http::Method Method;
             
             TArray<String> ComponentList;
-            TArray<int>  KeywordIndexes;
+            TArray<int16>  KeywordIndexes;
             
             String Controller;
             String Action;

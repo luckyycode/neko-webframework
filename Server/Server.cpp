@@ -93,11 +93,13 @@ namespace Neko
         , SocketsList(Allocator)
         , Settings(fileSystem, allocator)
         {
-            
+            SetDefaultAllocator(allocator);
         };
 
         bool Server::Init()
         {
+            GLogInfo.log("Http") << "Loading server settings";
+            
             // load every application & settings
             bool settingsLoaded = Settings.LoadAppSettings("appsettings.json", Modules);
             
@@ -237,7 +239,7 @@ namespace Neko
             if (Listeners.IsEmpty())
             {
                 Debug::DebugColor(Debug::EStdoutColor::Red); // aesthetics
-                GLogError.log("Http") << "Couldn't run server, no sockets opened.";
+                GLogError.log("Http") << "## Couldn't run server, no sockets opened.";
                 Debug::DebugColor(Debug::EStdoutColor::White);
                 
                 Clear();
@@ -256,9 +258,7 @@ namespace Neko
             
             Controls.SetActiveFlag();
             
-            Debug::DebugColor(Debug::EStdoutColor::Green);
-            GLogInfo.log("Http") << "Server is now listening on " << Settings.ResolvedAddressString << ".";
-            Debug::DebugColor(Debug::EStdoutColor::White);
+            GLogInfo.log("Http") << "Creating the main request queue task..";
             
             Net::SocketsQueue sockets(Allocator);
             
@@ -275,6 +275,10 @@ namespace Neko
                 thisData->server->ProcessWorkerThreads(thisData);
             };
             JobSystem::RunJobs(&job, 1, nullptr);
+            
+            Debug::DebugColor(Debug::EStdoutColor::Green);
+            GLogInfo.log("Http") << "## Server is now listening on " << Settings.ResolvedAddressString << ". (" << Listeners.GetSize() << " listeners)";
+            Debug::DebugColor(Debug::EStdoutColor::White);
             
             // list of new connections
             TArray<Net::INetSocket> socketsToAccept(Allocator);
@@ -316,6 +320,8 @@ namespace Neko
                 }
             }
             while (Controls.Active || Controls.UpdateModulesEvent.poll());
+            
+            GLogInfo.log("Http") << "Server main cycle quit";
             
             // cleanup
             
@@ -453,34 +459,34 @@ namespace Neko
                         
                         Net::NetAddress address;
                         bool success = socket.GetAddress(address);
-                        assert(success);
-                        
-                        const uint32 port = address.Port;
-                        auto it = TlsData.Find(port);
-                        
-                        // it's a valid tls data, secured
-                        if (it.IsValid())
+                        if (success)
                         {
-							GLogInfo.log("Http") << "Secure connection..";
-							
-                            auto* context = it.value();
-                            assert(context != nullptr);
-#   if USE_OPENSSL
-                            SocketSSL socketSsl(socket, (SSL_CTX* )context);
-#   endif
-							if (socketSsl.Handshake())
-							{
-								ThreadRequestProc(socketSsl, Sockets, nullptr);
-							}
-                        }
-                        else
-                        {
-                            // use default socket
-                            SocketDefault socketDefault(socket);
+                            const uint32 port = address.Port;
+                            auto it = TlsData.Find(port);
                             
-                            ThreadRequestProc(socketDefault, Sockets, streamData);
+                            // it's a valid tls data, secured
+                            if (it.IsValid())
+                            {
+                                GLogInfo.log("Http") << "Secure connection..";
+                                
+                                auto* context = it.value();
+                                assert(context != nullptr);
+#   if USE_OPENSSL
+                                SocketSSL socketSsl(socket, (SSL_CTX* )context);
+#   endif
+                                if (socketSsl.Handshake())
+                                {
+                                    ThreadRequestProc(socketSsl, Sockets, nullptr);
+                                }
+                            }
+                            else
+                            {
+                                // use default socket
+                                SocketDefault socketDefault(socket);
+                                
+                                ThreadRequestProc(socketDefault, Sockets, streamData);
+                            }
                         }
-                        
                         --ThreadsWorkingCount;
                     }
                     else
@@ -512,7 +518,6 @@ namespace Neko
         int32 Server::ProcessWorkerThreads(void* kek)
         {
             SocketServerData* data = (SocketServerData* )kek;
-            
             Net::SocketsQueue& sockets = *(Net::SocketsQueue*)data->queue;
             
             ThreadsWorkingCount.Set(0);
@@ -523,7 +528,6 @@ namespace Neko
             
             // check thread count
             assert (threadMaxCount != 0);
-
             GLogInfo.log("Http") << "Using " << threadMaxCount << " threads.";
             
             TArray<MT::Task*> activeTasks(Allocator);
@@ -545,7 +549,7 @@ namespace Neko
                            && activeTasks.GetSize() < threadMaxCount && !sockets.IsEmpty())
                     {
                         RequestTask* task = NEKO_NEW(Allocator, RequestTask)(*this, Allocator, sockets, threadsProcessEvent);
-                        if (task->Create("Server worker task"))
+                        if (task->Create("Server requests task"))
                         {
                             activeTasks.Push(task);
                         }
@@ -645,7 +649,7 @@ namespace Neko
         {
             if (ports.Contains(port))
             {
-                GLogWarning.log("Http") << "Attempt to bind socket with used port " << port << ".";
+                GLogError.log("Http") << "Attempt to bind socket with used port " << port << ".";
                 return false;
             }
             
@@ -833,9 +837,8 @@ namespace Neko
         int32 Server::GetServerProcessId(const String& serverName) const
         {
             int processId = 0;
-            
-            int memoryId;
             {
+                int memoryId;
                 MT::SpinLock lick(Mutex);
                 
                 if ((memoryId = Neko::Platform::OpenSharedMemory(serverName)) != -1)
@@ -962,7 +965,9 @@ namespace Neko
             {
                 for (auto& item : TlsData)
                 {
+# if USE_OPENSSL
                     SSL_CTX_free((SSL_CTX* )item);
+# endif
                 }
                 TlsData.Clear();
             }

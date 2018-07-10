@@ -23,48 +23,18 @@
 // | |\  |  __/   < (_) | |  _|| | | (_| | | | | | |  __/\ V  V / (_) | |  |   <
 // |_| \_|\___|_|\_\___/  |_|  |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
 //
-//  ActionContext.h
+//  Model.cpp
 //  Neko Framework
 //
 //  Copyright © 2018 Neko Vision. All rights reserved.
 //
 
-#pragma once
-
-#include "ControllerFactory.h"
-#include "Router.h"
+#include "Model.h"
 
 namespace Neko
 {
-	namespace Http
+    namespace Mvc
     {
-        class ActionContext
-        {
-        public:
-            
-            ActionContext();
-            
-            int32 Execute(Net::Http::RequestData& requestData, Net::Http::ResponseData& responseData);
-            
-            void CleanupResponseData(void* responseData, uint32 responseSize);
-            
-        public:
-            
-            /**
-             * Returns the instance of controller factory.
-             */
-            const ControllerFactory& GetControllerFactory() const
-            {
-                return this->ControllerFactory;
-            }
-            
-        private:
-            
-            Router MainRouter;
-            
-            ControllerFactory ControllerFactory;
-            
-            Neko::DefaultAllocator Allocator;
-        };
+       IMPLEMENT_RTTI_BASE(IModel)
     }
 }

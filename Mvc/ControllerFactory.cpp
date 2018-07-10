@@ -36,12 +36,13 @@
 
 namespace Neko
 {
-    namespace Http
+    using namespace Neko::Http;
+    namespace Mvc
     {
-        ControllerFactory::ControllerFactory(class Router& router)
-        : Allocator()
+        ControllerFactory::ControllerFactory(class Router& router, IAllocator& allocator)
+        : Allocator(allocator)
         , Router(router)
-        , ControllerDispatcher(Allocator)
+        , ControllerDispatcher(allocator)
         {
         }
        

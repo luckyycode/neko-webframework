@@ -36,7 +36,8 @@
 
 namespace Neko
 {
-	namespace Http
+    using namespace Neko::Http;
+    namespace Mvc
     {
         IController::IController(Net::Http::Request& request, Net::Http::Response& response, IAllocator& allocator, const char* path)
         : Allocator(allocator)

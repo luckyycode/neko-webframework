@@ -23,7 +23,7 @@
 // | |\  |  __/   < (_) | |  _|| | | (_| | | | | | |  __/\ V  V / (_) | |  |   <
 // |_| \_|\___|_|\_\___/  |_|  |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
 //
-//  User.h
+//  RequestContext.h
 //  Neko Framework
 //
 //  Copyright © 2018 Neko Vision. All rights reserved.
@@ -31,25 +31,44 @@
 
 #pragma once
 
-#include "../../Engine/Utilities/NekoString.h"
+#include "ControllerFactory.h"
+#include "Router.h"
 
 namespace Neko
 {
-    using namespace Neko::Http;
     namespace Mvc
     {
-        /// Base class for users.
-        class IUser
+        /// Provides higher level side for parsing requests (e.g. routes, controllers)
+        class RequestContext
         {
         public:
             
-            virtual ~IUser() { }
+            RequestContext(IAllocator& allocator);
             
-            /** Returns the identity key (i.e. user name) */
-            virtual String GetIdentityKey() = 0;
+            int32 Execute(Net::Http::RequestData& requestData, Net::Http::ResponseData& responseData);
             
-            /** Returns the group key. */
-            virtual String GetGroupKey() { return String(); }
+            void CleanupResponseData(void* responseData, uint32 responseSize);
+            
+        private:
+            
+            void ProcessRequest(Http::IProtocol& protocol, Net::Http::Request& request, Net::Http::Response& response, String& documentRoot, const bool secure);
+            
+        public:
+            
+            /**
+             * Returns the instance of controller factory.
+             */
+            ControllerFactory& GetControllerFactory() { return this->ControllerFactory;}
+            
+            IAllocator& GetAllocator() { return Allocator; }
+            
+        private:
+            
+            Router MainRouter;
+            
+            ControllerFactory ControllerFactory;
+            
+            IAllocator& Allocator;
         };
     }
 }

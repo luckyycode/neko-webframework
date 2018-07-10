@@ -34,13 +34,14 @@
 #include "../../Engine/Containers/Delegate.h"
 #include "../../Engine/Utilities/StringUtil.h"
 
+#include "../Server/IProtocol.h"
 #include "Router.h"
 
 #include "ControllerContext.h"
 
 namespace Neko
 {
-    namespace Http
+    namespace Mvc
     {
         /// Provides managing controllers lifetime.
         class ControllerFactory
@@ -52,13 +53,15 @@ namespace Neko
              *
              * @param router    Active url router.
              */
-            ControllerFactory(Router& router);
+            ControllerFactory(Router& router, IAllocator& allocator);
             
             /**
              * Prepares controller info.
              */
             template <class T> void CreateControllerContext(ControllerContext& context, const char* name, const char* path)
             {
+                static_assert(std::is_convertible<T, IController>::value, "Route action class must be inherit IController!");
+                
                 context.Path.Set(path);
                 context.Name.Set(name);
                 
@@ -74,6 +77,8 @@ namespace Neko
              */
             template <typename T, void(T::*A)()> void RouteAction(ControllerContext& context, Net::Http::Method method, const char* action, const char* params = nullptr)
             {
+                static_assert(std::is_convertible<T, IController>::value, "Route action class must be inherit IController!");
+                
                 // Build controller#action string
                 StaticString<32> controllerActionName(context.Name, "#", action);
                 // Build controller action uri
@@ -98,7 +103,7 @@ namespace Neko
             /**
              * Instantiates a new controller on request.
              */
-            void ExecuteController(const Routing& routing, class IProtocol& protocol, Net::Http::Request& request, Net::Http::Response& response);
+            void ExecuteController(const Routing& routing, Http::IProtocol& protocol, Net::Http::Request& request, Net::Http::Response& response);
             
             /**
              * Removes controller data.
@@ -109,7 +114,7 @@ namespace Neko
             
             Router& Router;
             
-            DefaultAllocator Allocator;
+            IAllocator& Allocator;
             
             THashMap<String, ControllerContext> ControllerDispatcher;
         };
