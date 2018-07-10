@@ -100,10 +100,11 @@ namespace Neko
         {
             assert(controller != nullptr);
             
-            NEKO_DELETE(Allocator, controller);
+            auto& allocator = GetDefaultAllocator();
+            NEKO_DELETE(allocator, controller);
         }
         
-        void ControllerFactory::CreateControllerContext(ControllerContext& context)
+        void ControllerFactory::CreateControllerContext(ControllerContext context)
         {
             String controllerName(context.Name);
             controllerName += "controller";

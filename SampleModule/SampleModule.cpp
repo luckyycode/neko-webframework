@@ -20,13 +20,14 @@ using namespace Neko::Mvc;
 
 Mvc::RequestContext* context = nullptr;
 
+static DefaultAllocator baseAllocator;
 extern "C"
 {
     static void CreateControllers(ControllerFactory& controllerFactory, IAllocator& allocator)
     {
         auto& router = controllerFactory.GetRouter();
         
-        ControllerContext fileContext(allocator);
+        ControllerContext fileContext;
         fileContext.Init<FileController>("files", "/api/files");
         {
             fileContext.RouteAction<FileController, &FileController::Index>(router, Net::Http::Method::Get, "index");
@@ -35,7 +36,7 @@ extern "C"
         }
         controllerFactory.CreateControllerContext(fileContext);
         
-        ControllerContext telegramContext(allocator);
+        ControllerContext telegramContext;
         telegramContext.Init<TelegramController>("telegram", "/api/telegram");
         {
             telegramContext.RouteAction<TelegramController, &TelegramController::Update>(router, Net::Http::Method::Post, "update");
@@ -53,7 +54,7 @@ extern "C"
         const char* rootDirectory = desc.RootDirectory;
         SampleModule::DocumentRoot.Assign(rootDirectory);
         
-        context = new Mvc::RequestContext(GetDefaultAllocator());
+        context = new Mvc::RequestContext(baseAllocator);
         
         auto& controllerFactory = context->GetControllerFactory();
         auto& allocator = context->GetAllocator();

@@ -189,7 +189,10 @@ namespace Neko
 		
 		const auto mimeType = Http::GetMimeByFileName(filename, GetPhotoMimeTypes());
 		
-        args.Emplace("photo", (const char* )data, true, mimeType, filename);
+        Net::Http::HttpRequestParam photoItem("photo", "", true, mimeType, filename);
+        photoItem.value.Append((const char* )data, size);
+        
+        args.Emplace(photoItem);
 		
         String response(Allocator);
         response.Resize(1024);

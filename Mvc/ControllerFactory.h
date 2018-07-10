@@ -58,7 +58,7 @@ namespace Neko
             /**
              * Saves the controller context.
              */
-            void CreateControllerContext(ControllerContext& context);
+            void CreateControllerContext(ControllerContext context);
             
             /**
              * Instantiates a new controller on request.

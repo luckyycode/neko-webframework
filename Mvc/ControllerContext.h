@@ -51,10 +51,8 @@ namespace Neko
         {
             typedef std::function<class IController* (Net::Http::Request&, Net::Http::Response&) > CreateControllerFunc;
             
-            ControllerContext(IAllocator& allocator)
-            : Actions(allocator)
-            , Allocator(allocator)
-            , Controller(nullptr)
+            ControllerContext()
+            : Controller(nullptr)
             {
             }
             
@@ -70,8 +68,9 @@ namespace Neko
                 
                 this->CreateController = [name, this] (Net::Http::Request& httpRequest, Net::Http::Response& httpResponse) -> IController*
                 {
+                    auto& allocator = GetDefaultAllocator();
                     // create a new controller on request
-                    return NEKO_NEW(Allocator, T) (httpRequest, httpResponse, Allocator, name);
+                    return NEKO_NEW(allocator, T) (httpRequest, httpResponse, allocator, name);
                 };
             }
             
@@ -117,8 +116,6 @@ namespace Neko
             
             //! Transient controller info.
             IController* Controller;
-            
-            IAllocator& Allocator;
         };
     }
 }
