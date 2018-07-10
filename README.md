@@ -6,6 +6,8 @@ Neko server with Mvc framework. Work in progress, not ready for production in an
 
 Fast and efficient server with higher level mvc code for developing web applications.
 
+See Wiki page for more info.
+
 | Directory                  | Description       
 | --------------------- |:-----------------------------------------------------------------:|
 | /Mvc/                     | contains higher level logic (e.g. controllers, routing)
