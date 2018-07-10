@@ -55,7 +55,7 @@ namespace Neko
             
         }
 
-        void ProtocolHttp::WriteRequestParameters(TArray<char>& buffer, const Net::Http::Request& request, const ApplicationSettings& applicationSettings) const
+        void ProtocolHttp::WriteRequest(TArray<char>& buffer, const Net::Http::Request& request, const ApplicationSettings& applicationSettings) const
         {
             Net::Http::OutputProtocolBlob blob((void* )buffer.GetData(), buffer.GetCapacity()/* max size */);
             
@@ -78,7 +78,7 @@ namespace Neko
             blob << request.IncomingFiles;
         }
         
-        void ProtocolHttp::ReadResponseParameters(Net::Http::Request& request, Net::Http::ResponseData& responseData) const
+        void ProtocolHttp::ReadResponse(Net::Http::Request& request, Net::Http::ResponseData& responseData) const
         {
             Net::Http::InputProtocolBlob blob(responseData.Data, INT_MAX);
             
@@ -147,6 +147,8 @@ namespace Neko
             const String& hostHeader = hostIt.value();
             const int32 delimiter = hostHeader.Find(":"); // port
             
+            // @todo perhaps if using default ports hostHeader may contain no port
+            
             request.Host = (delimiter == INDEX_NONE) ? hostHeader : hostHeader.Mid(0, delimiter);  // name/address
             
             // port value
@@ -156,7 +158,7 @@ namespace Neko
             const ApplicationSettings* applicationSettings = Settings->List.Find(request.Host) ;
             
             // app is found
-            if (applicationSettings && (applicationSettings->Port == port || applicationSettings->TlsPort == port))
+            if (applicationSettings != nullptr && (applicationSettings->Port == port || applicationSettings->TlsPort == port))
             {
                 return applicationSettings;
             }

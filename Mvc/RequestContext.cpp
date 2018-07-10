@@ -96,7 +96,7 @@ namespace Neko
                 
                 responseData.Data = data;
                 responseData.Size = size;
-                
+                // write headers
                 Net::Http::OutputProtocolBlob blob(responseData.Data, INT_MAX);
                 blob << outHeaders;
             }
@@ -104,6 +104,8 @@ namespace Neko
         
         void RequestContext::ProcessRequest(Http::IProtocol& protocol, Net::Http::Request& request, Net::Http::Response& response, String& documentRoot, const bool secure)
         {
+            String clearUri(Allocator);
+            TArray<String> components(Allocator);
             THashMap<String, String> requestCookies(Allocator);
             
             auto cookieIt = request.IncomingHeaders.Find("cookie");
@@ -113,11 +115,9 @@ namespace Neko
             }
             
             // Remove uri query parameters if present
-            String clearUri(Allocator);
             ClearRequestUri(request.Path, clearUri);
             
             // Match route
-            TArray<String> components(Allocator);
             Router::SplitPath(components, clearUri); // for parsing
             
             // route request to controllers
@@ -138,6 +138,7 @@ namespace Neko
                     
                     if (documentRoot.Find("/../") == INDEX_NONE)
                     {
+                        // show directory list
                         bool isDirectory = Neko::Platform::DirectoryExists(*documentRoot);
                         if (isDirectory)
                         {
@@ -147,6 +148,7 @@ namespace Neko
                         }
                         else
                         {
+                            // or send file
                             if (Platform::FileExists(*documentRoot))
                             {
                                 auto connectionIt = request.IncomingHeaders.Find("connection");
@@ -175,21 +177,22 @@ namespace Neko
         
         int32 RequestContext::Execute(Net::Http::RequestData& requestData, Net::Http::ResponseData& responseData)
         {
+            // Initialize socket from existing native socket descriptor
+            
             uint8 stack[sizeof(SocketSSL)]; // large socket object
             bool secure;
             Net::INetSocket netSocket;
             ISocket* socket = CreateSocket(netSocket, &requestData, &stack, secure);
             
-            const uint8* data = static_cast<const uint8*> (requestData.Data);
-            Net::Http::InputProtocolBlob blob((void* )data, INT_MAX);
-            
             // incoming protocol type by request
             IProtocol* protocol = nullptr;
             
-            String documentRoot(Allocator);
-            
             // Read incoming header info
             
+            const uint8* data = static_cast<const uint8*> (requestData.Data);
+            Net::Http::InputProtocolBlob blob((void* )data, INT_MAX);
+            
+            String documentRoot;
             // http version
             uint8 protocolVersion;
             blob.Read(protocolVersion);
