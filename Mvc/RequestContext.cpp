@@ -236,7 +236,7 @@ namespace Neko
             
             // process request
             
-            GLogInfo.log("Http") << "Http " << static_cast<uint32>(protocolVersion) << " " << request.Path << " /" << request.Method;
+            GLogInfo.log("Http") << "Request ## Http " << static_cast<uint32>(protocolVersion) << " " << request.Path << " /" << request.Method;
             
             ProcessRequest(*protocol, request, response, documentRoot, secure);
             

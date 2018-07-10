@@ -22,26 +22,25 @@ Mvc::RequestContext* context = nullptr;
 
 extern "C"
 {
-    static void CreateControllers(ControllerFactory& cf, IAllocator& allocator)
+    static void CreateControllers(ControllerFactory& controllerFactory, IAllocator& allocator)
     {
+        auto& router = controllerFactory.GetRouter();
+        
         ControllerContext fileContext(allocator);
-        cf.CreateControllerContext<FileController>(fileContext, "files", "/api/files");
+        fileContext.Init<FileController>("files", "/api/files");
         {
-            cf.RouteAction<FileController, &FileController::Index>(fileContext, Net::Http::Method::Get, "index");
-            cf.RouteAction<FileController, &FileController::Get>(fileContext, Net::Http::Method::Get, "get", "[params]");
-            cf.RouteAction<FileController, &FileController::List>(fileContext, Net::Http::Method::Get, "list");
-            
-            cf.Save(fileContext);
+            fileContext.RouteAction<FileController, &FileController::Index>(router, Net::Http::Method::Get, "index");
+            fileContext.RouteAction<FileController, &FileController::Get>(router, Net::Http::Method::Get, "get", "[params]");
+            fileContext.RouteAction<FileController, &FileController::List>(router, Net::Http::Method::Get, "list");
         }
+        controllerFactory.CreateControllerContext(fileContext);
         
         ControllerContext telegramContext(allocator);
-        cf.CreateControllerContext<TelegramController>(telegramContext, "telegram", "/api/telegram");
+        telegramContext.Init<TelegramController>("telegram", "/api/telegram");
         {
-            cf.RouteAction<TelegramController, &TelegramController::Update>(telegramContext, Net::Http::Method::Post, "update");
-            cf.RouteAction<TelegramController, &TelegramController::Update>(telegramContext, Net::Http::Method::Get, "update");
-            
-            cf.Save(telegramContext);
+            telegramContext.RouteAction<TelegramController, &TelegramController::Update>(router, Net::Http::Method::Post, "update");
         }
+        controllerFactory.CreateControllerContext(telegramContext);
     }
     
     /**

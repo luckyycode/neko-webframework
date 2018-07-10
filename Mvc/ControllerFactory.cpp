@@ -103,7 +103,7 @@ namespace Neko
             NEKO_DELETE(Allocator, controller);
         }
         
-        void ControllerFactory::Save(ControllerContext& context)
+        void ControllerFactory::CreateControllerContext(ControllerContext& context)
         {
             String controllerName(context.Name);
             controllerName += "controller";

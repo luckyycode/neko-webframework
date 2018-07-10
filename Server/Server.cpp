@@ -277,7 +277,7 @@ namespace Neko
             JobSystem::RunJobs(&job, 1, nullptr);
             
             Debug::DebugColor(Debug::EStdoutColor::Green);
-            GLogInfo.log("Http") << "## Server is now listening on " << Settings.ResolvedAddressString << ". (" << Listeners.GetSize() << " listeners)";
+            GLogInfo.log("Http") << "## Server is now listening on " << Settings.ResolvedAddressString << " (" << Listeners.GetSize() << " listeners).";
             Debug::DebugColor(Debug::EStdoutColor::White);
             
             // list of new connections
@@ -385,7 +385,7 @@ namespace Neko
                         return protocol;
                     }
                     
-                    GLogWarning.log("Http") << "Tls session data found, but couldn't negotiate needed protocol";
+//                    GLogWarning.log("Http") << "Tls session data found, but couldn't negotiate needed protocol";
                 }
                 
                 protocol = NEKO_NEW(allocator, ProtocolHttp)(socket, &Settings, allocator);
@@ -467,8 +467,6 @@ namespace Neko
                             // it's a valid tls data, secured
                             if (it.IsValid())
                             {
-                                GLogInfo.log("Http") << "Secure connection..";
-                                
                                 auto* context = it.value();
                                 assert(context != nullptr);
 #   if USE_OPENSSL

@@ -38,6 +38,8 @@
 #include "../Engine/Utilities/Utilities.h"
 #include "../Engine/Utilities/Timer.h"
 #include "../Engine/Utilities/Templates.h"
+#include "../Engine/Utilities/CommandLineParser.h"
+#include "../Engine/Platform/Platform.h"
 #include "../Engine/Core/IPlugin.h"
 #include "../Engine/Mt/Task.h"
 
@@ -67,17 +69,45 @@ namespace Neko
     {
     public:
         
-        ServerTask(IAllocator& allocator, FS::FileSystem& fileSystem, const char* name)
+        ServerTask(IAllocator& allocator, FS::FileSystem& fileSystem)
         : Task(allocator)
         , FileSystem(fileSystem)
-        , Name(name)
         {
         }
         
         virtual int32 DoTask() override
         {
+            bool forceStart = false;
+            char serverName[64] = { "Nekoo" };
+            
+            char commandLine[2048];
+            Platform::GetSystemCommandLine(commandLine, Neko::lengthOf(commandLine));
+            
+            CCommandLineParser parser(commandLine);
+            while (parser.Next())
+            {
+                if (parser.CurrentEquals("--force"))
+                {
+                    forceStart = true;
+                }
+                else if (parser.CurrentEquals("--name"))
+                {
+                    if (!parser.Next())
+                    {
+                        break;
+                    }
+                    
+                    parser.GetCurrent(serverName, Neko::lengthOf(serverName));
+                }
+                
+                if (!parser.Next())
+                {
+                    break;
+                }
+            }
+            
             ServerInstance = NEKO_NEW(GetAllocator(), Http::Server )(GetAllocator(), FileSystem);
-            int32 exitCode = ServerInstance->StartCommand(Name);
+            int32 exitCode = ServerInstance->StartCommand(serverName, forceStart);
             
             NEKO_DELETE(GetAllocator(), ServerInstance);
             return exitCode;
@@ -85,7 +115,6 @@ namespace Neko
         
     private:
         
-        const char* Name;
         FS::FileSystem& FileSystem;
     };
     
@@ -97,7 +126,7 @@ namespace Neko
         : Engine(engine)
         , Allocator(engine.GetAllocator())
         {
-            ServerTask* task = NEKO_NEW(Allocator, ServerTask)(Allocator, engine.GetFileSystem(), "Nekoo");
+            ServerTask* task = NEKO_NEW(Allocator, ServerTask)(Allocator, engine.GetFileSystem());
             if (!task->Create("Neko Server"))
             {
                 assert(false);

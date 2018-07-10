@@ -54,51 +54,11 @@ namespace Neko
              * @param router    Active url router.
              */
             ControllerFactory(Router& router, IAllocator& allocator);
-            
-            /**
-             * Prepares controller info.
-             */
-            template <class T> void CreateControllerContext(ControllerContext& context, const char* name, const char* path)
-            {
-                static_assert(std::is_convertible<T, IController>::value, "Route action class must be inherit IController!");
-                
-                context.Path.Set(path);
-                context.Name.Set(name);
-                
-                context.CreateController = [name, this] (Net::Http::Request& httpRequest, Net::Http::Response& httpResponse) -> IController*
-                {
-                    // create a new controller on request
-                    return NEKO_NEW(Allocator, T) (httpRequest, httpResponse, Allocator, name);
-                };
-            }
-            
-            /**
-             * Maps action to controller url.
-             */
-            template <typename T, void(T::*A)()> void RouteAction(ControllerContext& context, Net::Http::Method method, const char* action, const char* params = nullptr)
-            {
-                static_assert(std::is_convertible<T, IController>::value, "Route action class must be inherit IController!");
-                
-                // Build controller#action string
-                StaticString<32> controllerActionName(context.Name, "#", action);
-                // Build controller action uri
-                StaticString<32> controllerActionPath(context.Path, "/", action, "/", params);
-                
-                // Save route
-                bool success = Router.AddRoute(method, *controllerActionPath, *controllerActionName);
-                if (success)
-                {
-                    ControllerAction controllerAction;
-                    controllerAction.Bind<T, A>(nullptr);
-                    
-                    context.Actions.Insert(action, controllerAction);
-                }
-            }
-            
+      
             /**
              * Saves the controller context.
              */
-            void Save(ControllerContext& context);
+            void CreateControllerContext(ControllerContext& context);
             
             /**
              * Instantiates a new controller on request.
@@ -109,6 +69,10 @@ namespace Neko
              * Removes controller data.
              */
             void ReleaseController(IController* controller);
+            
+        public:
+            
+            NEKO_FORCE_INLINE Router& GetRouter() { return this->Router; }
             
         private:
             

@@ -53,8 +53,49 @@ namespace Neko
             
             ControllerContext(IAllocator& allocator)
             : Actions(allocator)
+            , Allocator(allocator)
             , Controller(nullptr)
             {
+            }
+            
+            /**
+             * Prepares controller info.
+             */
+            template <class T> void Init(const char* name, const char* path)
+            {
+                static_assert(std::is_convertible<T, IController>::value, "Route action class must inherit IController!");
+                
+                this->Path.Set(path);
+                this->Name.Set(name);
+                
+                this->CreateController = [name, this] (Net::Http::Request& httpRequest, Net::Http::Response& httpResponse) -> IController*
+                {
+                    // create a new controller on request
+                    return NEKO_NEW(Allocator, T) (httpRequest, httpResponse, Allocator, name);
+                };
+            }
+            
+            /**
+             * Maps action to controller url.
+             */
+            template <typename T, void(T::*A)()> void RouteAction(Router& router, Net::Http::Method method, const char* action, const char* params = nullptr)
+            {
+                static_assert(std::is_convertible<T, IController>::value, "Route action class must inherit IController!");
+                
+                // Build controller#action string
+                StaticString<32> controllerActionName(this->Name, "#", action);
+                // Build controller action uri
+                StaticString<32> controllerActionPath(this->Path, "/", action, "/", params);
+                
+                // Save route
+                bool success = router.AddRoute(method, *controllerActionPath, *controllerActionName);
+                if (success)
+                {
+                    ControllerAction controllerAction;
+                    controllerAction.Bind<T, A>(nullptr);
+                    
+                    this->Actions.Insert(action, controllerAction);
+                }
             }
             
             void Clear()
@@ -76,6 +117,8 @@ namespace Neko
             
             //! Transient controller info.
             IController* Controller;
+            
+            IAllocator& Allocator;
         };
     }
 }

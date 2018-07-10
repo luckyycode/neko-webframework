@@ -493,7 +493,7 @@ namespace Neko
             // File is not found or not valid
             if (!fileInfo.bIsValid)
             {
-                GLogInfo.log("Http") << "Send: Requested file " << *fileName << " not found.";
+                GLogInfo.log("Http") << "Requested file " << *fileName << " not found.";
                 
                 protocol.SendHeaders(Net::Http::StatusCode::NotFound, extraHeaders, request.Timeout);
                 
@@ -504,7 +504,7 @@ namespace Neko
                 fileSize = fileInfo.FileSize;
                 fileModificationTime = fileInfo.ModificationTime;
                 
-                GLogInfo.log("Http") << "Send: Requested file " << *fileName << " - " << (fileSize / 1024UL) << " kb.";
+                GLogInfo.log("Http") << "Requested file " << *fileName << " - " << (fileSize / 1024UL) << " kb.";
             }
             
             // If-Modified header
@@ -528,7 +528,7 @@ namespace Neko
             
             if (rangeIt.IsValid())
             {
-                GLogInfo.log("Http") << "Send: Range header found, partial transfer...";
+                GLogInfo.log("Http") << "Range header found, partial transfer...";
                 
                 return SendPartial(protocol, request, fileName, fileModificationTime, fileSize, rangeIt.value(), extraHeaders, mimeTypes, headersOnly, allocator);
             }
@@ -539,7 +539,7 @@ namespace Neko
             if (!file.Open(*fileName, FS::Mode::READ))
             {
                 file.Close();
-                GLogError.log("Http") << "Send: Couldn't open requested file!";
+                GLogError.log("Http") << "Couldn't open requested file!";
                 
                 protocol.SendHeaders(Net::Http::StatusCode::InternalServerError, extraHeaders, request.Timeout);
                 
@@ -564,7 +564,7 @@ namespace Neko
             if (!protocol.SendHeaders(Net::Http::StatusCode::Ok, extraHeaders, request.Timeout, end))
             {
                 file.Close();
-                GLogError.log("Http") << "Send: Failed to send headers";
+                GLogError.log("Http") << "Failed to send headers";
                 
                 return false;
             }
@@ -589,8 +589,6 @@ namespace Neko
                     sendSize = protocol.SendData(buffer.GetData(), readSize, request.Timeout, &dataCounter);
                 }
                 while (!file.IsEof() && (dataCounter.FullSize - dataCounter.SendTotal) && sendSize > 0);
-                
-                GLogInfo.log("Http") << "Send: Sent " << (uint32)sendSize << "/" << (uint32)fileSize << " kb.";
             }
             
             file.Close();
