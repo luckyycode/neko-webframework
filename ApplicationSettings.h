@@ -46,6 +46,7 @@ namespace Neko
         struct ApplicationInitDesc
         {
             const char* RootDirectory = nullptr;
+            IAllocator* AppAllocator = nullptr;
         };
         
         /** Server settings for each application. */

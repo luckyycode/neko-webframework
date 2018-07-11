@@ -85,6 +85,11 @@ namespace Neko
         {
         }
         
+        RequestContext::~RequestContext()
+        {
+            ControllerFactory.Clear();
+        }
+        
         static void WriteResponseData(Net::Http::Response& response, Net::Http::ResponseData& responseData, IAllocator& allocator)
         {
             // these will be processed by server after running this app

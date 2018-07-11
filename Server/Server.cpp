@@ -795,7 +795,8 @@ namespace Neko
                 
                 ApplicationInitDesc items
                 {
-                    *app->RootDirectory
+                    *app->RootDirectory,
+                    &Allocator
                 };
                 
                 app->OnApplicationInit(items);

@@ -35,6 +35,8 @@
 #include "../../Engine/Network/Http/Response.h"
 #include "../../Engine/Containers/Delegate.h"
 
+#include "IController.h"
+
 #include <functional>
 
 namespace Neko
@@ -47,37 +49,39 @@ namespace Neko
         typedef TDelegate< void() > ControllerAction;
         
         /** Contains controller info for actions, etc */
+        template <class T>
         struct ControllerContext
         {
+            static_assert(std::is_convertible<T, IController>::value, "Must inherit IController!");
+            
             typedef std::function<class IController* (Net::Http::Request&, Net::Http::Response&) > CreateControllerFunc;
             
-            ControllerContext()
+            ControllerContext(IAllocator& allocator)
             : Controller(nullptr)
+            , Allocator(allocator)
+            , Actions(allocator)
             {
             }
             
             /**
              * Prepares controller info.
              */
-            template <class T> void Init(const char* name, const char* path)
+            void Init(const char* name, const char* path)
             {
-                static_assert(std::is_convertible<T, IController>::value, "Route action class must inherit IController!");
-                
                 this->Path.Set(path);
                 this->Name.Set(name);
                 
                 this->CreateController = [name, this] (Net::Http::Request& httpRequest, Net::Http::Response& httpResponse) -> IController*
                 {
-                    auto& allocator = GetDefaultAllocator();
                     // create a new controller on request
-                    return NEKO_NEW(allocator, T) (httpRequest, httpResponse, allocator, name);
+                    return NEKO_NEW(Allocator, T) (httpRequest, httpResponse, Allocator, name);
                 };
             }
             
             /**
              * Maps action to controller url.
              */
-            template <typename T, void(T::*A)()> void RouteAction(Router& router, Net::Http::Method method, const char* action, const char* params = nullptr)
+            template <void(T::*A)()> void RouteAction(Router& router, Net::Http::Method method, const char* action, const char* params = nullptr)
             {
                 static_assert(std::is_convertible<T, IController>::value, "Route action class must inherit IController!");
                 
@@ -100,7 +104,9 @@ namespace Neko
             void Clear()
             {
                 assert(Controller == nullptr);
+                
                 this->Actions.Clear();
+                this->CreateController = nullptr;
             }
             
             //! Controller url path
@@ -114,8 +120,10 @@ namespace Neko
             //! Controller create action.
             CreateControllerFunc CreateController;
             
+            IAllocator& Allocator;
+            
             //! Transient controller info.
-            IController* Controller;
+            T* Controller;
         };
     }
 }

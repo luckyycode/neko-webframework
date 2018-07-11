@@ -55,9 +55,9 @@ namespace Neko
             assert(connection != nullptr);
         }
         
-        int SocketSSL::Connect()
+        int16 SocketSSL::Connect()
         {
-            int result = SSL_connect(this->Connection);
+            int16 result = SSL_connect(this->Connection);
             return result;
         }
         

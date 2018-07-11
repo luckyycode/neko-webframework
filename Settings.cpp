@@ -286,7 +286,8 @@ namespace Neko
             
             ApplicationInitDesc items
             {
-                *rootDirectory
+                *rootDirectory,
+                &Allocator
             };
             success = settings.OnApplicationInit(items);
             

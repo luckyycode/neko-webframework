@@ -18,30 +18,25 @@
 using namespace Neko;
 using namespace Neko::Mvc;
 
-Mvc::RequestContext* context = nullptr;
+static Mvc::RequestContext* context = nullptr;
 
-static DefaultAllocator baseAllocator;
 extern "C"
 {
-    static void CreateControllers(ControllerFactory& controllerFactory, IAllocator& allocator)
+    static void CreateControllers(ControllerFactory& cf, IAllocator& allocator)
     {
-        auto& router = controllerFactory.GetRouter();
+        auto& router = cf.GetRouter();
         
-        ControllerContext fileContext;
-        fileContext.Init<FileController>("files", "/api/files");
+        auto* fileContext = cf.CreateControllerContext<FileController>("files", "/api/files");
         {
-            fileContext.RouteAction<FileController, &FileController::Index>(router, Net::Http::Method::Get, "index");
-            fileContext.RouteAction<FileController, &FileController::Get>(router, Net::Http::Method::Get, "get", "[params]");
-            fileContext.RouteAction<FileController, &FileController::List>(router, Net::Http::Method::Get, "list");
+            fileContext->RouteAction<&FileController::Index>(router, Net::Http::Method::Get, "index");
+            fileContext->RouteAction<&FileController::Get>(router, Net::Http::Method::Get, "get", "[params]");
+            fileContext->RouteAction<&FileController::List>(router, Net::Http::Method::Get, "list");
         }
-        controllerFactory.CreateControllerContext(fileContext);
         
-        ControllerContext telegramContext;
-        telegramContext.Init<TelegramController>("telegram", "/api/telegram");
+        auto* telegramContext = cf.CreateControllerContext<TelegramController>("telegram", "/api/telegram");
         {
-            telegramContext.RouteAction<TelegramController, &TelegramController::Update>(router, Net::Http::Method::Post, "update");
+            telegramContext->RouteAction<&TelegramController::Update>(router, Net::Http::Method::Post, "update");
         }
-        controllerFactory.CreateControllerContext(telegramContext);
     }
     
     /**
@@ -51,14 +46,14 @@ extern "C"
     {
         GLogInfo.log("Http") << "Sample module init";
         
+        auto& allocator = *desc.AppAllocator;
+        
         const char* rootDirectory = desc.RootDirectory;
         SampleModule::DocumentRoot.Assign(rootDirectory);
         
-        context = new Mvc::RequestContext(baseAllocator);
+        context = NEKO_NEW(allocator, Mvc::RequestContext) (allocator);
         
         auto& controllerFactory = context->GetControllerFactory();
-        auto& allocator = context->GetAllocator();
-        
         CreateControllers(controllerFactory, allocator); // temp
         
         return context != nullptr;
@@ -83,7 +78,10 @@ extern "C"
     void OnApplicationExit()
     {
         printf("FINAL KEK WAVE\n");
-        delete context;
+        auto& allocator = context->GetAllocator();
+        NEKO_DELETE(allocator, context) ;
+        
+        context = nullptr;
     };
 }
 

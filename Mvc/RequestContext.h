@@ -45,6 +45,8 @@ namespace Neko
             
             RequestContext(IAllocator& allocator);
             
+            ~RequestContext();
+            
             int32 Execute(Net::Http::RequestData& requestData, Net::Http::ResponseData& responseData);
             
             void CleanupResponseData(void* responseData, uint32 responseSize);

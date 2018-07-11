@@ -63,7 +63,7 @@ namespace Neko
         
         void SocketDefault::Close()
         {
-            // Wait for send all data to client
+            // Send all data to client
             Socket.WaitForAnyDataInternal(-1, true);
             
             Socket.Close();

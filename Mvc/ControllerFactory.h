@@ -56,11 +56,6 @@ namespace Neko
             ControllerFactory(Router& router, IAllocator& allocator);
       
             /**
-             * Saves the controller context.
-             */
-            void CreateControllerContext(ControllerContext context);
-            
-            /**
              * Instantiates a new controller on request.
              */
             void ExecuteController(const Routing& routing, Http::IProtocol& protocol, Net::Http::Request& request, Net::Http::Response& response);
@@ -69,6 +64,28 @@ namespace Neko
              * Removes controller data.
              */
             void ReleaseController(IController* controller);
+            
+            void Clear();
+            
+            /**
+             * Creates a new controller context.
+             *
+             * @param controllerName    Controller name without controller postfix.
+             * @param path              Route path.
+             */
+            template<class T>
+            ControllerContext<T>* CreateControllerContext(const char* controllerName, const char* path)
+            {
+                ControllerContext<T>* context = NEKO_NEW(Allocator, ControllerContext<T>)(Allocator);
+                context->Init(controllerName, path);
+                
+                String fullControllerName(controllerName);
+                fullControllerName += "controller";
+                
+                ControllerDispatcher.Insert(fullControllerName, reinterpret_cast< ControllerContext<IController>* >(context));
+                
+                return context;
+            }
             
         public:
             
@@ -80,7 +97,7 @@ namespace Neko
             
             IAllocator& Allocator;
             
-            THashMap<String, ControllerContext> ControllerDispatcher;
+            THashMap<String, ControllerContext<IController>* > ControllerDispatcher;
         };
     }
 }

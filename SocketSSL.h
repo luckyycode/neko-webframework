@@ -70,7 +70,7 @@ namespace Neko
             virtual NEKO_FORCE_INLINE void* GetTlsSession() const override { return (void* )Connection; };
             
             /** Higher level SSL connect */
-            int Connect();
+            int16 Connect();
             
 			bool Handshake();
 			

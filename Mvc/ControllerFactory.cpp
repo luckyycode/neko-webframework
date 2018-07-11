@@ -55,10 +55,10 @@ namespace Neko
                 auto& context = contextIt.value();
                 
                 // create controller
-                IController* controller = context.CreateController(request, response);
+                IController* controller = context->CreateController(request, response);
                 
                 assert(controller != nullptr);
-                context.Controller = controller;
+                context->Controller = controller;
                 
                 // set params
                 controller->SetUrlParameters(routing.Params);
@@ -66,7 +66,7 @@ namespace Neko
                 if (controller->PreFilter())
                 {
                     // execute controller action
-                    auto& controllerAction = context.Actions.at(*routing.Action);
+                    auto& controllerAction = context->Actions.at(*routing.Action);
                     controllerAction.InvokeWith(controller);
                     
                     controller->PostFilter();
@@ -100,15 +100,19 @@ namespace Neko
         {
             assert(controller != nullptr);
             
-            auto& allocator = GetDefaultAllocator();
-            NEKO_DELETE(allocator, controller);
+            NEKO_DELETE(Allocator, controller);
         }
         
-        void ControllerFactory::CreateControllerContext(ControllerContext context)
+        void ControllerFactory::Clear()
         {
-            String controllerName(context.Name);
-            controllerName += "controller";
-            ControllerDispatcher.Insert(controllerName, context);
+            if (!this->ControllerDispatcher.IsEmpty())
+            {
+                for (auto* context : this->ControllerDispatcher)
+                {
+                    NEKO_DELETE(Allocator, context);
+                }
+                this->ControllerDispatcher.Clear();
+            }
         }
     }
 }
