@@ -62,9 +62,9 @@ namespace Neko
             
             // Ports
             
-            uint32 Port;
+            uint16 Port;
             //! Secure port, if set then secure socket context will be created.
-            uint32 TlsPort;
+            uint16 TlsPort;
             
             // Module
             

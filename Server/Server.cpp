@@ -199,12 +199,12 @@ namespace Neko
             Settings.List.GetAllApplicationSettings(applications);
             
             // Bound port list
-            TArray<uint32> ports(Allocator);
+            TArray<uint16> ports(Allocator);
          
             // Open applications sockets
             for (auto& application : applications)
             {
-                const uint32& tlsPort = application->TlsPort;
+                const uint16& tlsPort = application->TlsPort;
                 // init ssl data for this port
                 if (tlsPort != 0)
                 {
@@ -464,7 +464,7 @@ namespace Neko
                         bool success = socket.GetAddress(address);
                         if (success)
                         {
-                            const uint32 port = address.Port;
+                            const uint16 port = address.Port;
                             auto it = TlsData.Find(port);
                             
                             // it's a valid tls data, secured
@@ -648,7 +648,7 @@ namespace Neko
             Controls.UpdateModulesEvent.Reset();
         }
         
-        bool Server::BindPort(const uint32 port, TArray<uint32>& ports)
+        bool Server::BindPort(const uint16 port, TArray<uint16>& ports)
         {
             if (ports.Contains(port))
             {

@@ -64,7 +64,7 @@ namespace Neko
              * @param ports Empty array of ports.
              * @return TRUE if succeeded, FALSE otherwise.
              */
-            bool BindPort(const uint32 port, TArray<uint32>& ports);
+            bool BindPort(const uint16 port, TArray<uint16>& ports);
             
             /** Prepares applications. E.g. binds found application ports and so on. */
             void PrepareApplications();
@@ -148,7 +148,7 @@ namespace Neko
             //! List of active sockets which listen for incoming connections.
             TArray< Net::INetSocket > Listeners;
             
-            typedef THashMap<uint32, void*> TlsMap;
+            typedef THashMap<uint16, void*> TlsMap;
             //! Ssl contexts map.
             TlsMap TlsData;
             
