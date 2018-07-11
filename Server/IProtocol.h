@@ -44,15 +44,15 @@
 #include "../../Engine/Containers/HashMap.h"
 #include "../../Engine/Utilities/Timer.h"
 
-#define DEFAULT_HTTPS_PORT  443
-#define DEFAULT_HTTP_PORT   80
+#define DEFAULT_HTTPS_PORT      443
+#define DEFAULT_HTTP_PORT       80
+
+#define REQUEST_BUFFER_SIZE     4096
 
 namespace Neko
 {
     namespace Http
     {
-        const static uint32 REQUEST_BUFFER_SIZE = 4096;
-        
         /// Interface capable for http, websockets, etc.
         class IProtocol
         {

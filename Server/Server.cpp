@@ -32,6 +32,7 @@
 #include "../../Engine/Core/Log.h"
 #include "../../Engine/Core/Debug.h"
 #include "../../Engine/Core/JobSystem.h"
+#include "../../Engine/Mt/Task.h"
 #include "../../Engine/Platform/Platform.h"
 #include "../../Engine/Network/SocketQueue.h"
 #include "../../Engine/Network/SocketList.h"
@@ -39,8 +40,6 @@
 
 #include "../SocketSSL.h"
 #include "../SocketDefault.h"
-
-#include "../../Engine/Mt/Task.h"
 
 #include "Server.h"
 #include "Http.h"
@@ -191,6 +190,8 @@ namespace Neko
         
         void Server::PrepareApplications()
         {
+            GLogInfo.log("Http") << "Preparing server applications..";
+            
             // Applications settings list
             TArray< ApplicationSettings* > applications(Allocator);
             
@@ -256,6 +257,7 @@ namespace Neko
                 SocketsList.AddSocket(socket);
             }
             
+            // start processing immediately
             Controls.SetActiveFlag();
             
             GLogInfo.log("Http") << "Creating the main request queue task..";
@@ -279,6 +281,7 @@ namespace Neko
             Debug::DebugColor(Debug::EStdoutColor::Green);
             GLogInfo.log("Http") << "## Server is now listening on " << Settings.ResolvedAddressString << " (" << Listeners.GetSize() << " listeners).";
             Debug::DebugColor(Debug::EStdoutColor::White);
+            
             
             // list of new connections
             TArray<Net::INetSocket> socketsToAccept(Allocator);
@@ -531,12 +534,12 @@ namespace Neko
             TArray<MT::Task*> activeTasks(Allocator);
             activeTasks.Reserve(threadMaxCount);
             
-            // For update applications Modules
+            // Update applications
             do
             {
                 if (Controls.UpdateModulesEvent.poll())
                 {
-                    UpdateModules();
+                    UpdateApplications();
                 }
                 
                 // process each application requests and threads
@@ -591,7 +594,7 @@ namespace Neko
             return 0;
         }
 
-        void Server::UpdateModules()
+        void Server::UpdateApplications()
         {
             // Applications settings list
             TArray< ApplicationSettings* > applications(Allocator);
@@ -599,6 +602,8 @@ namespace Neko
             Settings.List.GetAllApplicationSettings(applications);
             
             TArray<uint32> updatedModules(Allocator);
+            
+            GLogInfo.log("Http") << "Updating server applications..";
             
             for (const auto& application : applications)
             {
@@ -627,7 +632,7 @@ namespace Neko
                             {
                                 if (moduleSize != updateModuleSize || moduleDate < updateModuleDate)
                                 {
-                                    UpdateModule(module, applications, moduleIndex);
+                                    UpdateApplication(module, applications, moduleIndex);
                                 }
                             }
                         }
@@ -681,7 +686,7 @@ namespace Neko
             return true;
         }
         
-        bool Server::UpdateModule(Module& module, TArray<ApplicationSettings* >& applications, const uint32 index)
+        bool Server::UpdateApplication(Module& module, TArray<ApplicationSettings* >& applications, const uint32 index)
         {
             TArray<ApplicationSettings* > existing(Allocator);
             
@@ -786,13 +791,13 @@ namespace Neko
                 app->OnApplicationPostRequest = application->OnApplicationPostRequest;
                 app->OnApplicationExit = application->OnApplicationExit;
                 
-                // @todo errors
                 assert (app->OnApplicationInit);
                 
                 ApplicationInitDesc items
                 {
                     *app->RootDirectory
                 };
+                
                 app->OnApplicationInit(items);
             }
             
@@ -809,6 +814,8 @@ namespace Neko
         
         void Server::Stop()
         {
+            GLogInfo.log("Http") << "Server is stopping..";
+            
             QueueNotFullEvent.Trigger();
             
             Controls.StopProcess();
@@ -817,6 +824,8 @@ namespace Neko
         
         void Server::Restart()
         {
+            GLogInfo.log("Http") << "Server is restarting..";
+            
             Controls.SetRestartFlag();
             
             QueueNotFullEvent.Trigger();
@@ -827,7 +836,9 @@ namespace Neko
         
         void Server::Update()
         {
-            Controls.UpdateModule();
+            GLogInfo.log("Http") << "Server is updating..";
+            
+            Controls.UpdateApplication();
             Controls.SetActiveFlag(false);
             Controls.ProcessQueue();
         }

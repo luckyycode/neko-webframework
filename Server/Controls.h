@@ -61,7 +61,7 @@ namespace Neko
                 UpdateModulesEvent.Reset();
             }
             
-            void UpdateModule()
+            void UpdateApplication()
             {
                 UpdateModulesEvent.Trigger();
             }

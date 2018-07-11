@@ -86,6 +86,7 @@ namespace Neko
                     if (item != ROUTE_PARAM_TAG && item != ROUTE_PARAMS_TAG)
                     {
                         GLogError.log("Mvc") << "Found tag begin symbol '[' but didn't match any of existing ones.";
+                        
                         return false;
                     }
                 }
@@ -125,7 +126,7 @@ namespace Neko
             // save
             Routes.Push(route);
             
-            GLogInfo.log("Mvc") << "Added URL route: /" << *path << ", method /" << route.Method << ", controller \"" << route.Controller.c_str() << "\", action \"" << route.Action.c_str() << "\", params: " << route.HasVariableParams;
+            GLogInfo.log("Mvc") << "Added Url route: " << *path << ", method /" << route.Method << ", controller \"" << route.Controller.c_str() << "\", action \"" << route.Action.c_str() << "\", params: " << route.HasVariableParams;
             
             return true;
         }
@@ -275,7 +276,9 @@ namespace Neko
         {
             if (Routes.IsEmpty())
             {
-                return String(Allocator);
+                GLogWarning.log("Mvc") << "FindUrl: No routes";
+                
+                return String::Empty;
             }
             
             for (const auto& route : Routes)
@@ -288,7 +291,7 @@ namespace Neko
                 }
             }
             
-            return String(Allocator);
+            return String::Empty;
         }
         
         String Router::GeneratePath(const TArray<String>& components, const TArray<String>& params) const

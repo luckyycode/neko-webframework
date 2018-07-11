@@ -76,7 +76,6 @@ namespace Neko
                 return false;
             }
             
-            const String empty("", Allocator);
             const String tempDirectory = Neko::Platform::GetTempDirectory();
             const uint32 requestMaxSize = 10485760;
             const uint64 maxDefaultSize = Megabyte(64);
@@ -117,10 +116,10 @@ namespace Neko
                     {
                         json.DeserializeObjectBegin();
                         json.Deserialize("name", applicationNames.Emplace(), "127.0.0.1");
-                        json.Deserialize("rootDirectory", settings->RootDirectory, empty);
+                        json.Deserialize("rootDirectory", settings->RootDirectory, String::Empty);
                         json.Deserialize("tempDirectory", settings->TempDirectory, tempDirectory);
-                        json.Deserialize("module", settings->ServerModule, empty);
-                        json.Deserialize("moduleUpdate", settings->ServerModuleUpdate, empty);
+                        json.Deserialize("module", settings->ServerModule, String::Empty);
+                        json.Deserialize("moduleUpdate", settings->ServerModuleUpdate, String::Empty);
                         json.DeserializeObjectEnd();
                     }
                     else if (EqualStrings(label, "server"))
@@ -134,8 +133,8 @@ namespace Neko
                     else if (EqualStrings(label, "ssl"))
                     {
                         json.DeserializeObjectBegin();
-                        json.Deserialize("certFile", settings->CertificateFile, empty);
-                        json.Deserialize("keyFile", settings->KeyFile, empty);
+                        json.Deserialize("certFile", settings->CertificateFile, String::Empty);
+                        json.Deserialize("keyFile", settings->KeyFile, String::Empty);
                         json.DeserializeObjectEnd();
                     }
                     else
@@ -170,7 +169,7 @@ namespace Neko
             }
             
             Net::NetAddress address;
-            address.Resolve(*applicationNames[0], Net::NA_IP);
+            address.Resolve(*applicationNames[0], Net::NA_UNSPEC);
             if (address.AddressType != Net::NA_BAD)
             {
                 this->ResolvedAddressString.Set(address.ToString());

@@ -95,7 +95,7 @@ namespace Neko
                             String name(allocator);
                             Util::DecodeUrl(uri.Mid(paramCur, INDEX_NONE != paramEnd ? paramEnd - paramCur : INT_MAX), name);
                             
-                            incomingData.Insert(Neko::Move(name), Neko::String(allocator));
+                            incomingData.Insert(Neko::Move(name), Neko::String::Empty);
                         }
                         else
                         {

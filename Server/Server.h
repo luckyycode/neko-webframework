@@ -42,6 +42,8 @@
 
 #include "../Tls.h"
 
+#define DEFAULT_SERVER_NAME     "Neko"
+
 namespace Neko
 {
     namespace Http
@@ -91,13 +93,14 @@ namespace Neko
             /** Gets server process id (if multiple are running). */
             int GetServerProcessId(const String& serverName) const;
             
+        private:
+            
             /** Updates all server modules. */
-            void UpdateModules();
+            void UpdateApplications();
             
             /** Updates the specified server module. */
-            bool UpdateModule(Module& module, TArray< ApplicationSettings* >& applications, const uint32 moduleIndex);
+            bool UpdateApplication(Module& module, TArray< ApplicationSettings* >& applications, const uint32 moduleIndex);
             
-        private:
             
             void* InitSsl(const ApplicationSettings& application);
             
@@ -108,6 +111,8 @@ namespace Neko
             IAllocator& Allocator;
             
         public:
+            
+            // commands
             
             void Stop();
             void Restart();

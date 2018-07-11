@@ -43,7 +43,7 @@
 #include "../ISocket.h"
 #include "../Utils.h"
 
-// Http 1.1 capable server
+// Http 1.1 capable protocol
 
 namespace Neko
 {
@@ -81,7 +81,7 @@ namespace Neko
         void ProtocolHttp::ReadResponse(Net::Http::Request& request, Net::Http::ResponseData& responseData) const
         {
             Net::Http::InputProtocolBlob blob(responseData.Data, INT_MAX);
-            
+            // write response headers to request
             blob >> request.OutgoingHeaders;
         }
         
@@ -106,7 +106,7 @@ namespace Neko
                 // protocol may change connection parameter under some circumstances (e.g. upgrade request)
                 request.ConnectionParams = Net::Http::ConnectionParams::Connection_Close;
                 
-                RunHttpProtocol(request, data, buffer);
+                RunProtocol(request, data, buffer);
                 // clearup after processing request
                 request.Clear();
             }
@@ -127,14 +127,14 @@ namespace Neko
             return this;
         }
       
-        const ApplicationSettings* ProtocolHttp::GetApplicationSettings(Net::Http::Request& request, const bool secure) const
+        const ApplicationSettings* ProtocolHttp::GetApplicationSettingsForRequest(Net::Http::Request& request, const bool secure) const
         {
             // Get domain or address from incoming request
             auto hostIt = request.IncomingHeaders.Find("host");
             
             if (!hostIt.IsValid())
             {
-                GLogWarning.log("Http") << "GetApplicationSettings: Request with no host header?!";
+                GLogWarning.log("Http") << "GetApplicationSettingsForRequest: Request with no host header?!";
                 
                 return nullptr;
             }
@@ -341,7 +341,7 @@ namespace Neko
                 GLogError.log("Http") << "Couldn't parse data of content-type " << contentTypeName;
                 // eh
                 
-                // if content-type had created some
+                // if content-type parser has created some
                 request.IncomingFiles.Clear();
                 
                 return Net::Http::StatusCode::InternalServerError;
@@ -410,7 +410,6 @@ namespace Neko
             {
                 return Net::Http::StatusCode::BadRequest;
             }
-            
             headersEnd += 2;
             
             int32 strCur = 0;
@@ -449,7 +448,7 @@ namespace Neko
                 {
                     // Get actual protocol version of HTTP
                     //    @todo ?
-                    // this is not supported anyways
+                    // this is not supported anyways but capatible
                 }
             }
             
@@ -620,7 +619,7 @@ namespace Neko
             }
         }
         
-        void ProtocolHttp::RunHttpProtocol(Net::Http::Request& request, TArray<char>& buffer, String& stringBuffer) const
+        void ProtocolHttp::RunProtocol(Net::Http::Request& request, TArray<char>& buffer, String& stringBuffer) const
         {
             // these can be null
             assert(this->Settings != nullptr);
@@ -640,7 +639,7 @@ namespace Neko
             }
             
             const bool secureSession = Socket.GetTlsSession() != nullptr;
-            const ApplicationSettings* applicationSettings = GetApplicationSettings(request, secureSession);
+            const ApplicationSettings* applicationSettings = GetApplicationSettingsForRequest(request, secureSession);
             
             // If application is not found
             if (applicationSettings == nullptr)

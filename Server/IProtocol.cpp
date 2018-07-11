@@ -175,7 +175,7 @@ namespace Neko
                     {
                         String paramName = header.Mid(paramCur, (paramEnd != INDEX_NONE) ? paramEnd - paramCur : INT_MAX).Trim();
                         
-                        contentParams.Insert(Neko::Move(paramName), Neko::String(allocator));
+                        contentParams.Insert(Neko::Move(paramName), Neko::String::Empty);
                     }
                     else
                     {

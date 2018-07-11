@@ -63,13 +63,14 @@ namespace Neko
             
         private:
             
-            const ApplicationSettings* GetApplicationSettings(Net::Http::Request& request, const bool secure) const;
+            const ApplicationSettings* GetApplicationSettingsForRequest(Net::Http::Request& request, const bool secure) const;
             
             Net::Http::StatusCode GetRequestData(Net::Http::Request& request, String& buffer, const ApplicationSettings& applicationSettings) const;
             
         protected:
             
-            void RunHttpProtocol(Net::Http::Request& request, TArray<char>& data, String& stringBuffer) const;
+            /** Process a request using this protocol. */
+            void RunProtocol(Net::Http::Request& request, TArray<char>& data, String& stringBuffer) const;
         };
     }
 }
