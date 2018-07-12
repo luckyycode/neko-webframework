@@ -16,9 +16,5 @@ namespace Neko
     public:
         
         static String DocumentRoot;
-        
-    private:
-        
-        static DefaultAllocator Allocator;
     };
 }

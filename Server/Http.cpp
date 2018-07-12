@@ -32,6 +32,7 @@
 #include "Http.h"
 #include "WebSocket.h"
 
+#include "../../Engine/Core/Profiler.h"
 #include "../../Engine/Core/Log.h"
 #include "../../Engine/Data/Blob.h"
 #include "../../Engine/Utilities/NekoString.h"
@@ -90,7 +91,7 @@ namespace Neko
             String buffer(Allocator);
             
             TArray<char> data(Allocator);
-            data.Resize(REQUEST_BUFFER_SIZE); // @todo possible optimization
+            data.Reserve(REQUEST_BUFFER_SIZE);
             
             // profiling
             TimeValue start, end;
@@ -178,8 +179,8 @@ namespace Neko
                 
                 for (int32 paramCur = delimiter + 1, paramEnd = 0; paramEnd != INDEX_NONE; paramCur = paramEnd + 1)
                 {
-                    paramEnd = headerValue.Find(";", ESearchCase::IgnoreCase, ESearchDir::FromStart, paramCur);
-                    delimiter = headerValue.Find("=", ESearchCase::IgnoreCase, ESearchDir::FromStart, paramCur);
+                    paramEnd = headerValue.Find(";",paramCur);
+                    delimiter = headerValue.Find("=", paramCur);
                     
                     if (delimiter >= paramEnd)
                     {
@@ -374,6 +375,7 @@ namespace Neko
                 string += header.second;
                 string += "\r\n";
             }
+            string += "Server: Neko";
             
             string += "\r\n";
             
@@ -397,6 +399,8 @@ namespace Neko
         
         static Net::Http::StatusCode GetRequestHeaders(Net::Http::Request& request, String& stringBuffer)
         {
+            PROFILE_FUNCTION()
+            
             // If request is empty
             if (stringBuffer.IsEmpty())
             {
@@ -424,7 +428,7 @@ namespace Neko
             stringBuffer[strEnd] = '\0';
             
             // split request method and request parameters
-            int32 delimiter = stringBuffer.Find(" ", ESearchCase::IgnoreCase, ESearchDir::FromStart, strCur);
+            int32 delimiter = stringBuffer.Find(" ", strCur);
             
             // get request method (e.g. GET, POST, PUT, DELETE, ...)
             request.Method = stringBuffer.Mid(strCur, delimiter - strCur);
@@ -433,7 +437,7 @@ namespace Neko
             delimiter += 1;
             
             // suffix of uri
-            int32 uriEnd = stringBuffer.Find(" ", ESearchCase::IgnoreCase, ESearchDir::FromStart, delimiter);
+            int32 uriEnd = stringBuffer.Find(" ", delimiter);
             if (uriEnd == INDEX_NONE)
             {
                 uriEnd = strEnd;
@@ -458,16 +462,16 @@ namespace Neko
             // parse the next header
             strCur = strEnd + 2;
             // search for end of that header
-            strEnd = stringBuffer.Find("\r\n", ESearchCase::IgnoreCase, ESearchDir::FromStart, strCur);
+            strEnd = stringBuffer.Find("\r\n", strCur);
             // end of line
             stringBuffer[strEnd] = '\0';
             
             // Get request headers
             for ( ; strCur != headersEnd;
-                 strEnd = stringBuffer.Find("\r\n", ESearchCase::IgnoreCase, ESearchDir::FromStart, strCur), stringBuffer[strEnd] = '\0')
+                 strEnd = stringBuffer.Find("\r\n", strCur), stringBuffer[strEnd] = '\0')
             {
                 // look for delimiter of header-value
-                delimiter = stringBuffer.Find(":", ESearchCase::IgnoreCase, ESearchDir::FromStart, strCur);
+                delimiter = stringBuffer.Find(":", strCur);
                 // if delimiter is not found (or somehow is not at the right place)
                 if (delimiter < strEnd)
                 {
@@ -493,7 +497,7 @@ namespace Neko
         {
             // Get request data from client
             long size = 0;
-            size = socket.GetPacketBlocking(&buffer[0], buffer.GetSize(), request.Timeout);
+            size = socket.GetPacketBlocking((void* )buffer.GetData(), buffer.GetCapacity(), request.Timeout);
             
             // no content or error
             if (size < 0 && stringBuffer.IsEmpty())
@@ -503,7 +507,7 @@ namespace Neko
             
             if (size > 0)
             {
-                stringBuffer.Append(&buffer[0], size);
+                stringBuffer.Append((const char* )buffer.GetData(), size);
             }
             return true;
         }

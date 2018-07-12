@@ -34,6 +34,7 @@
 #include "../ISocket.h"
 #include "../Utils.h"
 
+#include "../../Engine/Core/Profiler.h"
 #include "../../Engine/Network/Http/Response.h"
 #include "../../Engine/Platform/Platform.h"
 #include "../../Engine/FS/PlatformFile.h"
@@ -105,6 +106,8 @@ namespace Neko
         
         void IProtocol::RunApplication(Net::Http::Request& request, const ApplicationSettings& applicationSettings) const
         {
+            PROFILE_FUNCTION()
+            
             TArray<char> buffer(Allocator);
             buffer.Reserve(REQUEST_BUFFER_SIZE);
             
@@ -168,8 +171,8 @@ namespace Neko
                 
                 for (int32 paramCur = delimiter + 1, paramEnd = 0; paramEnd != INDEX_NONE; paramCur = paramEnd + 1)
                 {
-                    paramEnd = header.Find(";", ESearchCase::IgnoreCase, ESearchDir::FromStart, paramCur);
-                    delimiter = header.Find("=", ESearchCase::IgnoreCase, ESearchDir::FromStart, paramCur);
+                    paramEnd = header.Find(";", paramCur);
+                    delimiter = header.Find("=", paramCur);
                     
                     if (delimiter >= paramEnd)
                     {
@@ -270,10 +273,10 @@ namespace Neko
             {
                 strPos = delimiter + 1;
                 // bytes=0-1024,1024-2048...
-                delimiter = rangeHeader.Find(",", ESearchCase::IgnoreCase, ESearchDir::FromStart, strPos);
+                delimiter = rangeHeader.Find(",", strPos);
                 
                 // 0-1024
-                const int32 rangePos = rangeHeader.Find("-", ESearchCase::IgnoreCase, ESearchDir::FromStart, strPos);
+                const int32 rangePos = rangeHeader.Find("-", strPos);
                 
                 if (rangePos < delimiter || delimiter == INDEX_NONE)
                 {
@@ -374,7 +377,7 @@ namespace Neko
         
         static bool SendPartial(const IProtocol& protocol, const Net::Http::Request& request, const String& fileName, CDateTime fileTime, const ulong fileSize, const String& rangeHeader, TArray<std::pair<String, String> >& extraHeaders, const THashMap<String, String>& mimeTypes, const bool headersOnly, IAllocator& allocator)
         {
-            const int32 valueOffset = rangeHeader.Find("=", ESearchCase::IgnoreCase, ESearchDir::FromStart);
+            const int32 valueOffset = rangeHeader.Find("=");
             
             // not set
             if (valueOffset == INDEX_NONE)

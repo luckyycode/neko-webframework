@@ -52,7 +52,7 @@ namespace Neko
             for (int32 pos = 0, end = 0; end != INDEX_NONE; pos = end + 1)
             {
                 // find the next param
-                end = buffer.Find("&", Neko::ESearchCase::IgnoreCase, Neko::ESearchDir::FromStart, pos);
+                end = buffer.Find("&", pos);
                 
                 if (end == INDEX_NONE && contentDesc->FullSize != contentDesc->BytesReceived)
                 {
@@ -64,7 +64,7 @@ namespace Neko
                 }
                 
                 // get param value
-                int32 delimiter = buffer.Find("=", Neko::ESearchCase::IgnoreCase, Neko::ESearchDir::FromStart, pos);
+                int32 delimiter = buffer.Find("=", pos);
                 
                 const int32 last = (end == INDEX_NONE) ? INT_MAX : end; // hmmm
                 

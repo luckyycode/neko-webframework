@@ -30,6 +30,10 @@
 //
 
 #include "../../Engine/Core/Log.h"
+#include "../../Engine/Core/Profiler.h"
+
+
+#include "../../Engine/Data/LifoAllocator.h"
 
 #include "../../Engine/Network/Http/Response.h"
 
@@ -109,6 +113,8 @@ namespace Neko
         
         void RequestContext::ProcessRequest(Http::IProtocol& protocol, Net::Http::Request& request, Net::Http::Response& response, String& documentRoot, const bool secure)
         {
+            PROFILE_SECTION("mvc process request")
+            
             String clearUri(Allocator);
             TArray<String> components(Allocator);
             THashMap<String, String> requestCookies(Allocator);
@@ -135,6 +141,8 @@ namespace Neko
             }
             else
             {
+                PROFILE_SECTION("non-mapped route")
+                
                 // check if this is a file request
                 if (request.Method == "get")
                 {
@@ -147,12 +155,16 @@ namespace Neko
                         bool isDirectory = Neko::Platform::DirectoryExists(*documentRoot);
                         if (isDirectory)
                         {
+                            PROFILE_SECTION("directory listing")
+                            
                             ShowDirectoryList(documentRoot, request, response, secure, Allocator);
                             
                             protocol.SendResponse(response);
                         }
                         else
                         {
+                            PROFILE_SECTION("file send")
+                            
                             // or send file
                             if (Platform::FileExists(*documentRoot))
                             {
@@ -182,6 +194,8 @@ namespace Neko
         
         int32 RequestContext::Execute(Net::Http::RequestData& requestData, Net::Http::ResponseData& responseData)
         {
+            PROFILE_FUNCTION()
+            
             // Initialize socket from existing native socket descriptor
             
             uint8 stack[sizeof(SocketSSL)]; // large socket object
@@ -193,9 +207,7 @@ namespace Neko
             IProtocol* protocol = nullptr;
             
             // Read incoming header info
-            
-            const uint8* data = static_cast<const uint8*> (requestData.Data);
-            Net::Http::InputProtocolBlob blob((void* )data, INT_MAX);
+            Net::Http::InputProtocolBlob blob((void* )requestData.Data, INT_MAX);
             
             String documentRoot;
             // http version

@@ -47,7 +47,7 @@ namespace Neko
         String GetMimeByFileName(const String& fileName, const THashMap<String, String>& mimes)
         {
             // find extension start
-            const int32 extensionPos = fileName.Find(".", ESearchCase::IgnoreCase, ESearchDir::FromStart); // @todo possible optimization? FromEnd
+            const int32 extensionPos = fileName.Find("."); // @todo possible optimization? FromEnd
             
             if (extensionPos != INDEX_NONE)
             {
@@ -81,14 +81,14 @@ namespace Neko
                 {
                     for (int32 paramCur = start + 1, paramEnd = 0; paramEnd != INDEX_NONE; paramCur = paramEnd + 1)
                     {
-                        paramEnd = uri.Find("&", ESearchCase::IgnoreCase, ESearchDir::FromStart, paramCur);
+                        paramEnd = uri.Find("&", paramCur);
                         
                         if (finish != INDEX_NONE && paramEnd > finish)
                         {
                             paramEnd = INDEX_NONE;
                         }
                         
-                        int32 delimiter = uri.Find("=", ESearchCase::IgnoreCase, ESearchDir::FromStart, paramCur);
+                        int32 delimiter = uri.Find("=", paramCur);
                         
                         if (delimiter >= paramEnd)
                         {

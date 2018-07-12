@@ -324,6 +324,7 @@ namespace Neko
         ServerSettings::ApplicationsList::ApplicationsList(IAllocator& allocator)
         : Allocator(allocator)
         , List(allocator)
+        , ApplicationSettings(nullptr)
         {
             
         }

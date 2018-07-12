@@ -60,6 +60,7 @@ namespace Neko
         {
             bool forceStart = false;
             char serverName[64] = { DEFAULT_SERVER_NAME };
+            uint64 maxMemory = 1024 * 1024 * 128; // in mb
             
             char commandLine[2048];
             Platform::GetSystemCommandLine(commandLine, Neko::lengthOf(commandLine));
@@ -80,17 +81,31 @@ namespace Neko
                     
                     parser.GetCurrent(serverName, Neko::lengthOf(serverName));
                 }
-                
+                else if (parser.CurrentEquals("--maxmemory"))
+                {
+                    if (!parser.Next())
+                    {
+                        break;
+                    }
+                    
+                    char memory[8];
+                    parser.GetCurrent(memory, Neko::lengthOf(memory));
+                    maxMemory = StringToUnsignedLong(memory);
+                }
                 if (!parser.Next())
                 {
                     break;
                 }
             }
             
-            ServerInstance = NEKO_NEW(GetAllocator(), Http::Server )(GetAllocator(), FileSystem);
+            // perhaps use this in main framework?
+            FreeListAllocator* allocator = NEKO_NEW(GetAllocator(), FreeListAllocator)(maxMemory, GetAllocator());
+            
+            ServerInstance = NEKO_NEW(*allocator, Http::Server )(*allocator, FileSystem);
             int32 exitCode = ServerInstance->StartCommand(serverName, forceStart);
             
-            NEKO_DELETE(GetAllocator(), ServerInstance);
+            NEKO_DELETE(*allocator, ServerInstance);
+            NEKO_DELETE(GetAllocator(), allocator);
             return exitCode;
         }
         

@@ -29,6 +29,8 @@
 //  Copyright © 2018 Neko Vision. All rights reserved.
 //
 
+#include "../../Engine/Core/Profiler.h"
+
 #include "../Server/IProtocol.h"
 
 #include "ControllerFactory.h"
@@ -48,6 +50,8 @@ namespace Neko
        
         void ControllerFactory::ExecuteController(const Routing& routing, IProtocol& protocol, Net::Http::Request& request, Net::Http::Response& response)
         {
+            PROFILE_SECTION("controller context execute")
+            
             // get controller context
             auto contextIt = ControllerDispatcher.Find(*routing.Controller);
             if (contextIt.IsValid())
@@ -58,7 +62,6 @@ namespace Neko
                 IController* controller = context->CreateController(request, response);
                 
                 assert(controller != nullptr);
-                context->Controller = controller;
                 
                 // set params
                 controller->SetUrlParameters(routing.Params);
@@ -66,7 +69,7 @@ namespace Neko
                 if (controller->PreFilter())
                 {
                     // execute controller action
-                    auto& controllerAction = context->Actions.at(*routing.Action);
+                    auto& controllerAction = context->GetAction(*routing.Action);
                     controllerAction.InvokeWith(controller);
                     
                     controller->PostFilter();

@@ -110,6 +110,8 @@ namespace Neko
             
             IAllocator& Allocator;
             
+            IAllocator* FreeListAllocator;
+            
         public:
             
             // commands

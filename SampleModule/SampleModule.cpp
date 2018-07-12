@@ -87,6 +87,5 @@ extern "C"
 
 namespace Neko
 {
-    String SampleModule::DocumentRoot = String(SampleModule::Allocator);
-    DefaultAllocator SampleModule::Allocator = DefaultAllocator();
+    String SampleModule::DocumentRoot = String();
 }

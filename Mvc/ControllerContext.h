@@ -48,11 +48,18 @@ namespace Neko
          */
         typedef TDelegate< void() > ControllerAction;
         
-        /** Contains controller info for actions, etc */
-        template <class T>
-        struct ControllerContext
+        struct IControllerContext
         {
-            static_assert(std::is_convertible<T, IController>::value, "Must inherit IController!");
+            virtual IController* CreateController(Net::Http::Request& request, Net::Http::Response& response) = 0;
+            
+            virtual ControllerAction& GetAction(const char* name) = 0;
+        };
+        
+        /** Contains controller info for actions, etc */
+        template <class TController>
+        struct ControllerContext : public IControllerContext
+        {
+            static_assert(std::is_convertible<TController, IController>::value, "Must inherit IController!");
             
             typedef std::function<class IController* (Net::Http::Request&, Net::Http::Response&) > CreateControllerFunc;
             
@@ -71,19 +78,19 @@ namespace Neko
                 this->Path.Set(path);
                 this->Name.Set(name);
                 
-                this->CreateController = [name, this] (Net::Http::Request& httpRequest, Net::Http::Response& httpResponse) -> IController*
+                this->CreateIController = [name, this] (Net::Http::Request& httpRequest, Net::Http::Response& httpResponse) -> IController*
                 {
                     // create a new controller on request
-                    return NEKO_NEW(Allocator, T) (httpRequest, httpResponse, Allocator, name);
+                    return NEKO_NEW(Allocator, TController) (httpRequest, httpResponse, Allocator, name);
                 };
             }
             
             /**
              * Maps action to controller url.
              */
-            template <void(T::*A)()> void RouteAction(Router& router, Net::Http::Method method, const char* action, const char* params = nullptr)
+            template <void(TController::*A)()> void RouteAction(Router& router, Net::Http::Method method, const char* action, const char* params = nullptr)
             {
-                static_assert(std::is_convertible<T, IController>::value, "Route action class must inherit IController!");
+                static_assert(std::is_convertible<TController, IController>::value, "Route action class must inherit IController!");
                 
                 // Build controller#action string
                 StaticString<32> controllerActionName(this->Name, "#", action);
@@ -95,7 +102,7 @@ namespace Neko
                 if (success)
                 {
                     ControllerAction controllerAction;
-                    controllerAction.Bind<T, A>(nullptr);
+                    controllerAction.Bind<TController, A>(nullptr);
                     
                     this->Actions.Insert(action, controllerAction);
                 }
@@ -106,24 +113,35 @@ namespace Neko
                 assert(Controller == nullptr);
                 
                 this->Actions.Clear();
-                this->CreateController = nullptr;
+                this->CreateControllerFunc = nullptr;
+            }
+            
+            virtual IController* CreateController(Net::Http::Request& request, Net::Http::Response& response) override
+            {
+                this->Controller = static_cast<TController* >(this->CreateIController(request, response));
+                return this->Controller;
+            }
+            
+            virtual ControllerAction& GetAction(const char* name) override
+            {
+                return this->Actions.at(name);
             }
             
             //! Controller url path
-            StaticString<32> Path;
+            StaticString<16> Path;
             //! Controller name
-            StaticString<32> Name;
+            StaticString<16> Name;
             
             //! Controller action mappings
             THashMap<String, ControllerAction> Actions;
             
             //! Controller create action.
-            CreateControllerFunc CreateController;
+            CreateControllerFunc CreateIController;
             
             IAllocator& Allocator;
             
             //! Transient controller info.
-            T* Controller;
+            TController* Controller;
         };
     }
 }

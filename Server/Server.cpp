@@ -32,6 +32,7 @@
 #include "../../Engine/Core/Log.h"
 #include "../../Engine/Core/Debug.h"
 #include "../../Engine/Core/JobSystem.h"
+#include "../../Engine/Core/Profiler.h"
 #include "../../Engine/Mt/Task.h"
 #include "../../Engine/Platform/Platform.h"
 #include "../../Engine/Network/SocketQueue.h"
@@ -75,13 +76,39 @@ namespace Neko
 #   endif
         }
         
+#   if USE_OPENSSL
+        /**
+         * Called by OpenSSL when a client sends an ALPN request to check if protocol is supported.
+         * The server later will check a type and decide which protocol to use.
+         */
+        static int AlpnCallback(SSL* session, const Byte** out, Byte* outLength, const Byte* in, uint32 inLength, void* arg)
+        {
+            for (uint32 i = 0; i < inLength; i += in[i] + 1)
+            {
+                String protocol = String((const char* ) &in[i + 1]).Mid(0, in[i]);
+                
+                if (StartsWith(*protocol, "h2"))
+                {
+                    *out = (Byte* ) in + i + 1;
+                    *outLength = in[i];
+                    
+                    // success
+                    return SSL_TLSEXT_ERR_OK;
+                }
+            }
+            
+            // noop, fallback to http/1.1
+            return SSL_TLSEXT_ERR_NOACK;
+        }
+#   endif
+        
         // transient data
         struct SocketServerData
         {
             Server* server = nullptr;
             Net::SocketsQueue* queue = nullptr;
         };
-        
+ 
         Server::Server(IAllocator& allocator, FS::FileSystem& fileSystem)
         : Mutex(false)
         , QueueNotFullEvent(true)
@@ -89,7 +116,7 @@ namespace Neko
         , Modules(allocator)
         , Listeners(allocator)
         , TlsData(allocator)
-        , SocketsList(Allocator)
+        , SocketsList(allocator)
         , Settings(fileSystem, allocator)
         {
             SetDefaultAllocator(allocator);
@@ -121,33 +148,7 @@ namespace Neko
             Stop();
             Clear();
         }
-        
-#   if USE_OPENSSL
-        /**
-         * Called by OpenSSL when a client sends an ALPN request to check if protocol is supported.
-         * The server later will check a type and decide which protocol to use.
-         */
-        static int AlpnCallback(SSL* session, const Byte** out, Byte* outLength, const Byte* in, uint32 inLength, void* arg)
-        {
-            for (uint32 i = 0; i < inLength; i += in[i] + 1)
-            {
-                String protocol = String((const char* ) &in[i + 1]).Mid(0, in[i]);
-                
-                if (StartsWith(*protocol, "h2"))
-                {
-                    *out = (Byte* ) in + i + 1;
-                    *outLength = in[i];
-                    
-                    // success
-                    return SSL_TLSEXT_ERR_OK;
-                }
-            }
-            
-            // noop, fallback to http/1.1
-            return SSL_TLSEXT_ERR_NOACK;
-        }
-#   endif
-        
+
         void* Server::InitSsl(const ApplicationSettings& application)
         {
 #   if USE_OPENSSL
@@ -289,6 +290,8 @@ namespace Neko
             // Process receiving new connections
             do
             {
+                PROFILE_FUNCTION()
+                
                 if (SocketsList.Accept(socketsToAccept))
                 {
                     sockets.Mutex.Lock();
@@ -362,6 +365,8 @@ namespace Neko
             
             IProtocol* CreateProto(ISocket& socket, void* stream, IAllocator& allocator) const
             {
+                PROFILE_FUNCTION()
+                
                 IProtocol* protocol = nullptr;
   
                 if (socket.GetTlsSession() != nullptr)
@@ -429,6 +434,8 @@ namespace Neko
                 
                 while (true)
                 {
+                    PROFILE_SECTION("Server request process");
+                    
                     Net::INetSocket socket;
                     void* streamData = nullptr; // @todo http/2
                     
@@ -518,8 +525,8 @@ namespace Neko
         
         int32 Server::ProcessWorkerThreads(void* kek)
         {
-            SocketServerData* data = (SocketServerData* )kek;
-            Net::SocketsQueue& sockets = *(Net::SocketsQueue*)data->queue;
+            SocketServerData* data = static_cast<SocketServerData* >(kek);
+            Net::SocketsQueue& sockets = static_cast<Net::SocketsQueue&>(*data->queue);
             
             ThreadsWorkingCount.Set(0);
             
@@ -550,7 +557,10 @@ namespace Neko
                            && activeTasks.GetSize() < threadMaxCount && !sockets.IsEmpty())
                     {
                         RequestTask* task = NEKO_NEW(Allocator, RequestTask)(*this, Allocator, sockets, threadsProcessEvent);
-                        if (task->Create("Server requests task"))
+                        
+                        StaticString<32> taskName("Server requests task #", ThreadsWorkingCount.GetValue() + 1);
+                        
+                        if (task->Create(taskName))
                         {
                             activeTasks.Push(task);
                         }
@@ -596,6 +606,8 @@ namespace Neko
 
         void Server::UpdateApplications()
         {
+            PROFILE_FUNCTION()
+            
             // Applications settings list
             TArray< ApplicationSettings* > applications(Allocator);
             // Get full applications settings list

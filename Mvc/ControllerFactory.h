@@ -82,7 +82,7 @@ namespace Neko
                 String fullControllerName(controllerName);
                 fullControllerName += "controller";
                 
-                ControllerDispatcher.Insert(fullControllerName, reinterpret_cast< ControllerContext<IController>* >(context));
+                ControllerDispatcher.Insert(fullControllerName, static_cast< IControllerContext* >(context));
                 
                 return context;
             }
@@ -97,7 +97,7 @@ namespace Neko
             
             IAllocator& Allocator;
             
-            THashMap<String, ControllerContext<IController>* > ControllerDispatcher;
+            THashMap<String, IControllerContext* > ControllerDispatcher;
         };
     }
 }
