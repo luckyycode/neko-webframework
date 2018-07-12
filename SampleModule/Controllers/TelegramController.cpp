@@ -22,8 +22,8 @@ namespace Neko
         out = String(basicType.c_str());
     }
 
-    TelegramController::TelegramController(Net::Http::Request& request, Net::Http::Response& response, IAllocator& allocator, const char* name)
-    : IController(request, response, allocator, name)
+    TelegramController::TelegramController(Net::Http::Request& request, Net::Http::Response& response, IAllocator& allocator)
+    : IController(request, response, allocator)
     , TelegramApi(GetAllocator())
     {
         TelegramApi.SetBotToken("613232204:AAG3XMqvr7aLDrZmuGcV9O9AgQycU4zCtoo");

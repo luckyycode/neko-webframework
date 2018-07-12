@@ -10,7 +10,7 @@ namespace Neko
     public:
         
         FileController(Net::Http::Request& request, Net::Http::Response& response,
-                       IAllocator& allocator, const char* name);
+                       IAllocator& allocator);
         
         void Index();
         void Get();

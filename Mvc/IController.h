@@ -56,7 +56,7 @@ namespace Neko
              *
              * @param path  Controller url (e.g. can be /files or /api/files).
              */
-            IController(Net::Http::Request& request, Net::Http::Response& response, IAllocator& allocator, const char* path);
+            IController(Net::Http::Request& request, Net::Http::Response& response, IAllocator& allocator);
             
             virtual ~IController();
 
@@ -68,9 +68,6 @@ namespace Neko
             /** Called after request action execution. */
             virtual void PostFilter() { };
             
-            /** Returns the controller name. */
-            const NEKO_FORCE_INLINE String& GetName() const { return Path; }
-        
             /** This controller's response reference. */
             const NEKO_FORCE_INLINE Net::Http::Response& GetHttpResponse() { return HttpResponse; }
             
@@ -112,9 +109,6 @@ namespace Neko
         private:
             
             bool Rollback;
-            
-            //! Controller path.
-            String Path;
             
             //! Incoming parameters (url arguments)
             TArray<String> Arguments;

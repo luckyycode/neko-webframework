@@ -76,8 +76,7 @@ namespace Neko
             template<class T>
             ControllerContext<T>* CreateControllerContext(const char* controllerName, const char* path)
             {
-                ControllerContext<T>* context = NEKO_NEW(Allocator, ControllerContext<T>)(Allocator);
-                context->Init(controllerName, path);
+                ControllerContext<T>* context = NEKO_NEW(Allocator, ControllerContext<T>)(Allocator, path, controllerName);
                 
                 String fullControllerName(controllerName);
                 fullControllerName += "controller";

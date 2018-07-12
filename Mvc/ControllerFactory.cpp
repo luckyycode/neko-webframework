@@ -56,7 +56,7 @@ namespace Neko
             auto contextIt = ControllerDispatcher.Find(*routing.Controller);
             if (contextIt.IsValid())
             {
-                auto& context = contextIt.value();
+                auto* context = contextIt.value();
                 
                 // create controller
                 IController* controller = context->CreateController(request, response);
@@ -69,8 +69,7 @@ namespace Neko
                 if (controller->PreFilter())
                 {
                     // execute controller action
-                    auto& controllerAction = context->GetAction(*routing.Action);
-                    controllerAction.InvokeWith(controller);
+                    context->InvokeAction(*routing.Action);
                     
                     controller->PostFilter();
                 }

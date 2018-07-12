@@ -38,7 +38,7 @@ namespace Neko
 {
     namespace Mvc
     {
-        /// Provides higher level side for parsing requests (e.g. routes, controllers)
+        /// Provides higher level side for processing requests (e.g. routes, controllers)
         class RequestContext
         {
         public:

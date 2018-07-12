@@ -32,6 +32,7 @@
 #include "Router.h"
 
 #include "../../Engine/Containers/AssociativeArray.h"
+#include "../../Engine/Core/Profiler.h"
 #include "../../Engine/Core/Log.h"
 
 #include "../Utils.h"
@@ -133,6 +134,8 @@ namespace Neko
         
         Routing Router::FindRouting(Net::Http::Method method, TArray<String>& components) const
         {
+            PROFILE_FUNCTION()
+            
             if (this->Routes.IsEmpty())
             {
                 GLogWarning.log("Mvc") << "FindRouting: No routes";
@@ -274,6 +277,8 @@ namespace Neko
         
         String Router::FindUrl(const String& controller, const String& action, const TArray<String>& params) const
         {
+            PROFILE_FUNCTION()
+            
             if (Routes.IsEmpty())
             {
                 GLogWarning.log("Mvc") << "FindUrl: No routes";

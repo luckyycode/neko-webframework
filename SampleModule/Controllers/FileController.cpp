@@ -8,8 +8,8 @@
 
 namespace Neko
 {
-    FileController::FileController(Net::Http::Request& request, Net::Http::Response& response, IAllocator& allocator, const char* name)
-    : IController(request, response, allocator, name)
+    FileController::FileController(Net::Http::Request& request, Net::Http::Response& response, IAllocator& allocator)
+    : IController(request, response, allocator)
     {
         
     }

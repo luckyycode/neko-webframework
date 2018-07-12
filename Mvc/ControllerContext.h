@@ -35,7 +35,7 @@
 #include "../../Engine/Network/Http/Response.h"
 #include "../../Engine/Containers/Delegate.h"
 
-#include "IController.h"
+#include "IControllerContext.h"
 
 #include <functional>
 
@@ -43,18 +43,6 @@ namespace Neko
 {
     namespace Mvc
     {
-        /**
-         * Points to the function of a controller.
-         */
-        typedef TDelegate< void() > ControllerAction;
-        
-        struct IControllerContext
-        {
-            virtual IController* CreateController(Net::Http::Request& request, Net::Http::Response& response) = 0;
-            
-            virtual ControllerAction& GetAction(const char* name) = 0;
-        };
-        
         /** Contains controller info for actions, etc */
         template <class TController>
         struct ControllerContext : public IControllerContext
@@ -63,26 +51,16 @@ namespace Neko
             
             typedef std::function<class IController* (Net::Http::Request&, Net::Http::Response&) > CreateControllerFunc;
             
-            ControllerContext(IAllocator& allocator)
+            /**
+             *  Creates a new controller context for a controller type.
+             */
+            ControllerContext(IAllocator& allocator, const char* path, const char* name)
             : Controller(nullptr)
             , Allocator(allocator)
             , Actions(allocator)
             {
-            }
-            
-            /**
-             * Prepares controller info.
-             */
-            void Init(const char* name, const char* path)
-            {
                 this->Path.Set(path);
                 this->Name.Set(name);
-                
-                this->CreateIController = [name, this] (Net::Http::Request& httpRequest, Net::Http::Response& httpResponse) -> IController*
-                {
-                    // create a new controller on request
-                    return NEKO_NEW(Allocator, TController) (httpRequest, httpResponse, Allocator, name);
-                };
             }
             
             /**
@@ -118,14 +96,20 @@ namespace Neko
             
             virtual IController* CreateController(Net::Http::Request& request, Net::Http::Response& response) override
             {
-                this->Controller = static_cast<TController* >(this->CreateIController(request, response));
+                // create a new controller on request
+                this->Controller = NEKO_NEW(Allocator, TController) (request, response, Allocator);
                 return this->Controller;
             }
             
-            virtual ControllerAction& GetAction(const char* name) override
+            virtual void InvokeAction(const char* name) override
             {
-                return this->Actions.at(name);
+                auto& controllerAction = this->Actions.at(name);
+                assert(controllerAction.IsValid());
+                
+                controllerAction.InvokeWith(this->Controller);
             }
+            
+        private:
             
             //! Controller url path
             StaticString<16> Path;
@@ -134,9 +118,6 @@ namespace Neko
             
             //! Controller action mappings
             THashMap<String, ControllerAction> Actions;
-            
-            //! Controller create action.
-            CreateControllerFunc CreateIController;
             
             IAllocator& Allocator;
             
