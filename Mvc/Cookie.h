@@ -23,7 +23,7 @@
 // | |\  |  __/   < (_) | |  _|| | | (_| | | | | | |  __/\ V  V / (_) | |  |   <
 // |_| \_|\___|_|\_\___/  |_|  |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
 //
-//  RequestContext.h
+//  Cookie.h
 //  Neko Framework
 //
 //  Copyright © 2018 Neko Vision. All rights reserved.
@@ -31,55 +31,68 @@
 
 #pragma once
 
-#include "ControllerFactory.h"
-#include "Router.h"
+#include "../../Engine/Utilities/Date.h"
+#include "../../Engine/Utilities/NekoString.h"
 
 namespace Neko
 {
     namespace Mvc
     {
-        /// Provides higher level side for processing requests (e.g. routes, controllers)
-        class RequestContext
+        /// Session cookie.
+        class Cookie
         {
         public:
             
-            RequestContext(IAllocator& allocator, FS::FileSystem& fileSystem);
+            /** Used for convertation. */
+            enum class StringType
+            {
+                NameValue = 0,
+                
+                Full
+            };
             
-            ~RequestContext();
-            
-            /**
-             * Executes the given request with the higher level logic.
-             */
-            int32 Execute(Net::Http::RequestData& requestData, Net::Http::ResponseData& responseData);
-            
-            /**
-             * Called after request execution, clean up for a response data.
-             */
-            void CleanupResponseData(void* responseData, uint32 responseSize);
-            
-        private:
-            
-            void ProcessRequest(Http::IProtocol& protocol, Net::Http::Request& request, Net::Http::Response& response, String& documentRoot, const bool secure);
+            Cookie(const String& name, const String& value)
+            : Name(name)
+            , Value(value)
+            {
+                
+            }
+    
+            inline Cookie()
+            : Secure(false)
+            , HttpOnly(false)
+            {
+                
+            }
             
         public:
             
-            /**
-             * Returns the instance of controller factory.
-             */
-            NEKO_FORCE_INLINE ControllerFactory& GetControllerFactory() { return this->ControllerFactory; }
+            /** Parses cookie header string to cookie list. */
+            static bool ParseCookieString(const String& cookieString, TArray<Cookie>& outCookies);
             
-            NEKO_FORCE_INLINE IAllocator& GetAllocator() { return Allocator; }
+            /** Returns TRUE if expiration date is NOT set. */
+            NEKO_FORCE_INLINE bool IsSessionCookie() const { return !this->ExpirationDate.IsValid(); }
             
-        private:
+            /** Converts this to string type. */
+            String ToString(StringType type = StringType::Full);
             
-            //! Url router.
-            Router MainRouter;
+        public:
             
-            //! Main controller factory.
-            ControllerFactory ControllerFactory;
+            CDateTime ExpirationDate;
             
-            IAllocator& Allocator;
-            FS::FileSystem& FileSystem;
+            String Domain;
+            String Path;
+            String Comment;
+            
+            String Name;
+            String Value;
+            
+            bool Secure : 1;
+            bool HttpOnly : 1;
+            
+            // @todo SameSite
         };
+        
+        typedef TArray<Cookie> CookieJar;
     }
 }

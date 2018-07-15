@@ -99,7 +99,7 @@ namespace Neko
             socket.Init(this->GetNativeHandle(), Net::ESocketType::TCP);
             
             ulong total = 0;
-            int innerError;
+            int innerError = 0;
             
             while (total < length)
             {
@@ -131,8 +131,8 @@ namespace Neko
         
         bool SocketSSL::Handshake()
         {
-            int innerResult;
-            int result;
+            int innerResult = 0;
+            int result = 0;
             
             do
             {

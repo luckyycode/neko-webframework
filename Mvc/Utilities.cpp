@@ -23,35 +23,31 @@
 // | |\  |  __/   < (_) | |  _|| | | (_| | | | | | |  __/\ V  V / (_) | |  |   <
 // |_| \_|\___|_|\_\___/  |_|  |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
 //
-//  IControllerContext.h
+//  Utilities.cpp
 //  Neko Framework
 //
 //  Copyright © 2018 Neko Vision. All rights reserved.
 //
 
-#pragma once
-
-#include "../../Engine/Network/Http/Request.h"
-#include "../../Engine/Network/Http/Response.h"
-
-#include "IController.h"
+#include "Utilities.h"
+#include "../../Engine/Utilities/Utilities.h"
+#include "../../Engine/Utilities/Crc32.h"
 
 namespace Neko
 {
     namespace Mvc
     {
-        /**
-         * Points to the function of a controller.
-         */
-        typedef TDelegate< void() > ControllerAction;
-        
-        struct IControllerContext
+        void Crypt(const String& value, String& result)
         {
-            virtual IController* CreateController(Net::Http::Request& request, Net::Http::Response& response) = 0;
+            // this is temporary, need to use something more efficient (e.g. sha)
+            uint32 crc = Crc32(*value, value.Length());
+            result += crc;
+            result = Util::BytesToHex((const uint8* )*result, result.Length());
+        }
+        
+        void Uncrypt(const String& value, uint8* data)
+        {
             
-            virtual void ReleaseController(IController* controller) = 0;
-            
-            virtual void InvokeAction(IController& controller, const char* name) = 0;
-        };
+        }
     }
 }

@@ -43,10 +43,12 @@ namespace Neko
 {
     namespace Mvc
     {
-        /** Contains controller info for actions, etc */
+        /** Controller context is created once on initialization.
+            It must only manage own controller lifetime. Contains controller info for actions, etc */
         template <class TController>
         struct ControllerContext : public IControllerContext
         {
+            // only controller interfaces
             static_assert(std::is_convertible<TController, IController>::value, "Must inherit IController!");
             
             typedef std::function<class IController* (Net::Http::Request&, Net::Http::Response&) > CreateControllerFunc;
@@ -55,8 +57,7 @@ namespace Neko
              *  Creates a new controller context for a controller type.
              */
             ControllerContext(IAllocator& allocator, const char* path, const char* name)
-            : Controller(nullptr)
-            , Allocator(allocator)
+            : Allocator(allocator)
             , Actions(allocator)
             {
                 this->Path.Set(path);
@@ -66,7 +67,7 @@ namespace Neko
             /**
              * Maps action to controller url.
              */
-            template <void(TController::*A)()> void RouteAction(Router& router, Net::Http::Method method, const char* action, const char* params = nullptr)
+            template <void(TController::*A)()> ControllerContext& RouteAction(Router& router, Net::Http::Method method, const char* action, const char* params = nullptr)
             {
                 static_assert(std::is_convertible<TController, IController>::value, "Route action class must inherit IController!");
                 
@@ -84,12 +85,12 @@ namespace Neko
                     
                     this->Actions.Insert(action, controllerAction);
                 }
+                
+                return *this;
             }
             
             void Clear()
             {
-                assert(Controller == nullptr);
-                
                 this->Actions.Clear();
                 this->CreateControllerFunc = nullptr;
             }
@@ -97,16 +98,21 @@ namespace Neko
             virtual IController* CreateController(Net::Http::Request& request, Net::Http::Response& response) override
             {
                 // create a new controller on request
-                this->Controller = NEKO_NEW(Allocator, TController) (request, response, Allocator);
-                return this->Controller;
+                return NEKO_NEW(Allocator, TController) (request, response, Allocator);
             }
             
-            virtual void InvokeAction(const char* name) override
+            virtual void ReleaseController(IController* controller) override
+            {
+                assert(controller != nullptr);
+                NEKO_DELETE(Allocator, controller);
+            }
+            
+            virtual void InvokeAction(IController& controller, const char* name) override
             {
                 auto& controllerAction = this->Actions.at(name);
                 assert(controllerAction.IsValid());
                 
-                controllerAction.InvokeWith(this->Controller);
+                controllerAction.InvokeWith(&controller);
             }
             
         private:
@@ -120,9 +126,6 @@ namespace Neko
             THashMap<String, ControllerAction> Actions;
             
             IAllocator& Allocator;
-            
-            //! Transient controller info.
-            TController* Controller;
         };
     }
 }

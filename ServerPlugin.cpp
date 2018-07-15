@@ -98,14 +98,10 @@ namespace Neko
                 }
             }
             
-            // perhaps use this in main framework?
-            FreeListAllocator* allocator = NEKO_NEW(GetAllocator(), FreeListAllocator)(maxMemory, GetAllocator());
-            
-            ServerInstance = NEKO_NEW(*allocator, Http::Server )(*allocator, FileSystem);
+            ServerInstance = NEKO_NEW(GetAllocator(), Http::Server )(GetAllocator(), FileSystem);
             int32 exitCode = ServerInstance->StartCommand(serverName, forceStart);
             
-            NEKO_DELETE(*allocator, ServerInstance);
-            NEKO_DELETE(GetAllocator(), allocator);
+            NEKO_DELETE(GetAllocator(), ServerInstance);
             return exitCode;
         }
         

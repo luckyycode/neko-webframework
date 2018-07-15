@@ -35,7 +35,6 @@
 
 namespace Neko
 {
-    using namespace Neko::Http;
     namespace Mvc
     {
         /// Base class for users.
@@ -46,10 +45,10 @@ namespace Neko
             virtual ~IUser() { }
             
             /** Returns the identity key (i.e. user name) */
-            virtual String GetIdentityKey() = 0;
+            virtual const String& GetIdentityKey() const = 0;
             
             /** Returns the group key. */
-            virtual String GetGroupKey() { return String(); }
+            virtual const String& GetGroupKey() const { return String::Empty; }
         };
     }
 }

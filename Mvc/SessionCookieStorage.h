@@ -23,7 +23,7 @@
 // | |\  |  __/   < (_) | |  _|| | | (_| | | | | | |  __/\ V  V / (_) | |  |   <
 // |_| \_|\___|_|\_\___/  |_|  |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
 //
-//  IControllerContext.h
+//  SessionCookieStorage.h
 //  Neko Framework
 //
 //  Copyright © 2018 Neko Vision. All rights reserved.
@@ -31,27 +31,29 @@
 
 #pragma once
 
-#include "../../Engine/Network/Http/Request.h"
-#include "../../Engine/Network/Http/Response.h"
-
-#include "IController.h"
+#include "Session.h"
+#include "ISessionStorage.h"
 
 namespace Neko
 {
     namespace Mvc
     {
-        /**
-         * Points to the function of a controller.
-         */
-        typedef TDelegate< void() > ControllerAction;
-        
-        struct IControllerContext
+        /// Cookie session storage.
+        class SessionCookieStorage : public ISessionStorage
         {
-            virtual IController* CreateController(Net::Http::Request& request, Net::Http::Response& response) = 0;
+        public:
             
-            virtual void ReleaseController(IController* controller) = 0;
+            // @see comments in ISessionStorage
             
-            virtual void InvokeAction(IController& controller, const char* name) = 0;
+            virtual Session Find(const String& sessionId) override;
+            
+            virtual int32   ClearCache(const CDateTime& expireDate) override { return 0; };
+            
+            virtual bool Store(Session& session) override;
+            
+            virtual bool Remove(const String& sessionId) override { return true; };
+            
+            NEKO_FORCE_INLINE String GetName() const { return "cookie"; }
         };
     }
 }

@@ -23,7 +23,7 @@
 // | |\  |  __/   < (_) | |  _|| | | (_| | | | | | |  __/\ V  V / (_) | |  |   <
 // |_| \_|\___|_|\_\___/  |_|  |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
 //
-//  IControllerContext.h
+//  IWebApplication.h
 //  Neko Framework
 //
 //  Copyright © 2018 Neko Vision. All rights reserved.
@@ -31,27 +31,40 @@
 
 #pragma once
 
-#include "../../Engine/Network/Http/Request.h"
-#include "../../Engine/Network/Http/Response.h"
-
-#include "IController.h"
+#include "../ApplicationSettings.h"
 
 namespace Neko
 {
     namespace Mvc
     {
-        /**
-         * Points to the function of a controller.
-         */
-        typedef TDelegate< void() > ControllerAction;
-        
-        struct IControllerContext
+        /// Interface for main application.
+        class IWebApplication
         {
-            virtual IController* CreateController(Net::Http::Request& request, Net::Http::Response& response) = 0;
+        public:
             
-            virtual void ReleaseController(IController* controller) = 0;
+            IWebApplication(const Http::ApplicationInitDesc& desc)
+            : Context(*desc.AppAllocator, *desc.FileSystem)
+            {
+            }
             
-            virtual void InvokeAction(IController& controller, const char* name) = 0;
+            inline int32 ProcessRequest(Net::Http::RequestData& request, Net::Http::ResponseData& response)
+            {
+                return Context.Execute(request, response);
+            }
+            
+            inline void CleanupResponseData(Net::Http::ResponseData& data)
+            {
+                Context.CleanupResponseData(data.Data, data.Size);
+            }
+            
+            NEKO_FORCE_INLINE RequestContext& GetContext() { return this->Context; }
+            
+            NEKO_FORCE_INLINE IAllocator& GetAllocator() { return Context.GetAllocator(); }
+            
+        private:
+            
+            //! Request context.
+            RequestContext Context;
         };
     }
 }

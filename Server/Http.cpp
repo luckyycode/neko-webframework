@@ -375,7 +375,6 @@ namespace Neko
                 string += header.second;
                 string += "\r\n";
             }
-            string += "Server: Neko";
             
             string += "\r\n";
             

@@ -23,7 +23,7 @@
 // | |\  |  __/   < (_) | |  _|| | | (_| | | | | | |  __/\ V  V / (_) | |  |   <
 // |_| \_|\___|_|\_\___/  |_|  |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
 //
-//  RequestContext.h
+//  SessionManager.h
 //  Neko Framework
 //
 //  Copyright © 2018 Neko Vision. All rights reserved.
@@ -31,55 +31,45 @@
 
 #pragma once
 
-#include "ControllerFactory.h"
-#include "Router.h"
+#include "Session.h"
 
 namespace Neko
 {
     namespace Mvc
     {
-        /// Provides higher level side for processing requests (e.g. routes, controllers)
-        class RequestContext
+        /// Main class for managing sessions.
+        class SessionManager
         {
         public:
             
-            RequestContext(IAllocator& allocator, FS::FileSystem& fileSystem);
+            SessionManager() { }
             
-            ~RequestContext();
+            ~SessionManager() { }
             
-            /**
-             * Executes the given request with the higher level logic.
-             */
-            int32 Execute(Net::Http::RequestData& requestData, Net::Http::ResponseData& responseData);
+            /** Gets a session by its id. */
+            Session FindSession(const String& sessionId);
             
-            /**
-             * Called after request execution, clean up for a response data.
-             */
-            void CleanupResponseData(void* responseData, uint32 responseSize);
+            /** Saves a session. */
+            bool Store(Session& session);
             
-        private:
+            /** Removes a session. */
+            bool Remove(const String& sessionId);
             
-            void ProcessRequest(Http::IProtocol& protocol, Net::Http::Request& request, Net::Http::Response& response, String& documentRoot, const bool secure);
             
-        public:
+            /** Returns shared session storage type. */
+            const String& GetStoreType() const;
             
-            /**
-             * Returns the instance of controller factory.
-             */
-            NEKO_FORCE_INLINE ControllerFactory& GetControllerFactory() { return this->ControllerFactory; }
+            /** Clears session cache. */
+            void ClearSessionsCache();
             
-            NEKO_FORCE_INLINE IAllocator& GetAllocator() { return Allocator; }
             
-        private:
+            /** Generates random & unique session id. */
+            String GenerateSessionId();
             
-            //! Url router.
-            Router MainRouter;
+            void SetCsrfProtectionData(Session& session);
             
-            //! Main controller factory.
-            ControllerFactory ControllerFactory;
-            
-            IAllocator& Allocator;
-            FS::FileSystem& FileSystem;
+            /** Clears a session and resets csrf data. */
+            void ResetSession(Session& session);
         };
     }
 }

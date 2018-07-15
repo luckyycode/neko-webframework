@@ -23,7 +23,7 @@
 // | |\  |  __/   < (_) | |  _|| | | (_| | | | | | |  __/\ V  V / (_) | |  |   <
 // |_| \_|\___|_|\_\___/  |_|  |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
 //
-//  IControllerContext.h
+//  ISessionStorage.h
 //  Neko Framework
 //
 //  Copyright © 2018 Neko Vision. All rights reserved.
@@ -31,27 +31,37 @@
 
 #pragma once
 
-#include "../../Engine/Network/Http/Request.h"
-#include "../../Engine/Network/Http/Response.h"
+#include "Session.h"
 
-#include "IController.h"
+#include "../../Engine/Utilities/Date.h"
 
 namespace Neko
 {
     namespace Mvc
     {
-        /**
-         * Points to the function of a controller.
-         */
-        typedef TDelegate< void() > ControllerAction;
-        
-        struct IControllerContext
+        /// Interface for different kinds of session storages (e.g. cookie, database, file..)
+        class ISessionStorage
         {
-            virtual IController* CreateController(Net::Http::Request& request, Net::Http::Response& response) = 0;
+        public:
             
-            virtual void ReleaseController(IController* controller) = 0;
+            ISessionStorage()
+            { }
             
-            virtual void InvokeAction(IController& controller, const char* name) = 0;
+            virtual ~ISessionStorage()
+            { }
+            
+            /** Gets a session by the given id. */
+            virtual Session Find(const String& sessionId) = 0;
+            
+            /** Saves a session. */
+            virtual bool Store(Session& session) = 0;
+            
+            /** Removes session. */
+            virtual bool Remove(const String& sessionId) = 0;
+            
+            /** Removes session cache. */
+            virtual int32 ClearCache(const CDateTime& expiryDate) = 0;
         };
+        
     }
 }

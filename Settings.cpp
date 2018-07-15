@@ -71,7 +71,7 @@ namespace Neko
             
             if (file == nullptr)
             {
-                GLogError.log("Http") << "Couldn't find " << *fileName << " appsettings file.";
+                GLogError.log("Http") << "Couldn't find " << *fileName << " serversettings file.";
                 
                 return false;
             }
@@ -241,32 +241,42 @@ namespace Neko
         {
             assert(module.IsOpen());
             
-            bool success = true;
-            
             // @todo get rid of std function
             
             std::function<int(Net::Http::RequestData* , Net::Http::ResponseData* )> appRequestMethod;
             appRequestMethod = module.GetMethod<int(*)(Net::Http::RequestData* , Net::Http::ResponseData* )>("OnApplicationRequest");
-            success = appRequestMethod != nullptr;
+            if (appRequestMethod == nullptr)
+            {
+                return false;
+            };
             
             std::function<void(Net::Http::ResponseData* )> appPostRequestMethod;
             appPostRequestMethod = module.GetMethod<void(*)(Net::Http::ResponseData* )>("OnApplicationPostRequest");
-            success = appPostRequestMethod != nullptr;
+            if (appPostRequestMethod == nullptr)
+            {
+                return false;
+            };
             
             std::function<bool(ApplicationInitDesc)> appInitMethod;
             appInitMethod = module.GetMethod<bool(*)(ApplicationInitDesc)>("OnApplicationInit");
-            success = appInitMethod != nullptr;
+            if (appInitMethod == nullptr)
+            {
+                return false;
+            };
             
             std::function<void()> appExitMethod;
             appExitMethod = module.GetMethod<void(*)()>("OnApplicationExit");
-            success = appExitMethod != nullptr;
+            if (appExitMethod == nullptr)
+            {
+                return false;
+            };
             
             settings.OnApplicationRequest = Neko::Move(appRequestMethod);
             settings.OnApplicationPostRequest = Neko::Move(appPostRequestMethod);
             settings.OnApplicationInit = Neko::Move(appInitMethod);
             settings.OnApplicationExit = Neko::Move(appExitMethod);
             
-            return success;
+            return true;
         }
         
         int32 ServerSettings::LoadModule(const String& name, const String& rootDirectory, TArray<Module>& modules, ApplicationSettings& settings)
@@ -276,20 +286,31 @@ namespace Neko
             
             if (!module.IsOpen())
             {
-                GLogError.log("Http") << "Couldn't open '" << *name << "' application module";
+                GLogError.log("Http") << "Couldn't open '" << *name << "' application module.";
                 return false;
             }
             
             success = SetApplicationModuleMethods(settings, module);
+            if (!success)
+            {
+                GLogError.log("Http") << "One of application methods is missing.";
+                return false;
+            }
             
             assert(settings.OnApplicationInit != nullptr);
             
             ApplicationInitDesc items
             {
                 *rootDirectory,
-                &Allocator
+                &Allocator,
+                &FileSystem
             };
             success = settings.OnApplicationInit(items);
+            if (!success)
+            {
+                GLogWarning.log("Http") << "Application initialization returned unsuccessful result!";
+                return false;
+            }
             
             // Calculate module index
             int32 moduleIndex = INDEX_NONE;

@@ -79,7 +79,7 @@ namespace Neko
                 else
                 {
                     // param name
-                    Neko::String name = buffer.Mid(pos, delimiter - pos);
+                    Neko::String name = buffer.Mid(pos, (last != INT_MAX) ? delimiter - pos : INT_MAX);
                     
                     ++delimiter;
                     

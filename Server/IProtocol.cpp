@@ -85,7 +85,7 @@ namespace Neko
             TArray<std::pair<String, String> > headers(Allocator);
             
             const int32 size = response.Headers.GetSize() + (extra != nullptr ? extra->GetSize() : 0);
-            
+
             headers.Reserve(size);
             
             for (auto iter = response.Headers.begin(), end = response.Headers.end(); iter != end; ++iter)

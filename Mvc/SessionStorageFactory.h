@@ -23,7 +23,7 @@
 // | |\  |  __/   < (_) | |  _|| | | (_| | | | | | |  __/\ V  V / (_) | |  |   <
 // |_| \_|\___|_|\_\___/  |_|  |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
 //
-//  IControllerContext.h
+//  SessionStorageFactory.h
 //  Neko Framework
 //
 //  Copyright © 2018 Neko Vision. All rights reserved.
@@ -31,27 +31,36 @@
 
 #pragma once
 
-#include "../../Engine/Network/Http/Request.h"
-#include "../../Engine/Network/Http/Response.h"
-
-#include "IController.h"
+#include "../../Engine/Utilities/NekoString.h"
 
 namespace Neko
 {
     namespace Mvc
     {
-        /**
-         * Points to the function of a controller.
-         */
-        typedef TDelegate< void() > ControllerAction;
+        class ISessionStorage;
         
-        struct IControllerContext
+        /// Session storage factory. Creates the requested session storages.
+        class SessionStorageFactory
         {
-            virtual IController* CreateController(Net::Http::Request& request, Net::Http::Response& response) = 0;
+        private:
             
-            virtual void ReleaseController(IController* controller) = 0;
+            /** Available storage types. */
+            enum StorageType
+            {
+                Invalid = 0,
+                
+                Cookie,
+            };
             
-            virtual void InvokeAction(IController& controller, const char* name) = 0;
+        public:
+            
+            /** Returns the list of available storage key names. */
+            static TArray<String> GetAvailableStorageTypes();
+
+            /** Lookups a needed storage by the key. */
+            static ISessionStorage* Get(const String& name);
+            /** Removes data if session storage has created any. */
+            static void Cleanup(const String& name, ISessionStorage& storage);
         };
     }
 }

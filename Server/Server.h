@@ -112,6 +112,8 @@ namespace Neko
             
             IAllocator* FreeListAllocator;
             
+            FS::FileSystem& FileSystem;
+            
         public:
             
             // commands

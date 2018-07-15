@@ -117,6 +117,7 @@ namespace Neko
         , Listeners(allocator)
         , TlsData(allocator)
         , SocketsList(allocator)
+        , FileSystem(fileSystem)
         , Settings(fileSystem, allocator)
         {
             SetDefaultAllocator(allocator);
@@ -127,7 +128,7 @@ namespace Neko
             GLogInfo.log("Http") << "Loading server settings";
             
             // load every application & settings
-            bool settingsLoaded = Settings.LoadAppSettings("appsettings.json", Modules);
+            bool settingsLoaded = Settings.LoadAppSettings("serversettings.json", Modules);
             
             if (!settingsLoaded)
             {
@@ -808,7 +809,8 @@ namespace Neko
                 ApplicationInitDesc items
                 {
                     *app->RootDirectory,
-                    &Allocator
+                    &Allocator,
+                    &FileSystem
                 };
                 
                 app->OnApplicationInit(items);
@@ -951,7 +953,7 @@ namespace Neko
             // cleanup
             Neko::Platform::DestroySharedMemory(name);
             
-            return EXIT_SUCCESS;
+            return code;
         }
         
         int Server::RestartCommand(const String& serverName) const

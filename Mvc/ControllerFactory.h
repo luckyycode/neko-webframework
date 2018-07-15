@@ -37,16 +37,19 @@
 #include "../Server/IProtocol.h"
 #include "Router.h"
 
+#include "SessionManager.h"
 #include "ControllerContext.h"
 
 namespace Neko
 {
     namespace Mvc
     {
-        /// Provides managing controllers lifetime.
+        /// Provides managing of controllers lifetime.
         class ControllerFactory
         {
         public:
+            
+            ControllerFactory() = delete;
             
             /**
              * Constructor.
@@ -59,11 +62,6 @@ namespace Neko
              * Instantiates a new controller on request.
              */
             void ExecuteController(const Routing& routing, Http::IProtocol& protocol, Net::Http::Request& request, Net::Http::Response& response);
-            
-            /**
-             * Removes controller data.
-             */
-            void ReleaseController(IController* controller);
             
             void Clear();
             
@@ -86,6 +84,10 @@ namespace Neko
                 return context;
             }
             
+        private:
+            
+            void SetSession(Net::Http::Request& request, IController& controller);
+            
         public:
             
             NEKO_FORCE_INLINE Router& GetRouter() { return this->Router; }
@@ -93,6 +95,8 @@ namespace Neko
         private:
             
             Router& Router;
+            
+            SessionManager SessionManager;
             
             IAllocator& Allocator;
             

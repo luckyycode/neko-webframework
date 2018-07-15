@@ -8,55 +8,75 @@
 #include "SampleModule.h"
 
 #include "../../Engine/Core/Log.h"
+#include "../../Engine/FS/FileSystem.h"
+#include "../../Engine/Data/JsonSerializer.h"
 
+#include "../Mvc/Options.h"
 #include "../Mvc/RequestContext.h"
+#include "../Mvc/IWebApplication.h"
 #include "../ApplicationSettings.h"
 
 #include "Controllers/TelegramController.h"
-#include "Controllers/FileController.h"
+#include "Controllers/HomeController.h"
 
 using namespace Neko;
 using namespace Neko::Mvc;
 
-static Mvc::RequestContext* context = nullptr;
+class WebApplication : public IWebApplication
+{
+public:
+    
+    WebApplication(const ApplicationInitDesc& desc)
+    : IWebApplication(desc)
+    {
+        LoadSettings();
+        
+        RegisterControllers();
+    }
+    
+    void RegisterControllers()
+    {
+        auto& cf = GetContext().GetControllerFactory();
+        auto& router = cf.GetRouter();
+        
+        
+        auto* homeContext = cf.CreateControllerContext<HomeController>("home", "/api/home");
+        
+        homeContext->RouteAction<&HomeController::Index>(router, Net::Http::Method::Get, "index")
+            .RouteAction<&HomeController::Get>(router, Net::Http::Method::Get, "get", "[params]")
+            .RouteAction<&HomeController::Login>(router, Net::Http::Method::Get, "login")
+            .RouteAction<&HomeController::Logout>(router, Net::Http::Method::Get, "logout");
+        
+        auto* telegramContext = cf.CreateControllerContext<TelegramController>("telegram", "/api/telegram");
+        
+        telegramContext->RouteAction<&TelegramController::Update>(router, Net::Http::Method::Post, "update");
+    }
+    
+    bool LoadSettings()
+    {
+        return true;
+    }
+};
+
+static IWebApplication* Application = nullptr;
 
 extern "C"
 {
-    static void CreateControllers(ControllerFactory& cf, IAllocator& allocator)
-    {
-        auto& router = cf.GetRouter();
-        
-        auto* fileContext = cf.CreateControllerContext<FileController>("files", "/api/files");
-        {
-            fileContext->RouteAction<&FileController::Index>(router, Net::Http::Method::Get, "index");
-            fileContext->RouteAction<&FileController::Get>(router, Net::Http::Method::Get, "get", "[params]");
-            fileContext->RouteAction<&FileController::List>(router, Net::Http::Method::Get, "list");
-        }
-        
-        auto* telegramContext = cf.CreateControllerContext<TelegramController>("telegram", "/api/telegram");
-        {
-            telegramContext->RouteAction<&TelegramController::Update>(router, Net::Http::Method::Post, "update");
-        }
-    }
-    
+
     /**
      * This is called on early module initialization.
      */
     bool OnApplicationInit(Neko::Http::ApplicationInitDesc desc)
     {
         GLogInfo.log("Http") << "Sample module init";
-        
-        auto& allocator = *desc.AppAllocator;
-        
+
         const char* rootDirectory = desc.RootDirectory;
         SampleModule::DocumentRoot.Assign(rootDirectory);
         
-        context = NEKO_NEW(allocator, Mvc::RequestContext) (allocator);
+        auto& allocator = *desc.AppAllocator;
+        Application = NEKO_NEW(allocator, WebApplication) (desc);
         
-        auto& controllerFactory = context->GetControllerFactory();
-        CreateControllers(controllerFactory, allocator); // temp
-        
-        return context != nullptr;
+        return Application != nullptr;
     }
     
     /**
@@ -64,7 +84,7 @@ extern "C"
      */
     int OnApplicationRequest(Neko::Net::Http::RequestData* request, Neko::Net::Http::ResponseData * response)
     {
-        return context->Execute(*request, *response);
+        return Application->ProcessRequest(*request, *response);
     }
     
     /**
@@ -72,16 +92,16 @@ extern "C"
      */
     void OnApplicationPostRequest(Neko::Net::Http::ResponseData * response)
     {
-        context->CleanupResponseData(response->Data, response->Size);
+        Application->CleanupResponseData(*response);
     }
     
     void OnApplicationExit()
     {
         printf("FINAL KEK WAVE\n");
-        auto& allocator = context->GetAllocator();
-        NEKO_DELETE(allocator, context) ;
+        auto& allocator = Application->GetAllocator();
+        NEKO_DELETE(allocator, Application) ;
         
-        context = nullptr;
+        Application = nullptr;
     };
 }
 

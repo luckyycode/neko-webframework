@@ -33,7 +33,8 @@
 #include "../../Engine/Core/Profiler.h"
 
 
-#include "../../Engine/Data/LifoAllocator.h"
+#include "../../Engine/FS/FileSystem.h"
+#include "../../Engine/Data/JsonSerializer.h"
 
 #include "../../Engine/Network/Http/Response.h"
 
@@ -49,6 +50,7 @@
 #include "../SocketDefault.h"
 #include "../Utils.h"
 
+#include "Options.h"
 #include "RequestContext.h"
 #include "IController.h"
 
@@ -82,11 +84,30 @@ namespace Neko
             }
         }
         
-        RequestContext::RequestContext(IAllocator& allocator)
+        RequestContext::RequestContext(IAllocator& allocator, FS::FileSystem& fileSystem)
         : Allocator(allocator)
+        , FileSystem(fileSystem)
         , MainRouter(allocator)
         , ControllerFactory(MainRouter, allocator)
         {
+            // defaults
+            auto& options = Options::Instance();
+            
+            options.Configure([&](Options& options)
+            {
+                auto& session = options.Session;
+                
+                session.Name = "Neko.CoolCookie";
+                session.AutoIdRegeneration = false;
+                session.CookiePath = "cookiePath";
+                session.IsCsrfProtectionEnabled = true;
+                session.CsrfKey = "identitysecretkey1337";
+                session.Lifetime = 3600;
+                session.Secret = "qwerty1234567890";
+                session.GcProbability = 5;
+                session.MaxGcLifetime = 1000;
+                session.StorageType = "cookie";
+            });
         }
         
         RequestContext::~RequestContext()
@@ -94,6 +115,15 @@ namespace Neko
             ControllerFactory.Clear();
         }
         
+        struct AppSettings
+        {
+            template <typename TFunc>
+            void LoadFrom(TFunc func)
+            {
+                
+            }
+        };
+ 
         static void WriteResponseData(Net::Http::Response& response, Net::Http::ResponseData& responseData, IAllocator& allocator)
         {
             // these will be processed by server after running this app
@@ -118,12 +148,6 @@ namespace Neko
             String clearUri(Allocator);
             TArray<String> components(Allocator);
             THashMap<String, String> requestCookies(Allocator);
-            
-            auto cookieIt = request.IncomingHeaders.Find("cookie");
-            if (cookieIt.IsValid())
-            {
-                // @todo
-            }
             
             // Remove uri query parameters if present
             ClearRequestUri(request.Path, clearUri);

@@ -23,7 +23,7 @@
 // | |\  |  __/   < (_) | |  _|| | | (_| | | | | | |  __/\ V  V / (_) | |  |   <
 // |_| \_|\___|_|\_\___/  |_|  |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
 //
-//  IControllerContext.h
+//  Utilities.h
 //  Neko Framework
 //
 //  Copyright © 2018 Neko Vision. All rights reserved.
@@ -31,27 +31,14 @@
 
 #pragma once
 
-#include "../../Engine/Network/Http/Request.h"
-#include "../../Engine/Network/Http/Response.h"
-
-#include "IController.h"
+#include "../../Engine/Utilities/NekoString.h"
 
 namespace Neko
 {
     namespace Mvc
     {
-        /**
-         * Points to the function of a controller.
-         */
-        typedef TDelegate< void() > ControllerAction;
+        void Crypt(const String& value, String& result);
         
-        struct IControllerContext
-        {
-            virtual IController* CreateController(Net::Http::Request& request, Net::Http::Response& response) = 0;
-            
-            virtual void ReleaseController(IController* controller) = 0;
-            
-            virtual void InvokeAction(IController& controller, const char* name) = 0;
-        };
+        void Uncrypt(const String& value, uint8* data);
     }
 }

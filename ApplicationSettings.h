@@ -40,6 +40,10 @@
 
 namespace Neko
 {
+    namespace FS
+    {
+        class FileSystem;
+    }
     namespace Http
     {
         /** Object used to pass parameters to the application module on init. */
@@ -47,6 +51,7 @@ namespace Neko
         {
             const char* RootDirectory = nullptr;
             IAllocator* AppAllocator = nullptr;
+            FS::FileSystem* FileSystem = nullptr;
         };
         
         /** Server settings for each application. */

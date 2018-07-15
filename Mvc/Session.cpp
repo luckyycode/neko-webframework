@@ -23,35 +23,21 @@
 // | |\  |  __/   < (_) | |  _|| | | (_| | | | | | |  __/\ V  V / (_) | |  |   <
 // |_| \_|\___|_|\_\___/  |_|  |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
 //
-//  IControllerContext.h
+//  Session.cpp
 //  Neko Framework
 //
 //  Copyright © 2018 Neko Vision. All rights reserved.
 //
 
-#pragma once
-
-#include "../../Engine/Network/Http/Request.h"
-#include "../../Engine/Network/Http/Response.h"
-
-#include "IController.h"
+#include "Session.h"
 
 namespace Neko
 {
     namespace Mvc
     {
-        /**
-         * Points to the function of a controller.
-         */
-        typedef TDelegate< void() > ControllerAction;
-        
-        struct IControllerContext
+        void Session::Reset()
         {
-            virtual IController* CreateController(Net::Http::Request& request, Net::Http::Response& response) = 0;
-            
-            virtual void ReleaseController(IController* controller) = 0;
-            
-            virtual void InvokeAction(IController& controller, const char* name) = 0;
-        };
+            SessionMap::Clear();
+        }
     }
 }

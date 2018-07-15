@@ -37,6 +37,9 @@
 
 #include "../Utils.h"
 
+#include "Utilities.h"
+#include "Cookie.h"
+#include "Session.h"
 #include "Router.h"
 
 #include "Model.h"
@@ -50,7 +53,7 @@ namespace Neko
         class IController
         {
         public:
-
+       
             /**
              * Instance of a controller.
              *
@@ -63,10 +66,29 @@ namespace Neko
         public:
             
             /** Called before request action execution. */
-            virtual bool PreFilter() { return true; };
+            virtual bool PreFilter(const String& action) { return true; };
             
             /** Called after request action execution. */
             virtual void PostFilter() { };
+            
+            // @todo Move 
+            bool IsUserAuthenticated();
+            bool UserLogin(const class IUser& user);
+            void UserLogout();
+            
+            String GetAuthToken();
+            
+            virtual bool IsSessionEnabled() const { return true; }
+            
+            virtual bool IsCsrfProtectionEnabled() const { return true; }
+            
+            bool IsCsrflessAction(const char* action) const { return true; }
+            
+            bool VerifyRequest();
+            
+            void SetSession(const Session& session);
+            
+            bool AddCookie(Cookie cookie);
             
             /** This controller's response reference. */
             const NEKO_FORCE_INLINE Net::Http::Response& GetHttpResponse() { return HttpResponse; }
@@ -87,6 +109,8 @@ namespace Neko
             }
             
             bool NEKO_FORCE_INLINE IsRollbackRequested() const { return Rollback; }
+            
+            NEKO_FORCE_INLINE Session& GetSession() { return Session; }
             
         public:
             
@@ -110,10 +134,14 @@ namespace Neko
             
             bool Rollback;
             
+            Session Session;
+            
             //! Incoming parameters (url arguments)
             TArray<String> Arguments;
             
             IAllocator& Allocator;
+            
+            CookieJar CookieJar;
             
         public:
             // @note Lifetime of these is the same as the lifetime of this controller.

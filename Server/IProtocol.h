@@ -58,6 +58,8 @@ namespace Neko
         {
         public:
             
+            IProtocol() = delete;
+            
             /**
              * Server protocol interface.
              *
