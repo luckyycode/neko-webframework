@@ -47,6 +47,8 @@ namespace Neko
         
         struct IControllerContext
         {
+            virtual ~IControllerContext() { }
+            
             virtual IController* CreateController(Net::Http::Request& request, Net::Http::Response& response) = 0;
             
             virtual void ReleaseController(IController* controller) = 0;

@@ -98,7 +98,7 @@ namespace Neko
                 auto& session = options.Session;
                 
                 session.Name = "Neko.CoolCookie";
-                session.AutoIdRegeneration = false;
+                session.AutoIdRenewal = false;
                 session.CookiePath = "cookiePath";
                 session.IsCsrfProtectionEnabled = true;
                 session.CsrfKey = "identitysecretkey1337";

@@ -616,7 +616,7 @@ namespace Neko
                         headers.Emplace("connection", "keep-alive");
                         
                         String value("timeout=5; max=", Allocator);
-                        value += (uint32)request.KeepAliveTimeout;
+                        value += request.KeepAliveTimeout;
                         
                         headers.Emplace("keep-alive", value);
                     }

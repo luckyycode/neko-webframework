@@ -150,11 +150,11 @@ namespace Neko
             
             FileSystem.Close(*file);
             
-            for (uint32 i = 0; i < applicationSettingItems.GetSize(); ++i)
+            for (uint16 i = 0; i < applicationSettingItems.GetSize(); ++i)
             {
                 auto* settings = applicationSettingItems[i];
                 
-                int moduleIndex = LoadModule(settings->ServerModule, settings->RootDirectory, modules, *settings);
+                int16 moduleIndex = LoadModule(settings->ServerModule, settings->RootDirectory, modules, *settings);
                 bool success = moduleIndex!= -1;
                 
                 if (!success)
@@ -244,7 +244,7 @@ namespace Neko
             // @todo get rid of std function
             
             std::function<int(Net::Http::RequestData* , Net::Http::ResponseData* )> appRequestMethod;
-            appRequestMethod = module.GetMethod<int(*)(Net::Http::RequestData* , Net::Http::ResponseData* )>("OnApplicationRequest");
+            appRequestMethod = module.GetMethod<int16(*)(Net::Http::RequestData* , Net::Http::ResponseData* )>("OnApplicationRequest");
             if (appRequestMethod == nullptr)
             {
                 return false;
@@ -257,8 +257,8 @@ namespace Neko
                 return false;
             };
             
-            std::function<bool(ApplicationInitDesc)> appInitMethod;
-            appInitMethod = module.GetMethod<bool(*)(ApplicationInitDesc)>("OnApplicationInit");
+            std::function<bool(ApplicationInitContext)> appInitMethod;
+            appInitMethod = module.GetMethod<bool(*)(ApplicationInitContext)>("OnApplicationInit");
             if (appInitMethod == nullptr)
             {
                 return false;
@@ -279,7 +279,7 @@ namespace Neko
             return true;
         }
         
-        int32 ServerSettings::LoadModule(const String& name, const String& rootDirectory, TArray<Module>& modules, ApplicationSettings& settings)
+        int16 ServerSettings::LoadModule(const String& name, const String& rootDirectory, TArray<Module>& modules, ApplicationSettings& settings)
         {
             bool success = true;
             Module module(name);
@@ -287,19 +287,21 @@ namespace Neko
             if (!module.IsOpen())
             {
                 GLogError.log("Http") << "Couldn't open '" << *name << "' application module.";
-                return false;
+                return -1;
             }
             
             success = SetApplicationModuleMethods(settings, module);
             if (!success)
             {
                 GLogError.log("Http") << "One of application methods is missing.";
-                return false;
+                
+                module.Close();
+                return -1;
             }
             
             assert(settings.OnApplicationInit != nullptr);
             
-            ApplicationInitDesc items
+            ApplicationInitContext items
             {
                 *rootDirectory,
                 &Allocator,
@@ -309,11 +311,13 @@ namespace Neko
             if (!success)
             {
                 GLogWarning.log("Http") << "Application initialization returned unsuccessful result!";
-                return false;
+                
+                module.Close();
+                return -1;
             }
             
             // Calculate module index
-            int32 moduleIndex = INDEX_NONE;
+            int16 moduleIndex = INDEX_NONE;
             
             for (int32 i = 0; i < modules.GetSize(); ++i)
             {

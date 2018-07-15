@@ -66,13 +66,13 @@ namespace Neko
              */
             bool BindPort(const uint16 port, TArray<uint16>& ports);
             
-            /** Prepares applications. E.g. binds found application ports and so on. */
+            /** Prepares applications. Binds found application ports. */
             void PrepareApplications();
             
             /**
              * Manages worker threads.
              */
-            int ProcessWorkerThreads(void* kek);
+            uint16 ProcessWorkerThreads(void* kek);
           
             /**
              * Processes incoming requests.
@@ -85,13 +85,13 @@ namespace Neko
             /** Shuts down the server. */
             void Shutdown();
             
-            int32 Run();
+            uint32 Run();
             
             /** Clears cached data and settings. */
             void Clear();
             
             /** Gets server process id (if multiple are running). */
-            int GetServerProcessId(const String& serverName) const;
+            uint32 GetServerProcessId(const String& serverName) const;
             
         private:
             
@@ -110,8 +110,6 @@ namespace Neko
             
             IAllocator& Allocator;
             
-            IAllocator* FreeListAllocator;
-            
             FS::FileSystem& FileSystem;
             
         public:
@@ -122,10 +120,10 @@ namespace Neko
             void Restart();
             void Update();
             
-            int StartCommand(const String& name, bool force = false);
-            int RestartCommand(const String& serverName) const;
-            int ExitCommand(const String& serverName) const;
-            int UpdateModulesCommand(const String& serverName) const;
+            uint16 StartCommand(const String& name, bool force = false);
+            uint16 RestartCommand(const String& serverName) const;
+            uint16 ExitCommand(const String& serverName) const;
+            uint16 UpdateModulesCommand(const String& serverName) const;
             
         public:
             

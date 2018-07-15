@@ -26,7 +26,7 @@ namespace Neko
             
             bool SuppressXFrameOptionsHeader : 1;
             
-            bool AutoIdRegeneration : 1;
+            bool AutoIdRenewal : 1;
             
         };
         

@@ -37,6 +37,7 @@
 
 #include "../Utils.h"
 
+#include "UserManager.h"
 #include "Utilities.h"
 #include "Cookie.h"
 #include "Session.h"
@@ -70,23 +71,19 @@ namespace Neko
             
             /** Called after request action execution. */
             virtual void PostFilter() { };
-            
-            // @todo Move 
-            bool IsUserAuthenticated();
-            bool UserLogin(const class IUser& user);
-            void UserLogout();
-            
-            String GetAuthToken();
-            
+
             virtual bool IsSessionEnabled() const { return true; }
             
             virtual bool IsCsrfProtectionEnabled() const { return true; }
+            
+            String GetAuthToken();
             
             bool IsCsrflessAction(const char* action) const { return true; }
             
             bool VerifyRequest();
             
             void SetSession(const Session& session);
+            void SetUserManager(UserManager* userManager) { this->UserManager = userManager; }
             
             bool AddCookie(Cookie cookie);
             
@@ -94,12 +91,12 @@ namespace Neko
             const NEKO_FORCE_INLINE Net::Http::Response& GetHttpResponse() { return HttpResponse; }
             
             /** Parameters from url / arguments tagged as [param] or [params] */
-            const NEKO_FORCE_INLINE TArray<String>& GetUrlParameters() const { return this->Arguments; }
+            const NEKO_FORCE_INLINE TArray<String>& GetUrlParameters() const { return this->QueryParameters; }
 
             /** Sets this controller arguments for action. */
             void SetUrlParameters(const TArray<String>& arguments)
             {
-                this->Arguments = arguments;
+                this->QueryParameters = arguments;
             }
             
             /** Requests transaction rollback. */
@@ -130,6 +127,12 @@ namespace Neko
             
             IAllocator& GetAllocator() { return Allocator; }
             
+            NEKO_FORCE_INLINE UserManager& GetUserManager()
+            {
+                assert(UserManager != nullptr);
+                return *UserManager;
+            }
+            
         private:
             
             bool Rollback;
@@ -137,11 +140,13 @@ namespace Neko
             Session Session;
             
             //! Incoming parameters (url arguments)
-            TArray<String> Arguments;
+            TArray<String> QueryParameters;
             
             IAllocator& Allocator;
             
             CookieJar CookieJar;
+            
+            UserManager* UserManager;
             
         public:
             // @note Lifetime of these is the same as the lifetime of this controller.

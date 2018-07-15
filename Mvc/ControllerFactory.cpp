@@ -34,6 +34,7 @@
 #include "../Server/IProtocol.h"
 
 #include "Options.h"
+#include "UserManager.h"
 #include "SessionManager.h"
 #include "ControllerFactory.h"
 #include "IController.h"
@@ -47,6 +48,7 @@ namespace Neko
         : Allocator(allocator)
         , Router(router)
         , ControllerDispatcher(allocator)
+        , UserManager(SessionManager)
         {
         }
        
@@ -118,13 +120,14 @@ namespace Neko
             {
                 auto* context = contextIt.value();
                 
-                // create controller
+                // create a brand new controller
                 IController* controller = context->CreateController(request, response);
                 
                 assert(controller != nullptr);
                 
-                // set params
+                // set query params
                 controller->SetUrlParameters(routing.Params);
+                controller->SetUserManager(&UserManager);
                 
                 // session
                 SetSession(request, *controller);
@@ -136,6 +139,7 @@ namespace Neko
                 {
                     // only for specified methods
                     const auto& method = request.Method;
+                    
                     if (method != "get" && method != "head" && method != "options" && method != "trace")
                     {
                         verified = controller->VerifyRequest();
@@ -150,7 +154,7 @@ namespace Neko
                 {
                     if (controller->IsSessionEnabled())
                     {
-                        if (Options::SessionOptions().AutoIdRegeneration || !controller->GetSession().IsValid())
+                        if (Options::SessionOptions().AutoIdRenewal || !controller->GetSession().IsValid())
                         {
                             // remove the old session
                             SessionManager.Remove(controller->GetSession().Id);
@@ -184,7 +188,7 @@ namespace Neko
                             else
                             {
                                 // shouldn't happen
-                                GLogWarning.log("Mvc") << "Couldn't store requested session!";
+                                GLogWarning.log("Mvc") << "Couldn't store a requested session!";
                             }
                         }
                     }

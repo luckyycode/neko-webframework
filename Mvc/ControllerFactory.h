@@ -37,6 +37,7 @@
 #include "../Server/IProtocol.h"
 #include "Router.h"
 
+#include "UserManager.h"
 #include "SessionManager.h"
 #include "ControllerContext.h"
 
@@ -96,6 +97,7 @@ namespace Neko
             
             Router& Router;
             
+            UserManager UserManager;
             SessionManager SessionManager;
             
             IAllocator& Allocator;

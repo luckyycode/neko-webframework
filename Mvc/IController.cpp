@@ -36,8 +36,6 @@
 #include "Router.h"
 #include "User.h"
 
-#define SESSION_USER_NAME   "loginUserName"
-
 namespace Neko
 {
     using namespace Neko::Http;
@@ -45,11 +43,12 @@ namespace Neko
     {
         IController::IController(Net::Http::Request& request, Net::Http::Response& response, IAllocator& allocator)
         : Allocator(allocator)
-        , Arguments(allocator)
+        , QueryParameters(allocator)
         , CookieJar(allocator)
         , HttpRequest(request)
         , HttpResponse(response)
         , Rollback(false)
+        , UserManager(nullptr)
         {
             
         }
@@ -58,44 +57,7 @@ namespace Neko
         {
             
         }
-    
-        bool IController::IsUserAuthenticated()
-        {
-            auto keyIt = Session.Find(SESSION_USER_NAME);
-            return keyIt.IsValid();
-        }
-        
-        bool IController::UserLogin(const IUser& user)
-        {
-            if (user.GetIdentityKey().IsEmpty())
-            {
-                GLogWarning.log("Mvc") << "User identity key is empty!";
-                return false;
-            }
-            
-            if (IsUserAuthenticated())
-            {
-                GLogInfo.log("Mvc") << "User is already authenticated!";
-            }
-            
-            GetSession().Insert(SESSION_USER_NAME, user.GetIdentityKey());
-            
-            GLogInfo.log("Mvc") << "User logged in!";
-            
-            return true;
-        }
-        
-        void IController::UserLogout()
-        {
-            auto& session = GetSession();
-            
-            const auto keyIt = session.Find(SESSION_USER_NAME);
-            if (keyIt.IsValid())
-            {
-                GLogInfo.log("Mvc") << "User logged out.";
-                session.Erase(keyIt);
-            }
-        }
+
         
         bool IController::VerifyRequest()
         {

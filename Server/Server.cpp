@@ -229,7 +229,7 @@ namespace Neko
             }
         }
 
-        int32 Server::Run()
+        uint32 Server::Run()
         {
             bool initialized = Init();
             if (!initialized)
@@ -524,7 +524,7 @@ namespace Neko
             ThreadSafeCounter& ThreadsWorkingCount;
         };
         
-        int32 Server::ProcessWorkerThreads(void* kek)
+        uint16 Server::ProcessWorkerThreads(void* kek)
         {
             SocketServerData* data = static_cast<SocketServerData* >(kek);
             Net::SocketsQueue& sockets = static_cast<Net::SocketsQueue&>(*data->queue);
@@ -716,8 +716,8 @@ namespace Neko
                     }
                     
                     // @todo get rid of std function
-                    application->OnApplicationInit = std::function<bool(ApplicationInitDesc)>();
-                    application->OnApplicationRequest = std::function<int(Net::Http::RequestData* , Net::Http::ResponseData* )>();
+                    application->OnApplicationInit = std::function<bool(ApplicationInitContext)>();
+                    application->OnApplicationRequest = std::function<int16(Net::Http::RequestData* , Net::Http::ResponseData* )>();
                     application->OnApplicationPostRequest = std::function<void(Net::Http::ResponseData* )>();
                     application->OnApplicationExit = std::function<void()>();
                 }
@@ -806,7 +806,7 @@ namespace Neko
                 
                 assert (app->OnApplicationInit);
                 
-                ApplicationInitDesc items
+                ApplicationInitContext items
                 {
                     *app->RootDirectory,
                     &Allocator,
@@ -858,9 +858,9 @@ namespace Neko
             Controls.ProcessQueue();
         }
         
-        int32 Server::GetServerProcessId(const String& serverName) const
+        uint32 Server::GetServerProcessId(const String& serverName) const
         {
-            int processId = 0;
+            uint32 processId = 0;
             {
                 int memoryId;
                 MT::SpinLock lick(Mutex);
@@ -876,7 +876,7 @@ namespace Neko
         
         // Commands
         
-        int Server::StartCommand(const String& name, bool force/* = false*/)
+        uint16 Server::StartCommand(const String& name, bool force/* = false*/)
         {
             Neko::Platform::CheckSharedMemoryName((String&)name);
             
@@ -939,7 +939,7 @@ namespace Neko
             
             Mutex.Unlock();
             
-            int32 code = EXIT_FAILURE;
+            uint32 code = EXIT_FAILURE;
             
             do
             {
@@ -956,21 +956,21 @@ namespace Neko
             return code;
         }
         
-        int Server::RestartCommand(const String& serverName) const
+        uint16 Server::RestartCommand(const String& serverName) const
         {
             const uint32 processId = GetServerProcessId(serverName);
             
             return processId > 1 && Neko::Platform::SendSignal(processId, SIGUSR1) ? EXIT_SUCCESS : EXIT_FAILURE;
         }
         
-        int Server::ExitCommand(const String& serverName) const
+        uint16 Server::ExitCommand(const String& serverName) const
         {
             const uint32 processId = GetServerProcessId(serverName);
             
             return processId > 1 && Neko::Platform::SendSignal(processId, SIGTERM) ? EXIT_SUCCESS : EXIT_FAILURE;
         }
         
-        int Server::UpdateModulesCommand(const String& serverName) const
+        uint16 Server::UpdateModulesCommand(const String& serverName) const
         {
             const uint32 processId = GetServerProcessId(serverName);
             

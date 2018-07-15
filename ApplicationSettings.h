@@ -47,7 +47,7 @@ namespace Neko
     namespace Http
     {
         /** Object used to pass parameters to the application module on init. */
-        struct ApplicationInitDesc
+        struct ApplicationInitContext
         {
             const char* RootDirectory = nullptr;
             IAllocator* AppAllocator = nullptr;
@@ -85,12 +85,12 @@ namespace Neko
             String KeyFile;
             
             /** Called on early server initialization. */
-            std::function< bool(ApplicationInitDesc) > OnApplicationInit;
+            std::function< bool(ApplicationInitContext) > OnApplicationInit;
             /** Called on server quit. */
             std::function< void() > OnApplicationExit;
             
             /** Called on incoming request. */
-            std::function< int(Net::Http::RequestData* , Net::Http::ResponseData* ) > OnApplicationRequest;
+            std::function< int16(Net::Http::RequestData* , Net::Http::ResponseData* ) > OnApplicationRequest;
             /** Called after processing request. */
             std::function< void(Net::Http::ResponseData* ) > OnApplicationPostRequest;
         };

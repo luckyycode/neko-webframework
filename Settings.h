@@ -105,7 +105,7 @@ namespace Neko
             
             bool SetApplicationModuleMethods(ApplicationSettings& settings, Module& module);
             
-            int32 LoadModule(const String& name, const String& rootDirectory, TArray<Module>& modules, ApplicationSettings& settings);
+            int16 LoadModule(const String& name, const String& rootDirectory, TArray<Module>& modules, ApplicationSettings& settings);
             
         public:
             

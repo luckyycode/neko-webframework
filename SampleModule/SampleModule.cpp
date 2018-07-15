@@ -26,8 +26,8 @@ class WebApplication : public IWebApplication
 {
 public:
     
-    WebApplication(const ApplicationInitDesc& desc)
-    : IWebApplication(desc)
+    WebApplication(const ApplicationInitContext& context)
+    : IWebApplication(context)
     {
         LoadSettings();
         
@@ -66,15 +66,15 @@ extern "C"
     /**
      * This is called on early module initialization.
      */
-    bool OnApplicationInit(Neko::Http::ApplicationInitDesc desc)
+    bool OnApplicationInit(Neko::Http::ApplicationInitContext context)
     {
         GLogInfo.log("Http") << "Sample module init";
 
-        const char* rootDirectory = desc.RootDirectory;
+        const char* rootDirectory = context.RootDirectory;
         SampleModule::DocumentRoot.Assign(rootDirectory);
         
-        auto& allocator = *desc.AppAllocator;
-        Application = NEKO_NEW(allocator, WebApplication) (desc);
+        auto& allocator = *context.AppAllocator;
+        Application = NEKO_NEW(allocator, WebApplication) (context);
         
         return Application != nullptr;
     }
@@ -82,7 +82,7 @@ extern "C"
     /**
      * This is called when requested application has been found.
      */
-    int OnApplicationRequest(Neko::Net::Http::RequestData* request, Neko::Net::Http::ResponseData * response)
+    int16 OnApplicationRequest(Neko::Net::Http::RequestData* request, Neko::Net::Http::ResponseData * response)
     {
         return Application->ProcessRequest(*request, *response);
     }

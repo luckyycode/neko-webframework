@@ -42,8 +42,8 @@ namespace Neko
         {
         public:
             
-            IWebApplication(const Http::ApplicationInitDesc& desc)
-            : Context(*desc.AppAllocator, *desc.FileSystem)
+            IWebApplication(const Http::ApplicationInitContext& context)
+            : Context(*context.AppAllocator, *context.FileSystem)
             {
             }
             
