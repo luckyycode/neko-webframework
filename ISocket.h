@@ -38,7 +38,7 @@
 
 namespace Neko
 {
-    namespace Http
+    namespace Skylar
     {
         /** Wrapper for system socket. */
         class ISocket

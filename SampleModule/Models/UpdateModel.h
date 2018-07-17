@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../Mvc/Model.h"
+#include "../../Nova/Model.h"
 
 namespace Neko
 {
@@ -23,7 +23,7 @@ namespace Neko
         String Text;
     };
     
-    struct UpdateModel : Mvc::IModel
+    struct UpdateModel : Nova::IModel
     {
         long UpdateId;
         MessageModel Message;

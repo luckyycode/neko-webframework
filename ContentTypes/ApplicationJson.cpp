@@ -34,7 +34,7 @@
 
 namespace Neko
 {
-    namespace Http
+    namespace Skylar
     {
         ApplicationJson::ApplicationJson(IAllocator& allocator)
         : IContentType(allocator)

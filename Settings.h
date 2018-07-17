@@ -43,7 +43,7 @@ namespace Neko
         class FileSystem;
     }
     
-    namespace Http
+    namespace Skylar
     {
         /// Common server settings.
         class ServerSettings

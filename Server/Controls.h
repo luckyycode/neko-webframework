@@ -37,7 +37,7 @@
 
 namespace Neko
 {
-    namespace Http
+    namespace Skylar
     {
         /// Server threadsafe controls.
         class ServerSharedControls

@@ -44,7 +44,7 @@ namespace Neko
     {
         class FileSystem;
     }
-    namespace Http
+    namespace Skylar
     {
         /** Object used to pass parameters to the application module on init. */
         struct ApplicationInitContext

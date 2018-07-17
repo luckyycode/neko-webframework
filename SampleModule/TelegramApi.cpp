@@ -104,7 +104,7 @@ namespace Neko
             return false;
         }
         
-        Http::SocketSSL socketSsl(socket, (SSL_CTX* )SslContext);
+        Skylar::SocketSSL socketSsl(socket, (SSL_CTX* )SslContext);
         
         // connect using ssl
         result = socketSsl.Connect();
@@ -187,7 +187,7 @@ namespace Neko
         args.Reserve(2);
         args.Emplace("chat_id", (int64)chatId);
 		
-		const auto mimeType = Http::GetMimeByFileName(filename, GetPhotoMimeTypes());
+		const auto mimeType = Skylar::GetMimeByFileName(filename, GetPhotoMimeTypes());
 		
         Net::Http::HttpRequestParam photoItem("photo", "", true, mimeType, filename);
         photoItem.value.Append((const char* )data, size);

@@ -3,7 +3,7 @@
 ![alt text](https://c.radikal.ru/c25/1807/13/e500422fd6a7.png)
 ![alt text](https://img.shields.io/badge/repo%20status-active-blue.svg)
 
-Neko server with Mvc framework. Work in progress, not ready for production in any way yet.
+Neko server with Nova framework. Work in progress, not ready for production in any way yet.
 
 Fast and efficient server with higher level mvc code for developing web applications.
 
@@ -11,8 +11,8 @@ See Wiki page for more info.
 
 | Directory                  | Description       
 | --------------------- |:-----------------------------------------------------------------:|
-| /Mvc/                     | contains higher level logic (e.g. controllers, routing)
-| /Server/                  | contains lower level logic for processing requests      
+| /Nova/                     | contains higher level logic (e.g. controllers, routing)
+| /Server/                  | Skylar server, contains lower level logic for processing requests      
 | /ContentTypes/        | supported content data parsers for content-type      
 | /SampleModule/     | sample project 
 
@@ -46,9 +46,7 @@ See Issues for more info, but the most important and global now are the followin
 * HTTP/2 support - *wip* 
 * GnuTLS support instead of OpenSSL (I will keep these together)
 * More samples
-* Mvc - database
-* Mvc - user 
-* Mvc - session
+* Nova - database
 
 ## About
 

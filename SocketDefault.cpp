@@ -33,7 +33,7 @@
 
 namespace Neko
 {
-    namespace Http
+    namespace Skylar
     {
         SocketDefault::SocketDefault(const Net::INetSocket& socket)
         : Socket(socket)

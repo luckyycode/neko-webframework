@@ -50,7 +50,7 @@
 
 namespace Neko
 {
-    namespace Http
+    namespace Skylar
     {
         static bool NegotiateProtocol(void* session, String& protocol)
         {
@@ -242,7 +242,7 @@ namespace Neko
             if (Listeners.IsEmpty())
             {
                 Debug::DebugColor(Debug::EStdoutColor::Red); // aesthetics
-                GLogError.log("Http") << "## Couldn't run server, no sockets opened.";
+                GLogError.log("Http") << "## Couldn't run Skylar server, no sockets opened.";
                 Debug::DebugColor(Debug::EStdoutColor::White);
                 
                 Clear();
@@ -281,7 +281,7 @@ namespace Neko
             JobSystem::RunJobs(&job, 1, nullptr);
             
             Debug::DebugColor(Debug::EStdoutColor::Green);
-            GLogInfo.log("Http") << "## Server is now listening on " << Settings.ResolvedAddressString << " (" << Listeners.GetSize() << " listeners).";
+            GLogInfo.log("Http") << "## Skylar server is now listening on " << Settings.ResolvedAddressString << " (" << Listeners.GetSize() << " listeners).";
             Debug::DebugColor(Debug::EStdoutColor::White);
             
             

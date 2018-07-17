@@ -11,16 +11,18 @@
 #include "../../Engine/FS/FileSystem.h"
 #include "../../Engine/Data/JsonSerializer.h"
 
-#include "../Mvc/Options.h"
-#include "../Mvc/RequestContext.h"
-#include "../Mvc/IWebApplication.h"
+#include "../Nova/Options.h"
+#include "../Nova/RequestContext.h"
+#include "../Nova/IWebApplication.h"
 #include "../ApplicationSettings.h"
 
 #include "Controllers/TelegramController.h"
 #include "Controllers/HomeController.h"
 
 using namespace Neko;
-using namespace Neko::Mvc;
+using namespace Neko::Nova;
+using namespace Neko::Skylar;
+using namespace Neko::Net::Http;
 
 class WebApplication : public IWebApplication
 {
@@ -33,23 +35,19 @@ public:
         
         RegisterControllers();
     }
-    
+
     void RegisterControllers()
     {
         auto& cf = GetContext().GetControllerFactory();
-        auto& router = cf.GetRouter();
+    
+        cf.CreateContext<HomeController>("home", "/api")
+            .RouteAction<&HomeController::Index>(Method::Get, "index")
+            .RouteAction<&HomeController::Get>(Method::Get, "get", "[params]")
+            .RouteAction<&HomeController::Login>(Method::Get, "login")
+            .RouteAction<&HomeController::Logout>(Method::Get, "logout");
         
-        
-        auto* homeContext = cf.CreateControllerContext<HomeController>("home", "/api/home");
-        
-        homeContext->RouteAction<&HomeController::Index>(router, Net::Http::Method::Get, "index")
-            .RouteAction<&HomeController::Get>(router, Net::Http::Method::Get, "get", "[params]")
-            .RouteAction<&HomeController::Login>(router, Net::Http::Method::Get, "login")
-            .RouteAction<&HomeController::Logout>(router, Net::Http::Method::Get, "logout");
-        
-        auto* telegramContext = cf.CreateControllerContext<TelegramController>("telegram", "/api/telegram");
-        
-        telegramContext->RouteAction<&TelegramController::Update>(router, Net::Http::Method::Post, "update");
+        cf.CreateContext<TelegramController>("telegram", "/api")
+            .RouteAction<&TelegramController::Update>(Method::Post, "update");
     }
     
     bool LoadSettings()
@@ -66,7 +64,7 @@ extern "C"
     /**
      * This is called on early module initialization.
      */
-    bool OnApplicationInit(Neko::Http::ApplicationInitContext context)
+    bool OnApplicationInit(ApplicationInitContext context)
     {
         GLogInfo.log("Http") << "Sample module init";
 

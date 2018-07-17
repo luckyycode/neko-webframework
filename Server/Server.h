@@ -46,7 +46,7 @@
 
 namespace Neko
 {
-    namespace Http
+    namespace Skylar
     {
         /// Server instance.
         class Server

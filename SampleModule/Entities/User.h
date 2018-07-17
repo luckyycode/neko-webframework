@@ -1,10 +1,10 @@
 #pragma once
 
-#include "../../Mvc/User.h"
+#include "../../Nova/User.h"
 
 namespace Neko
 {
-    class User : public Mvc::IUser
+    class User : public Nova::IUser
     {
     public:
         

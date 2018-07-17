@@ -38,7 +38,7 @@
 
 namespace Neko
 {
-    namespace Http
+    namespace Skylar
     {
         /// Http 1.1 capable server protocol.
         class ProtocolHttp : public IProtocol

@@ -38,7 +38,7 @@
 
 namespace Neko
 {
-    namespace Http
+    namespace Skylar
     {
         /// Content type interface. Used for types, e.g. text/plain, application/json, multipart/form-data and so on.
         class IContentType

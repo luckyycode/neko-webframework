@@ -40,7 +40,7 @@
 
 namespace Neko
 {
-    namespace Http
+    namespace Skylar
     {
         ServerSettings::ServerSettings(FS::FileSystem& fileSystem, IAllocator& allocator)
         : Allocator(allocator)

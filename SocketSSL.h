@@ -41,7 +41,7 @@
 
 namespace Neko
 {
-    namespace Http
+    namespace Skylar
     {
         /// OpenSSL socket wrapper
         class SocketSSL : public ISocket

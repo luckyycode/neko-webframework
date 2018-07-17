@@ -36,7 +36,7 @@
 
 namespace Neko
 {
-    namespace Http
+    namespace Skylar
     {
         SocketSSL::SocketSSL(const Net::INetSocket& socket, SSL_CTX* context)
         : Socket(socket)

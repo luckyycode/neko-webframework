@@ -43,7 +43,7 @@
 
 namespace Neko
 {
-    namespace Http
+    namespace Skylar
     {
         IProtocol::IProtocol(ISocket& socket, const ServerSettings* settings, IAllocator& allocator)
         : Socket(socket)
@@ -375,7 +375,7 @@ namespace Neko
             return ranges;
         }
         
-        static bool SendPartial(const IProtocol& protocol, const Net::Http::Request& request, const String& fileName, CDateTime fileTime, const ulong fileSize, const String& rangeHeader, TArray<std::pair<String, String> >& extraHeaders, const THashMap<String, String>& mimeTypes, const bool headersOnly, IAllocator& allocator)
+        static bool SendPartial(const IProtocol& protocol, const Net::Http::Request& request, const String& fileName, DateTime fileTime, const ulong fileSize, const String& rangeHeader, TArray<std::pair<String, String> >& extraHeaders, const THashMap<String, String>& mimeTypes, const bool headersOnly, IAllocator& allocator)
         {
             const int32 valueOffset = rangeHeader.Find("=");
             
@@ -484,14 +484,14 @@ namespace Neko
         static bool Sendfile(const IProtocol& protocol, const Net::Http::Request &request, TArray<std::pair<String, String> >& extraHeaders, const String& fileName, const THashMap<String, String>& mimeTypes, const bool headersOnly, IAllocator& allocator)
         {
             // Current time in Gmt
-            const auto now = CDateTime::GmtNow().ToRfc882();
+            const auto now = DateTime::GmtNow().ToRfc882();
             extraHeaders.Emplace("date", now);
             
             // get file info
             const auto fileInfo = Neko::Platform::GetFileData(*fileName);
             
             uint64 fileSize;
-            CDateTime fileModificationTime;
+            DateTime fileModificationTime;
             
             // File is not found or not valid
             if (!fileInfo.bIsValid)
@@ -516,7 +516,7 @@ namespace Neko
             // if its valid, check file moditification time
             if (modifiedIt.IsValid())
             {
-                const auto requestTime = CDateTime::FromRfc822(*modifiedIt.value());
+                const auto requestTime = DateTime::FromRfc822(*modifiedIt.value());
                 
                 if (fileModificationTime == requestTime)
                 {
@@ -551,7 +551,7 @@ namespace Neko
             
             const String mimeType = GetMimeByFileName(fileName, mimeTypes);
             // format datetime
-            const auto lastModifiedGmt = CDateTime::GmtNow().ToRfc882();
+            const auto lastModifiedGmt = DateTime::GmtNow().ToRfc882();
             
             String fileSizeString(allocator);
             fileSizeString += fileSize;
@@ -631,7 +631,7 @@ namespace Neko
                 
                 const auto& mimeTypes = Settings->SupportedMimeTypes;
                 // doesnt assume that file is sent successfully
-                bool success = ::Neko::Http::Sendfile(*this, request, headers, sendfileIt.value(), mimeTypes, headersOnly, Allocator);
+                bool success = Skylar::Sendfile(*this, request, headers, sendfileIt.value(), mimeTypes, headersOnly, Allocator);
                 NEKO_UNUSED(success)
                 
                 return true;

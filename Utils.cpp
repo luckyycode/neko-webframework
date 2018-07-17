@@ -42,7 +42,7 @@
 
 namespace Neko
 {
-    namespace Http
+    namespace Skylar
     {
         String GetMimeByFileName(const String& fileName, const THashMap<String, String>& mimes)
         {

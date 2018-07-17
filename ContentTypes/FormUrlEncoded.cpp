@@ -37,7 +37,7 @@
 
 namespace Neko
 {
-    namespace Http
+    namespace Skylar
     {
         FormUrlencoded::FormUrlencoded(IAllocator& allocator)
         : IContentType(allocator)

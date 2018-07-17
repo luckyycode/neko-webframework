@@ -45,7 +45,7 @@ namespace Neko
             class Response;
         }
     }
-	namespace Http
+	namespace Skylar
     {
         // binary
         static const char* DefaultMimeType = "application/octet-stream";

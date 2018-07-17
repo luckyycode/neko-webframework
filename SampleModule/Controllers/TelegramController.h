@@ -1,13 +1,13 @@
 
 #pragma once
 
-#include "../../Mvc/IController.h"
+#include "../../Nova/IController.h"
 
 #include "../TelegramApi.h"
 
 namespace Neko
 {
-    class TelegramController : public Mvc::IController
+    class TelegramController : public Nova::IController
     {
     public:
         

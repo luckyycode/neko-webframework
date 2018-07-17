@@ -16,7 +16,7 @@ namespace Neko
     
     void HomeController::Index()
     {
-        const char* aaa = GetUserManager().IsUserAuthenticated(GetSession()) ? "Perhaps" : "No";
+        const char* aaa = GetUserManager().IsUserAuthenticated(Session) ? "Perhaps" : "No";
         Net::Http::ObjectResult result
         {
             .Value = (uint8* )aaa,
@@ -45,9 +45,7 @@ namespace Neko
         User user;
         user.UserName = "neko";
         
-        auto& session = GetSession();
-        
-        GetUserManager().UserLogin(user, session);
+        GetUserManager().UserLogin(user, Session);
         
         const char* aaa = *user.UserName;
         Net::Http::ObjectResult result
@@ -60,7 +58,7 @@ namespace Neko
     
     void HomeController::Logout()
     {
-        GetUserManager().UserLogout(GetSession());
+        GetUserManager().UserLogout(Session);
     }
 }
 

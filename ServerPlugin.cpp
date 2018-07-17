@@ -44,7 +44,7 @@
 
 namespace Neko
 {
-    static Http::Server* ServerInstance = nullptr;
+    static Skylar::Server* ServerInstance = nullptr;
     
     class ServerTask : public MT::Task
     {
@@ -98,7 +98,7 @@ namespace Neko
                 }
             }
             
-            ServerInstance = NEKO_NEW(GetAllocator(), Http::Server )(GetAllocator(), FileSystem);
+            ServerInstance = NEKO_NEW(GetAllocator(), Skylar::Server )(GetAllocator(), FileSystem);
             int32 exitCode = ServerInstance->StartCommand(serverName, forceStart);
             
             NEKO_DELETE(GetAllocator(), ServerInstance);

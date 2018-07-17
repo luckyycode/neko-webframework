@@ -51,7 +51,7 @@
 
 namespace Neko
 {
-    namespace Http
+    namespace Skylar
     {
         /// Interface capable for http, websockets, etc.
         class IProtocol

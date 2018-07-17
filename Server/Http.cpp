@@ -48,7 +48,7 @@
 
 namespace Neko
 {
-    namespace Http
+    namespace Skylar
     {
         ProtocolHttp::ProtocolHttp(ISocket& socket, const ServerSettings* settings, IAllocator& allocator)
         : IProtocol(socket, settings, allocator)

@@ -33,7 +33,7 @@
 
 namespace Neko
 {
-    namespace Http
+    namespace Skylar
     {
         IContentType::IContentType(IAllocator& allocator)
         : Allocator(allocator)

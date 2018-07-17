@@ -35,7 +35,7 @@
 
 namespace Neko
 {
-    namespace Http
+    namespace Skylar
     {
         /// Text/plain extension for content type.
         class TextPlain: public IContentType

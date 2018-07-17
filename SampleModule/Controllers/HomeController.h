@@ -1,11 +1,11 @@
 
 #pragma once
 
-#include "../../Mvc/IController.h"
+#include "../../Nova/IController.h"
 
 namespace Neko
 {
-    class HomeController : public Mvc::IController
+    class HomeController : public Nova::IController
     {
     public:
         

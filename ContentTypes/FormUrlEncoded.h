@@ -35,7 +35,7 @@
 
 namespace Neko
 {
-    namespace Http
+    namespace Skylar
     {
         class FormUrlencoded : public IContentType
         {
