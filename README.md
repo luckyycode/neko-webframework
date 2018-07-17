@@ -3,7 +3,7 @@
 ![alt text](https://c.radikal.ru/c25/1807/13/e500422fd6a7.png)
 ![alt text](https://img.shields.io/badge/repo%20status-active-blue.svg)
 
-Neko server with Nova framework. Work in progress, not ready for production in any way yet.
+Neko server / framework. Work in progress, not ready for production in any way yet.
 
 Fast and efficient server with higher level mvc code for developing web applications.
 
