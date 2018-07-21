@@ -45,7 +45,7 @@ namespace Neko
             
         public:
             
-            virtual bool Parse(const String& buffer, Net::Http::RequestDataInternal* requestData, ContentDesc* contentDesc) const override;
+            virtual bool Parse(const String& buffer, Net::Http::RequestDataInternal& requestData, ContentDesc* contentDesc) const override;
         };
     }
 }

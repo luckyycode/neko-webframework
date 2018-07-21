@@ -37,6 +37,7 @@
 
 namespace Neko
 {
+    using namespace Neko::Net;
     namespace Skylar
     {
         FormUrlencoded::FormUrlencoded(IAllocator& allocator)
@@ -46,7 +47,7 @@ namespace Neko
         }
         
         
-        bool FormUrlencoded::Parse(const Neko::String& buffer, Net::Http::RequestDataInternal* requestData, ContentDesc* contentDesc) const
+        bool FormUrlencoded::Parse(const Neko::String& buffer, Http::RequestDataInternal& requestData, ContentDesc* contentDesc) const
         {
             if (buffer.IsEmpty())
             {
@@ -83,7 +84,7 @@ namespace Neko
                     Util::DecodeUrl(stringToDecode, name);
                     
                     // empty value
-                    requestData->IncomingData.Insert(Neko::Move(name), String());
+                    requestData.IncomingData.Insert(Neko::Move(name), String());
                 }
                 else
                 {
@@ -100,7 +101,7 @@ namespace Neko
                     Util::DecodeUrl(stringToDecode, value);
                     
                     // Store parameter and value
-                    requestData->IncomingData.Insert(Neko::Move(name), Neko::Move(value));
+                    requestData.IncomingData.Insert(Neko::Move(name), Neko::Move(value));
                 }
             }
             

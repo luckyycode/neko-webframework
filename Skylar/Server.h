@@ -31,18 +31,18 @@
 
 #pragma once
 
-#include "../../Engine/Core/Module.h"
-#include "../../Engine/Data/IAllocator.h"
-#include "../../Engine/Utilities/Tuple.h"
-#include "../../Engine/Network/SocketQueue.h"
-#include "../../Engine/Network/SocketList.h"
+#include "Engine/Core/Module.h"
+#include "Engine/Data/IAllocator.h"
+#include "Engine/Utilities/Tuple.h"
+#include "Engine/Network/SocketQueue.h"
+#include "Engine/Platform/SocketList.h"
 
 #include "Controls.h"
 #include "../Settings.h"
 
 #include "../Tls.h"
 
-#define DEFAULT_SERVER_NAME     "Neko"
+#define DEFAULT_SERVER_NAME     "Skylar"
 
 namespace Neko
 {

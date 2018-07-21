@@ -32,13 +32,12 @@
 #include "Http.h"
 #include "WebSocket.h"
 
-#include "../../Engine/Core/Profiler.h"
-#include "../../Engine/Core/Log.h"
-#include "../../Engine/Data/Blob.h"
-#include "../../Engine/Utilities/NekoString.h"
-#include "../../Engine/Utilities/Cache.h"
-#include "../../Engine/Platform/Platform.h"
-#include "../../Engine/Network/Http/Extensions/Extensions.h"
+#include "Engine/Core/Profiler.h"
+#include "Engine/Core/Log.h"
+#include "Engine/Data/Blob.h"
+#include "Engine/Utilities/NekoString.h"
+#include "Engine/Utilities/Cache.h"
+#include "Engine/Platform/Platform.h"
 
 #include "../ContentTypes/ContentDesc.h"
 #include "../ISocket.h"
@@ -56,32 +55,26 @@ namespace Neko
             
         }
 
-        void ProtocolHttp::WriteRequest(TArray<char>& buffer, const Net::Http::Request& request, const ApplicationSettings& applicationSettings) const
+        void ProtocolHttp::WriteRequest(char* buffer, const Http::Request& request, const ApplicationSettings& applicationSettings) const
         {
-            Net::Http::OutputProtocolBlob blob((void* )buffer.GetData(), buffer.GetCapacity()/* max size */);
+            OutputBlob blob(reinterpret_cast<void* >(buffer), INT_MAX);
             
             // version
-            blob.Write(uint8(Net::Http::Version::Http_1));
+            blob.Write(uint8(Http::Version::Http_1));
             
             // request data
-            blob << request.Host;
-            blob << request.Path;
-            blob << request.Method;
+            blob << request.Host << request.Path << request.Method;
             
             // app
-            blob << applicationSettings.RootDirectory;
+            blob.WriteString(applicationSettings.RootDirectory);
             
             // containers
-            blob << request.IncomingHeaders;
-            blob << request.IncomingData;
-            
-            // files
-            blob << request.IncomingFiles;
+            blob << request.IncomingHeaders << request.IncomingData << request.IncomingFiles /* files */;
         }
         
-        void ProtocolHttp::ReadResponse(Net::Http::Request& request, Net::Http::ResponseData& responseData) const
+        void ProtocolHttp::ReadResponse(Http::Request& request, Http::ResponseData& responseData) const
         {
-            Net::Http::InputProtocolBlob blob(responseData.Data, INT_MAX);
+            InputBlob blob(responseData.Data, INT_MAX);
             // write response headers to request
             blob >> request.OutgoingHeaders;
         }
@@ -90,22 +83,19 @@ namespace Neko
         {
             String buffer(Allocator);
             
-            TArray<char> data(Allocator);
-            data.Reserve(REQUEST_BUFFER_SIZE);
+            char data[REQUEST_BUFFER_SIZE]; // @todo  perhaps use memstack allocator?
             
             // profiling
             TimeValue start, end;
             
-            Net::Http::Request request(Allocator);
-            // defaults
-            request.ProtocolVersion = Net::Http::Version::Http_1; // this
+            Http::Request request(Allocator, Http::Version::Http_1); // this
             
             start = Timer.GetAsyncTime();
             
             do
             {
                 // protocol may change connection parameter under some circumstances (e.g. upgrade request)
-                request.ConnectionParams = Net::Http::ConnectionParams::Connection_Close;
+                request.ConnectionParams = Http::ConnectionParams::Connection_Close;
                 
                 RunProtocol(request, data, buffer);
                 // clearup after processing request
@@ -115,12 +105,12 @@ namespace Neko
             
             end = Timer.GetAsyncTime();
             
-            GLogInfo.log("Http") << "Request completed in " << (end - start).GetMilliSeconds() << "ms";
+            GLogInfo.log("Skylar") << "Request completed in " << (end - start).GetMilliSeconds() << "ms";
             
             // see docs
             if (IsConnectionLeaveOpen(request))
             {
-                GLogInfo.log("Http") << "Switching to websocket..";
+                GLogInfo.log("Skylar") << "Switching to websocket..";
                 
                 return NEKO_NEW(Allocator, ProtocolWebSocket)(*this);
             }
@@ -128,14 +118,14 @@ namespace Neko
             return this;
         }
       
-        const ApplicationSettings* ProtocolHttp::GetApplicationSettingsForRequest(Net::Http::Request& request, const bool secure) const
+        const ApplicationSettings* ProtocolHttp::GetApplicationSettingsForRequest(Http::Request& request, const bool secure) const
         {
             // Get domain or address from incoming request
             auto hostIt = request.IncomingHeaders.Find("host");
             
             if (!hostIt.IsValid())
             {
-                GLogWarning.log("Http") << "GetApplicationSettingsForRequest: Request with no host header?!";
+                GLogWarning.log("Skylar") << "GetApplicationSettingsForRequest: Request with no host header?!";
                 
                 return nullptr;
             }
@@ -207,9 +197,9 @@ namespace Neko
             }
         }
         
-        static inline bool ParseRequestContentType(Net::Http::Request& request, String& stringBuffer, const IContentType* contentTypeData, const String& contentTypeName, const ulong contentLength, const THashMap<String, String>& contentParams, ISocket& socket, IAllocator& allocator)
+        static inline bool ParseRequestContentType(Http::Request& request, String& stringBuffer, const IContentType* contentTypeData, const String& contentTypeName, const ulong contentLength, const THashMap<String, String>& contentParams, ISocket& socket, IAllocator& allocator)
         {
-            auto* requestData = (Net::Http::RequestDataInternal* )&request;
+            auto& requestData = (Http::RequestDataInternal& )request;
             
             void* contentTypeState = contentTypeData->CreateState(requestData, contentParams);
             
@@ -283,7 +273,7 @@ namespace Neko
             return result;
         }
         
-        Net::Http::StatusCode ProtocolHttp::GetRequestData(Net::Http::Request& request, String& stringBuffer,
+        Http::StatusCode ProtocolHttp::GetRequestData(Http::Request& request, String& stringBuffer,
                                                         const ApplicationSettings& applicationSettings) const
         {
             // Get content type and check if we have any data
@@ -294,9 +284,9 @@ namespace Neko
                 // hmm
                 if (request.Method != "get")
                 {
-                    GLogWarning.log("Http") << "Request with no Content-Type";
+                    GLogWarning.log("Skylar") << "Request with no Content-Type";
                 }
-                return Net::Http::StatusCode::Empty;
+                return Http::StatusCode::Empty;
             }
             
             const String& headerValue = it.value();
@@ -310,9 +300,9 @@ namespace Neko
             // Check if we support that one
             if (!contentTypeIt.IsValid())
             {
-                GLogWarning.log("Http") << "Unsupported content-type " << *contentTypeName;
+                GLogWarning.log("Skylar") << "Unsupported content-type " << *contentTypeName;
                 
-                return Net::Http::StatusCode::NotImplemented;
+                return Http::StatusCode::NotImplemented;
             }
             
             const IContentType* contentTypeData = contentTypeIt.value();
@@ -330,29 +320,29 @@ namespace Neko
             // check limits
             if (applicationSettings.RequestMaxSize > 0 /* if max size is set */ && applicationSettings.RequestMaxSize < contentLength)
             {
-                GLogWarning.log("Http") << "Large request " << (uint64)contentLength << "/" << applicationSettings.RequestMaxSize;
+                GLogWarning.log("Skylar") << "Large request " << (uint64)contentLength << "/" << applicationSettings.RequestMaxSize;
                 
-                return Net::Http::StatusCode::RequestEntityTooLarge;
+                return Http::StatusCode::RequestEntityTooLarge;
             }
             
             const bool parsed = ParseRequestContentType(request, stringBuffer, contentTypeData, contentTypeName, contentLength, contentParams, Socket, Allocator);
             
             if (!parsed)
             {
-                GLogError.log("Http") << "Couldn't parse data of content-type " << contentTypeName;
+                GLogError.log("Skylar") << "Couldn't parse data of content-type " << contentTypeName;
                 // eh
                 
                 // if content-type parser has created some
                 request.IncomingFiles.Clear();
                 
-                return Net::Http::StatusCode::InternalServerError;
+                return Http::StatusCode::InternalServerError;
             }
             
             // ok
-            return Net::Http::StatusCode::Empty;
+            return Http::StatusCode::Empty;
         }
         
-        bool ProtocolHttp::SendHeaders(const Net::Http::StatusCode status, TArray< std::pair<String, String> >& headers,
+        bool ProtocolHttp::SendHeaders(const Http::StatusCode status, TArray< std::pair<String, String> >& headers,
                                      const uint32& timeout, const bool end) const
         {
             String string("HTTP/1.1 ", Allocator);
@@ -381,7 +371,7 @@ namespace Neko
             return Socket.SendAllPacketsWait(*string, string.Length(), timeout) > 0;
         }
         
-        long ProtocolHttp::SendData(const void* source, uint32 size, const uint32& timeout, Net::Http::DataCounter* dataCounter/* = nullptr*/) const
+        long ProtocolHttp::SendData(const void* source, uint32 size, const uint32& timeout, Http::DataCounter* dataCounter/* = nullptr*/) const
         {
             long sendSize = Socket.SendAllPacketsWait(source, size, timeout);
             // check if no error returned
@@ -396,14 +386,14 @@ namespace Neko
             return sendSize;
         }
         
-        static Net::Http::StatusCode GetRequestHeaders(Net::Http::Request& request, String& stringBuffer)
+        static Http::StatusCode GetRequestHeaders(Http::Request& request, String& stringBuffer)
         {
             PROFILE_FUNCTION()
             
             // If request is empty
             if (stringBuffer.IsEmpty())
             {
-                return Net::Http::StatusCode::BadRequest;
+                return Http::StatusCode::BadRequest;
             }
             
             // Search for end of header (empty string)
@@ -411,7 +401,7 @@ namespace Neko
             
             if (headersEnd == INDEX_NONE)
             {
-                return Net::Http::StatusCode::BadRequest;
+                return Http::StatusCode::BadRequest;
             }
             headersEnd += 2;
             
@@ -421,7 +411,7 @@ namespace Neko
             
             if (strEnd == INDEX_NONE)
             {
-                return Net::Http::StatusCode::BadRequest;
+                return Http::StatusCode::BadRequest;
             }
             // end of line
             stringBuffer[strEnd] = '\0';
@@ -489,14 +479,14 @@ namespace Neko
             stringBuffer.Erase(0, headersEnd + 2);
             
             // ok
-            return Net::Http::StatusCode::Empty;
+            return Http::StatusCode::Empty;
         }
         
-        static bool GetRequest(const ISocket& socket, Net::Http::Request& request, TArray<char>& buffer, String& stringBuffer)
+        static bool GetRequest(const ISocket& socket, Http::Request& request, char* buffer, String& stringBuffer)
         {
             // Get request data from client
             long size = 0;
-            size = socket.GetPacketBlocking((void* )buffer.GetData(), buffer.GetCapacity(), request.Timeout);
+            size = socket.GetPacketBlocking((void* )buffer, REQUEST_BUFFER_SIZE, request.Timeout);
             
             // no content or error
             if (size < 0 && stringBuffer.IsEmpty())
@@ -506,12 +496,12 @@ namespace Neko
             
             if (size > 0)
             {
-                stringBuffer.Append((const char* )buffer.GetData(), size);
+                stringBuffer.Append(buffer, size);
             }
             return true;
         }
         
-        static void SendStatus(const ISocket& socket, const Net::Http::Request& request, const Net::Http::StatusCode statusCode, IAllocator& allocator)
+        static void SendStatus(const ISocket& socket, const Http::Request& request, const Http::StatusCode statusCode, IAllocator& allocator)
         {
             const auto it = GetStatusList().Find((int)statusCode);
             
@@ -527,7 +517,7 @@ namespace Neko
             }
         }
         
-        static inline void CheckRequestUpgrade(Net::Http::Request& request, bool secure)
+        static inline void CheckRequestUpgrade(Http::Request& request, bool secure)
         {
             auto outUpgradeIt = request.OutgoingHeaders.Find("upgrade");
             
@@ -539,15 +529,15 @@ namespace Neko
             const String& upgrade = outUpgradeIt.value();
             upgrade.ToLowerInline();
             
-            GLogInfo.log("Http") << "Upgrade request to " << *upgrade;
+            GLogInfo.log("Skylar") << "Upgrade request to " << *upgrade;
             
             if (upgrade == "h2")
             {
                 if (secure)
                 {
                     // set protocol
-                    request.ProtocolVersion = Net::Http::Version::Http_2;
-                    request.ConnectionParams |= Net::Http::ConnectionParams::Connection_Reuse;
+                    request.ProtocolVersion = Http::Version::Http_2;
+                    request.ConnectionParams |= Http::ConnectionParams::Connection_Reuse;
                 }
             }
             else if (upgrade == "h2c")
@@ -555,34 +545,34 @@ namespace Neko
                 if (!secure)
                 {
                     // set protocol
-                    request.ProtocolVersion = Net::Http::Version::Http_2;
-                    request.ConnectionParams |= Net::Http::ConnectionParams::Connection_Reuse;
+                    request.ProtocolVersion = Http::Version::Http_2;
+                    request.ConnectionParams |= Http::ConnectionParams::Connection_Reuse;
                 }
             }
             else if (upgrade == "websocket")
             {
-                request.ConnectionParams |= Net::Http::ConnectionParams::Connection_LeaveOpen;
+                request.ConnectionParams |= Http::ConnectionParams::Connection_LeaveOpen;
             }
         }
         
-        static inline void CheckRequestKeepAlive(Net::Http::Request& request)
+        static inline void CheckRequestKeepAlive(Http::Request& request)
         {
-            GLogInfo.log("Http") << "keep-alive connection request";
+            GLogInfo.log("Skylar") << "keep-alive connection request";
             
             --request.KeepAliveTimeout;
             
             if (request.KeepAliveTimeout > 0)
             {
-                request.ConnectionParams |= Net::Http::ConnectionParams::Connection_Reuse;
+                request.ConnectionParams |= Http::ConnectionParams::Connection_Reuse;
             }
         }
         
-        static inline void ClearRequestItems(Net::Http::Request& request)
+        static inline void ClearRequestItems(Http::Request& request)
         {
             request.IncomingFiles.Clear();
         }
         
-        static void GetConnectionParams(Net::Http::Request& request, const bool secure, IAllocator& allocator)
+        static void GetConnectionParams(Http::Request& request, const bool secure, IAllocator& allocator)
         {
             auto InConnectionIt = request.IncomingHeaders.Find("connection");
             auto outConnectionIt = request.OutgoingHeaders.Find("connection");
@@ -622,7 +612,7 @@ namespace Neko
             }
         }
         
-        void ProtocolHttp::RunProtocol(Net::Http::Request& request, TArray<char>& buffer, String& stringBuffer) const
+        void ProtocolHttp::RunProtocol(Http::Request& request, char* buffer, String& stringBuffer) const
         {
             // these can be null
             assert(this->Settings != nullptr);
@@ -634,7 +624,7 @@ namespace Neko
             
             auto errorCode = GetRequestHeaders(request, stringBuffer);
             
-            if (errorCode != Net::Http::StatusCode::Empty)
+            if (errorCode != Http::StatusCode::Empty)
             {
                 // send last set status
                 SendStatus(Socket, request, errorCode, Allocator);
@@ -647,16 +637,16 @@ namespace Neko
             // If application is not found
             if (applicationSettings == nullptr)
             {
-                GLogWarning.log("Http") << "Couldn't find application for \"" << request.Host << "\"!";
+                GLogWarning.log("Skylar") << "Couldn't find application for \"" << request.Host << "\"!";
                 
                 // send last set status
-                SendStatus(Socket, request, Net::Http::StatusCode::NotFound, Allocator);
+                SendStatus(Socket, request, Http::StatusCode::NotFound, Allocator);
                 return;
             }
             
             errorCode = GetRequestData(request, stringBuffer, *applicationSettings);
             
-            if (errorCode != Net::Http::StatusCode::Empty)
+            if (errorCode != Http::StatusCode::Empty)
             {
                 // send last set status
                 SendStatus(Socket, request, errorCode, Allocator);

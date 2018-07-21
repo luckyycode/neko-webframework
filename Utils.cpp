@@ -31,17 +31,18 @@
 
 #include "Utils.h"
 
-#include "../Engine/Network/Http/Request.h"
-#include "../Engine/Network/Http/Response.h"
+#include "Engine/Network/Http/Request.h"
+#include "Engine/Network/Http/Response.h"
 
-#include "../Engine/Platform/Platform.h"
+#include "Engine/Platform/Platform.h"
 
-#include "../Engine/Utilities/Templates.h"
-#include "../Engine/Utilities/Utilities.h"
-#include "../Engine/Core/Log.h"
+#include "Engine/Utilities/Templates.h"
+#include "Engine/Utilities/Utilities.h"
+#include "Engine/Core/Log.h"
 
 namespace Neko
 {
+    using namespace Neko::Net;
     namespace Skylar
     {
         String GetMimeByFileName(const String& fileName, const THashMap<String, String>& mimes)
@@ -121,7 +122,7 @@ namespace Neko
             Util::DecodeUrl(index == INDEX_NONE ? path : path.Mid(0, index), clean);
         }
         
-        void ShowDirectoryList(const String& documentRoot, const Net::Http::Request& request, Net::Http::Response& response, bool secure, IAllocator& allocator)
+        void ShowDirectoryList(const String& documentRoot, const Http::Request& request, Http::Response& response, bool secure, IAllocator& allocator)
         {
             auto fullHost = request.IncomingHeaders.Find("host"); // get host with port (request.Host may have no port)
             
@@ -209,7 +210,7 @@ namespace Neko
                 </footer>
             </body>)";
             
-            response.SetStatusCode(Net::Http::StatusCode::Ok);
+            response.SetStatusCode(Http::StatusCode::Ok);
             response.SetBodyData((uint8* )*body, body.Length());
         }
     }

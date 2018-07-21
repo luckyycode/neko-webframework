@@ -12,7 +12,7 @@ See Wiki page for more info.
 | Directory                  | Description       
 | --------------------- |:-----------------------------------------------------------------:|
 | /Nova/                     | contains higher level logic (e.g. controllers, routing)
-| /Server/                  | Skylar server, contains lower level logic for processing requests      
+| /Skylar/                  | Skylar server, contains lower level logic for processing requests      
 | /ContentTypes/        | supported content data parsers for content-type      
 | /SampleModule/     | sample project 
 

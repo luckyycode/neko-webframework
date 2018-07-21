@@ -40,7 +40,7 @@ namespace Neko
         , KeywordIndexes(allocator)
         , Controller(allocator)
         , Action(allocator)
-        , Method(Net::Http::None)
+        , Method(Http::None)
         , ParameterNum(0)
         , HasVariableParams(false)
         {

@@ -69,7 +69,7 @@ namespace Neko
     
     void TelegramApi::SetWebHook(const char* domain, const char* certificate/* = nullptr*/)
     {
-        TArray<Net::Http::HttpRequestParam> args(Allocator);
+        TArray<Http::HttpRequestParam> args(Allocator);
         
         args.Reserve(2);
         args.Emplace("url", domain);
@@ -85,7 +85,7 @@ namespace Neko
         SendBotRequest("setWebhook", args, response);
     }
     
-    bool TelegramApi::SendRequest(const Net::Http::Url& url, const TArray<Net::Http::HttpRequestParam>& parameters, String& response)
+    bool TelegramApi::SendRequest(const Http::Url& url, const TArray<Http::HttpRequestParam>& parameters, String& response)
     {
         GLogInfo.log("Telegram") << "Sending request " << *url.Host;
         
@@ -114,12 +114,12 @@ namespace Neko
             return false;
         }
         
-        const String requestText = Net::Http::Client::GenerateRequest(url, parameters, false);
+        const String requestText = Http::Client::GenerateRequest(url, parameters, false);
         
         long bytes = socketSsl.SendAllPacketsWait(*requestText, requestText.Length(), -1);
         if (bytes < 0)
         {
-            GLogError.log("Http") << "Couldn't send request";
+            GLogError.log("Telegram") << "Couldn't send request";
             return false;
         }
         
@@ -138,7 +138,7 @@ namespace Neko
     
     void TelegramApi::SendMessage(long chatId, String message, const char* parseMode/* = ""*/)
     {
-        TArray<Net::Http::HttpRequestParam> args(Allocator);
+        TArray<Http::HttpRequestParam> args(Allocator);
         
         args.Reserve(3);
         args.Emplace("chat_id", (int64)chatId);
@@ -153,7 +153,7 @@ namespace Neko
         
     void TelegramApi::SendSticker(long chatId, String id)
     {
-        TArray<Net::Http::HttpRequestParam> args(Allocator);
+        TArray<Http::HttpRequestParam> args(Allocator);
         
         args.Reserve(2);
         args.Emplace("chat_id", (int64)chatId);
@@ -182,14 +182,14 @@ namespace Neko
 	
 	void TelegramApi::SendPhoto(long chatId, const char* filename, uint8* data, ulong size)
 	{ 
-		TArray<Net::Http::HttpRequestParam> args(Allocator);
+		TArray<Http::HttpRequestParam> args(Allocator);
         
         args.Reserve(2);
         args.Emplace("chat_id", (int64)chatId);
 		
 		const auto mimeType = Skylar::GetMimeByFileName(filename, GetPhotoMimeTypes());
 		
-        Net::Http::HttpRequestParam photoItem("photo", "", true, mimeType, filename);
+        Http::HttpRequestParam photoItem("photo", "", true, mimeType, filename);
         photoItem.value.Append((const char* )data, size);
         
         args.Emplace(photoItem);
@@ -200,14 +200,19 @@ namespace Neko
         SendBotRequest("sendPhoto", args, response);
 	}
 	
-    bool TelegramApi::SendBotRequest(String method, const TArray<Net::Http::HttpRequestParam>& parameters, String& response)
+    bool TelegramApi::SendBotRequest(String method, const TArray<Http::HttpRequestParam>& parameters, String& response)
     {
+        if (this->BotToken.IsEmpty())
+        {
+            return false;
+        }
+        
         String stringUrl(TelegramBotApiEndpoint, Allocator);
         stringUrl += this->BotToken.data;
         stringUrl += "/";
         stringUrl += method;
         
-        Net::Http::Url url(stringUrl);
+        Http::Url url(stringUrl);
         
         return SendRequest(url, parameters, response);
     }

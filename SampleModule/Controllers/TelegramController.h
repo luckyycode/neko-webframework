@@ -11,7 +11,7 @@ namespace Neko
     {
     public:
         
-        TelegramController(Net::Http::Request& request, Net::Http::Response& response, IAllocator& allocator);
+        TelegramController(Http::Request& request, Http::Response& response, IAllocator& allocator);
         
         void Update();
         

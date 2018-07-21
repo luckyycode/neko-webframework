@@ -50,7 +50,7 @@ namespace Neko
             /**
              * Executes the given request with the higher level logic.
              */
-            int32 Execute(Net::Http::RequestData& requestData, Net::Http::ResponseData& responseData);
+            int32 Execute(Http::RequestData& requestData, Http::ResponseData& responseData);
             
             /**
              * Called after request execution, clean up for a response data.
@@ -59,7 +59,7 @@ namespace Neko
             
         private:
             
-            void ProcessRequest(Skylar::IProtocol& protocol, Net::Http::Request& request, Net::Http::Response& response, String& documentRoot, const bool secure);
+            void ProcessRequest(Skylar::IProtocol& protocol, Http::Request& request, Http::Response& response, const char* documentRoot, const bool secure);
             
         public:
             

@@ -29,7 +29,7 @@
 //  Copyright © 2018 Neko Vision. All rights reserved.
 //
 
-#include "../Server/IProtocol.h"
+#include "../Skylar/IProtocol.h"
 
 #include "SessionManager.h"
 #include "IController.h"
@@ -41,7 +41,7 @@ namespace Neko
     using namespace Neko::Skylar;
     namespace Nova
     {
-        IController::IController(Net::Http::Request& request, Net::Http::Response& response, IAllocator& allocator)
+        IController::IController(Http::Request& request, Http::Response& response, IAllocator& allocator)
         : Allocator(allocator)
         , QueryParameters(allocator)
         , CookieJar(allocator)
@@ -158,18 +158,18 @@ namespace Neko
             return true;
         }
         
-        void IController::BadRequest(Net::Http::ObjectResult* result)
+        void IController::BadRequest(Http::ObjectResult* result)
         {
-            HttpResponse.SetStatusCode(Net::Http::StatusCode::BadRequest);
+            HttpResponse.SetStatusCode(Http::StatusCode::BadRequest);
             if (result != nullptr)
             {
                 HttpResponse.SetBodyData(result->Value, result->Size);
             }
         }
         
-        void IController::Ok(Net::Http::ObjectResult* result)
+        void IController::Ok(Http::ObjectResult* result)
         {
-            HttpResponse.SetStatusCode(Net::Http::StatusCode::Ok);
+            HttpResponse.SetStatusCode(Http::StatusCode::Ok);
             if (result != nullptr)
             {
                 HttpResponse.SetBodyData(result->Value, result->Size);
@@ -178,13 +178,13 @@ namespace Neko
         
         void IController::PhysicalFile(const String& fileName)
         {
-            HttpResponse.SetStatusCode(Net::Http::StatusCode::Empty);
+            HttpResponse.SetStatusCode(Http::StatusCode::Empty);
             HttpResponse.AddHeader("x-sendfile", fileName);
         }
         
         void IController::Redirect(const String& toUrl)
         {
-            HttpResponse.SetStatusCode(Net::Http::StatusCode::MovedTemporarily);
+            HttpResponse.SetStatusCode(Http::StatusCode::MovedTemporarily);
             HttpResponse.AddHeader("Location", *toUrl);
             
             const char* text = "<html><body>Redirected.</body></html>";

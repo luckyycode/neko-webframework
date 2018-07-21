@@ -51,16 +51,14 @@ namespace Neko
             // @see ISocket for comments
             
             SocketSSL() = delete;
-            
             /** Created new SSL connection based on existing context (server/client). */
             SocketSSL(const Net::INetSocket& socket, SSL_CTX* context);
-            
             /** Initiates from existing SSL connection. */
 			SocketSSL(const Net::INetSocket& socket, SSL* connection);
 			
-            virtual long GetPacketBlocking(void* buffer, const uint32 length, const uint32& timeout) const override;
+            virtual long GetPacketBlocking(void* buffer, const ulong length, const uint32& timeout) const override;
             
-            virtual long SendAllPacketsWait(const void* buffer, const uint32 length, const uint32& timeout) const override;
+            virtual long SendAllPacketsWait(const void* buffer, const ulong length, const uint32& timeout) const override;
             
             virtual void Close() override;
             

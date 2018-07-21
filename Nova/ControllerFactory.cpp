@@ -31,7 +31,7 @@
 
 #include "../../Engine/Core/Profiler.h"
 
-#include "../Server/IProtocol.h"
+#include "../Skylar/IProtocol.h"
 
 #include "Options.h"
 #include "UserManager.h"
@@ -74,7 +74,7 @@ namespace Neko
             controller.AddCookie(cookie);
         }
         
-        void ControllerFactory::SetSession(Net::Http::Request& request, IController& controller)
+        void ControllerFactory::SetSession(Http::Request& request, IController& controller)
         {
             // session
             if (!controller.IsSessionEnabled())
@@ -110,7 +110,7 @@ namespace Neko
             controller.SetSession(session);
         }
         
-        void ControllerFactory::ExecuteController(const Routing& routing, IProtocol& protocol, Net::Http::Request& request, Net::Http::Response& response)
+        void ControllerFactory::ExecuteController(const Routing& routing, IProtocol& protocol, Http::Request& request, Http::Response& response)
         {
             PROFILE_SECTION("controller context execute")
             
@@ -193,7 +193,7 @@ namespace Neko
                 }
                 
                 // outgoing response is empty, probably controller didn't set anything
-                if (response.Status != Net::Http::StatusCode::Empty)
+                if (response.Status != Http::StatusCode::Empty)
                 {
                     // but if something got changed..
                     protocol.SendResponse(response);
@@ -203,7 +203,7 @@ namespace Neko
                     // response has no data and empty status codes
                     if (!response.HasBodyData())
                     {
-                        response.SetStatusCode(Net::Http::StatusCode::InternalServerError);
+                        response.SetStatusCode(Http::StatusCode::InternalServerError);
                     }
                 }
                 

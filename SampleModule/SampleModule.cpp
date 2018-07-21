@@ -22,7 +22,7 @@
 using namespace Neko;
 using namespace Neko::Nova;
 using namespace Neko::Skylar;
-using namespace Neko::Net::Http;
+using namespace Neko::Http;
 
 class WebApplication : public IWebApplication
 {
@@ -66,7 +66,7 @@ extern "C"
      */
     bool OnApplicationInit(ApplicationInitContext context)
     {
-        GLogInfo.log("Http") << "Sample module init";
+        GLogInfo.log("Skylar") << "Sample module init";
 
         const char* rootDirectory = context.RootDirectory;
         SampleModule::DocumentRoot.Assign(rootDirectory);
@@ -80,7 +80,7 @@ extern "C"
     /**
      * This is called when requested application has been found.
      */
-    int16 OnApplicationRequest(Neko::Net::Http::RequestData* request, Neko::Net::Http::ResponseData * response)
+    int16 OnApplicationRequest(Neko::Http::RequestData* request, Neko::Http::ResponseData * response)
     {
         return Application->ProcessRequest(*request, *response);
     }
@@ -88,7 +88,7 @@ extern "C"
     /**
      * Called when request has finished.
      */
-    void OnApplicationPostRequest(Neko::Net::Http::ResponseData * response)
+    void OnApplicationPostRequest(Neko::Http::ResponseData * response)
     {
         Application->CleanupResponseData(*response);
     }

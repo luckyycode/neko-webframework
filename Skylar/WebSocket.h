@@ -23,57 +23,40 @@
 // | |\  |  __/   < (_) | |  _|| | | (_| | | | | | |  __/\ V  V / (_) | |  |   <
 // |_| \_|\___|_|\_\___/  |_|  |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
 //
-//  WebSocket.cpp
+//  WebSocket.h
 //  Neko Framework
 //
 //  Copyright © 2018 Neko Vision. All rights reserved.
 //
 
-#include "WebSocket.h"
-#include "../ISocket.h"
+#pragma once
+
+#include "IProtocol.h"
 
 namespace Neko
 {
     namespace Skylar
     {
-        // empty
-        
-        ProtocolWebSocket::ProtocolWebSocket(ISocket& socket, const ServerSettings* settings, IAllocator& allocator)
-        : IProtocol(socket, settings, allocator)
-        { }
-        
-        ProtocolWebSocket::ProtocolWebSocket(const IProtocol& protocol)
-        : IProtocol(protocol)
-        { }
-        
-        IProtocol* ProtocolWebSocket::Process()
+        /// Websockets
+        class ProtocolWebSocket final : public IProtocol
         {
-            return this;
-        }
-        
-        long ProtocolWebSocket::SendData(const void* src,uint32 size, const uint32& timeout, Net::Http::DataCounter* dataCounter) const
-        {
-            return 0;
-        }
-        
-        bool ProtocolWebSocket::SendHeaders(const Net::Http::StatusCode status, TArray< std::pair<String, String> >& headers, const uint32& timeout, bool end) const
-        {
-            return false;
-        }
-        
-        void ProtocolWebSocket::WriteRequest(TArray<char>& buffer, const Net::Http::Request& repuest, const ApplicationSettings& applicationSettings) const
-        {
-        }
-        
-        void ProtocolWebSocket::ReadResponse(Net::Http::Request& request, Net::Http::ResponseData& responseData) const
-        {
+        public:
             
-        }
-        
-        void ProtocolWebSocket::Close()
-        {
+            // @see comments in IProtocol
             
-        }
+            ProtocolWebSocket(class ISocket& socket, const ServerSettings* settings, class IAllocator& allocator);
+
+            ProtocolWebSocket(const IProtocol& protocol);
+            
+            virtual bool    SendHeaders(const Http::StatusCode status, TArray< std::pair<String, String> >& headers, const uint32& timeout, bool end) const override;
+            virtual long    SendData(const void* source, uint32 size, const uint32& timeout, Http::DataCounter* dataCounter) const override;
+            
+            virtual void    WriteRequest(char* buffer, const Http::Request& repuest, const ApplicationSettings& applicationSettings) const override;
+            virtual void    ReadResponse(Http::Request& request, Http::ResponseData& responseData) const override;
+            
+            virtual IProtocol* Process() override;
+            virtual void Close() override;
+        };
     }
 }
 

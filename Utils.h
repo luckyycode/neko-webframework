@@ -38,13 +38,14 @@
 
 namespace Neko
 {
-    namespace Net
-    {
-        namespace Http
-        {
+    using namespace Neko::Net;
+    
+    namespace Net {
+        namespace Http {
             class Response;
         }
     }
+    
 	namespace Skylar
     {
         // binary
@@ -80,13 +81,13 @@ namespace Neko
         void ShowDirectoryList(const String& documentRoot, const Net::Http::Request& request, Net::Http::Response& response, bool secure, IAllocator& allocator);
         
         
-        NEKO_FORCE_INLINE bool IsConnectionLeaveOpen(const Net::Http::Request& request)
+        NEKO_FORCE_INLINE bool IsConnectionLeaveOpen(const Http::Request& request)
         {
             return (request.ConnectionParams & Net::Http::ConnectionParams::Connection_LeaveOpen)
             == Net::Http::ConnectionParams::Connection_LeaveOpen;
         }
         
-        NEKO_FORCE_INLINE bool IsConnectionReuse(const Net::Http::Request& request)
+        NEKO_FORCE_INLINE bool IsConnectionReuse(const Http::Request& request)
         {
             return (request.ConnectionParams & Net::Http::ConnectionParams::Connection_Reuse)
             == Net::Http::ConnectionParams::Connection_Reuse;

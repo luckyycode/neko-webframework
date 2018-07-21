@@ -31,9 +31,9 @@
 
 #pragma once
 
-#include "../../Engine/Utilities/Cache.h"
-#include "../../Engine/Mt/Sync.h"
-#include "../../Engine/Mt/ThreadSafe.h"
+#include "Engine/Utilities/Cache.h"
+#include "Engine/Mt/Sync.h"
+#include "Engine/Mt/ThreadSafe.h"
 
 namespace Neko
 {

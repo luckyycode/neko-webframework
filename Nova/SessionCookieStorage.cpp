@@ -31,9 +31,9 @@
 
 #include "SessionCookieStorage.h"
 
-#include "../../Engine/Core/Log.h"
-#include "../../Engine/Utilities/Utilities.h"
-#include "../../Engine/Network/Http/Extensions/Extensions.h"
+#include "Engine/Core/Log.h"
+#include "Engine/Data/Blob.h"
+#include "Engine/Utilities/Utilities.h"
 
 namespace Neko
 {
@@ -46,12 +46,12 @@ namespace Neko
                 return true;
             }
             
-            const uint32 size = Net::Http::InputProtocolBlob::GetContainerSize(session);
+            const uint32 size = InputBlob::GetContainerSize(session);
             
             String sessionData(size);
             
             // Write session data
-            Net::Http::OutputProtocolBlob data((void* )*sessionData, INT_MAX);
+            OutputBlob data((void* )*sessionData, INT_MAX);
             data << *static_cast<const SessionMap* >(&session);
             // to hex
             session.Id = Util::BytesToHex((uint8* )*sessionData, size);
@@ -97,11 +97,11 @@ namespace Neko
                 
                 if (dataHash != digest)
                 {
-                    GLogWarning.log("Nova") << "Probably a tampered cookie detected!";
+//                    GLogWarning.log("Nova") << "Probably a tampered cookie detected!";
                     return session;
                 }
                 
-                Net::Http::InputProtocolBlob data((void* )*unhexSessionData, INT_MAX);
+                InputBlob data((void* )*unhexSessionData, INT_MAX);
                 data >> *static_cast<SessionMap* >(&session);
             }
             return session;

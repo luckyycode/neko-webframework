@@ -47,12 +47,12 @@ namespace Neko
             {
             }
             
-            inline int32 ProcessRequest(Net::Http::RequestData& request, Net::Http::ResponseData& response)
+            inline int32 ProcessRequest(Http::RequestData& request, Http::ResponseData& response)
             {
                 return Context.Execute(request, response);
             }
             
-            inline void CleanupResponseData(Net::Http::ResponseData& data)
+            inline void CleanupResponseData(Http::ResponseData& data)
             {
                 Context.CleanupResponseData(data.Data, data.Size);
             }

@@ -38,22 +38,18 @@ namespace Neko
         SocketDefault::SocketDefault(const Net::INetSocket& socket)
         : Socket(socket)
         {
-            
         }
         
-        long SocketDefault::GetPacketBlocking(void* buffer, const uint32 length, const uint32& timeout) const
+        long SocketDefault::GetPacketBlocking(void* buffer, const ulong length, const uint32& timeout) const
         {
-            //Net::NetAddress address;
-            //bool succeeded = Socket.GetAddress(address);
-            
-            int size = 0;
+            long size = 0;
             bool result = Socket.GetPacketBlocking(nullptr, buffer, size, length, timeout);
             NEKO_UNUSED(result);
-            //assert(result != false);
+            
             return size;
         }
         
-        long SocketDefault::SendAllPacketsWait(const void* buffer, const uint32 length, const uint32& timeout) const
+        long SocketDefault::SendAllPacketsWait(const void* buffer, const ulong length, const uint32& timeout) const
         {
             //Net::NetAddress address;
             //bool succeeded = Socket.GetAddress(address);

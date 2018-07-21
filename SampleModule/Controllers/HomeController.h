@@ -9,7 +9,7 @@ namespace Neko
     {
     public:
         
-        HomeController(Net::Http::Request& request, Net::Http::Response& response,
+        HomeController(Http::Request& request, Http::Response& response,
                        IAllocator& allocator);
         
         void Index();

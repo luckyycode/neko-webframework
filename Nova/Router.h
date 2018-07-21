@@ -61,7 +61,7 @@ namespace Neko
              *
              * @return TRUE if route has been processed and successfully created.
              */
-            bool AddRoute(const Net::Http::Method method, const String& path, const String& controllerAction);
+            bool AddRoute(const Http::Method method, const String& path, const String& controllerAction);
             
             /**
              * Looks up for a routing.
@@ -74,7 +74,7 @@ namespace Neko
             Routing FindRouting(const String& method, TArray<String>& components) const;
             
             /** @copydoc Router::FindRouting */
-            Routing FindRouting(Net::Http::Method method, TArray<String>& components) const;
+            Routing FindRouting(Http::Method method, TArray<String>& components) const;
             
             /** Builds url with action and controller with parameters. */
             String FindUrl(const String& controller, const String& action, const TArray<String>& params) const;

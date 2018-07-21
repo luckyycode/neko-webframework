@@ -22,7 +22,7 @@ namespace Neko
         out = String(basicType.c_str());
     }
 
-    TelegramController::TelegramController(Net::Http::Request& request, Net::Http::Response& response, IAllocator& allocator)
+    TelegramController::TelegramController(Http::Request& request, Http::Response& response, IAllocator& allocator)
     : IController(request, response, allocator)
     , TelegramApi(GetAllocator())
     {

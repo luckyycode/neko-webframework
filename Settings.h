@@ -84,7 +84,7 @@ namespace Neko
             ~ServerSettings();
             
             /** Adds content type to supported content types list. */
-            void AddContentType(IContentType* contentType);
+            void AddContentType(IContentType& contentType);
             
             void Clear();
             
@@ -101,11 +101,12 @@ namespace Neko
             /**
              * Configuration parsing for each app.
              */
-            bool LoadAppSettings(const String& file, TArray<Module>& modules);
+            bool LoadAppSettings(const String& file, TArray< Module >& modules);
             
             bool SetApplicationModuleMethods(ApplicationSettings& settings, Module& module);
             
-            int16 LoadModule(const String& name, const String& rootDirectory, TArray<Module>& modules, ApplicationSettings& settings);
+            int16 LoadModule(const String& name, const char* rootDirectory, TArray< Module >& modules,
+                             ApplicationSettings& settings);
             
         public:
             

@@ -46,12 +46,12 @@ namespace Neko
         /** Controller context is created once on controller registration.
             It must only manage own controller lifetime. Contains controller info for actions, etc */
         template <class TController>
-        struct ControllerContext : public IControllerContext
+        struct ControllerContext final : public IControllerContext
         {
             // only controller interfaces
             static_assert(std::is_convertible<TController, IController>::value, "Must inherit from IController!");
             
-            typedef std::function<class IController* (Net::Http::Request&, Net::Http::Response&) > CreateControllerFunc;
+            typedef std::function<class IController* (Http::Request&, Http::Response&) > CreateControllerFunc;
             
             /**
              *  Creates a new controller context for a controller type.
@@ -71,7 +71,7 @@ namespace Neko
             /**
              * Maps action to controller url.
              */
-            template <void(TController::*A)()> ControllerContext& RouteAction(Net::Http::Method method, const char* action, const char* params = nullptr)
+            template <void(TController::*A)()> ControllerContext& RouteAction(Http::Method method, const char* action, const char* params = nullptr)
             {
                 static_assert(std::is_convertible<TController, IController>::value, "Route action class must inherit from IController!");
                 
@@ -113,7 +113,7 @@ namespace Neko
              */
             NEKO_FORCE_INLINE bool IsValid() const { return !this->Path.IsEmpty() && !this->Name.IsEmpty(); }
           
-            virtual IController* CreateController(Net::Http::Request& request, Net::Http::Response& response) override
+            virtual IController* CreateController(Http::Request& request, Http::Response& response) override
             {
                 // create a new controller on request
                 return NEKO_NEW(Allocator, TController) (request, response, Allocator);

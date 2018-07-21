@@ -39,7 +39,7 @@ namespace Neko
     namespace Nova
     {
         /// Cookie session storage.
-        class SessionCookieStorage : public ISessionStorage
+        class SessionCookieStorage final : public ISessionStorage
         {
         public:
             

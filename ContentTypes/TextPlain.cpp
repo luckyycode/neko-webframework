@@ -34,6 +34,7 @@
 
 namespace Neko
 {
+    using namespace Neko::Net;
     namespace Skylar
     {
         TextPlain::TextPlain(IAllocator& allocator)
@@ -42,7 +43,7 @@ namespace Neko
             Name = "text/plain";
         }
         
-        bool TextPlain::Parse(const Neko::String& buffer, Net::Http::RequestDataInternal* requestData, ContentDesc* contentDesc) const
+        bool TextPlain::Parse(const Neko::String& buffer, Http::RequestDataInternal& requestData, ContentDesc* contentDesc) const
         {
             if (buffer.IsEmpty())
             {
@@ -74,7 +75,7 @@ namespace Neko
                     Neko::String name = buffer.Mid(pos, (last != INT_MAX) ? end - pos : INT_MAX);
                     
                     // save param
-                    requestData->IncomingData.Insert(Neko::Move(name), Neko::String());
+                    requestData.IncomingData.Insert(Neko::Move(name), Neko::String());
                 }
                 else
                 {
@@ -87,7 +88,7 @@ namespace Neko
                     Neko::String value = buffer.Mid(delimiter, (end != INDEX_NONE) ? end - delimiter : INT_MAX);
                     
                     // save both
-                    requestData->IncomingData.Insert(Neko::Move(name), Neko::Move(value));
+                    requestData.IncomingData.Insert(Neko::Move(name), Neko::Move(value));
                 }
             }
             

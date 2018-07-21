@@ -30,22 +30,20 @@
 //  Copyright (c) 2013 Neko Vision. All rights reserved.
 //
 
-#include "../Engine/Core/Engine.h"
-#include "../Engine/Core/Log.h"
-#include "../Engine/Utilities/Utilities.h"
-#include "../Engine/Utilities/CommandLineParser.h"
-#include "../Engine/Platform/Platform.h"
-#include "../Engine/Core/IPlugin.h"
-#include "../Engine/Mt/Task.h"
+#include "Engine/Core/Engine.h"
+#include "Engine/Core/Log.h"
+#include "Engine/Utilities/Utilities.h"
+#include "Engine/Utilities/CommandLineParser.h"
+#include "Engine/Platform/Platform.h"
+#include "Engine/Core/IPlugin.h"
+#include "Engine/Mt/Task.h"
 
-#include "Server/Server.h"
+#include "Skylar/Server.h"
 
 // Network base
 
 namespace Neko
 {
-    static Skylar::Server* ServerInstance = nullptr;
-    
     class ServerTask : public MT::Task
     {
     public:
@@ -98,10 +96,9 @@ namespace Neko
                 }
             }
             
-            ServerInstance = NEKO_NEW(GetAllocator(), Skylar::Server )(GetAllocator(), FileSystem);
-            int32 exitCode = ServerInstance->StartCommand(serverName, forceStart);
+            Skylar::Server server(GetAllocator(), FileSystem);
+            int32 exitCode = server.StartCommand(serverName, forceStart);
             
-            NEKO_DELETE(GetAllocator(), ServerInstance);
             return exitCode;
         }
         
@@ -119,7 +116,7 @@ namespace Neko
         , Allocator(engine.GetAllocator())
         {
             this->Task = NEKO_NEW(Allocator, ServerTask)(Allocator, engine.GetFileSystem());
-            if (!this->Task->Create("Neko Server"))
+            if (!this->Task->Create("Skylar task"))
             {
                 assert(false);
             }
@@ -135,7 +132,7 @@ namespace Neko
         
     public:
         
-        NEKO_FORCE_INLINE const char* GetName() const override { return "httpserver"; }
+        NEKO_FORCE_INLINE const char* GetName() const override { return "skylar"; }
       
         void Update(float fDelta) override { }
 

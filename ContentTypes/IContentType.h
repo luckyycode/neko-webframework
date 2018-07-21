@@ -31,13 +31,14 @@
 
 #pragma once
 
-#include "../../Engine/Utilities/NekoString.h"
-#include "../../Engine/Utilities/Templates.h"
-#include "../../Engine/Network/NetSocket.h"
-#include "../../Engine/Network/Http/Request.h"
+#include "Engine/Utilities/NekoString.h"
+#include "Engine/Utilities/Templates.h"
+#include "Engine/Network/NetSocket.h"
+#include "Engine/Network/Http/Request.h"
 
 namespace Neko
 {
+    using namespace Neko::Net;
     namespace Skylar
     {
         /// Content type interface. Used for types, e.g. text/plain, application/json, multipart/form-data and so on.
@@ -53,7 +54,7 @@ namespace Neko
             virtual ~IContentType() = default;
             
             /** Creates transient content data state. */
-            virtual void* CreateState(const Net::Http::RequestDataInternal* requestData, const Neko::THashMap< Neko::String, Neko::String >& contentParams) const;
+            virtual void* CreateState(const Net::Http::RequestDataInternal& requestData, const Neko::THashMap< Neko::String, Neko::String >& contentParams) const;
             /** Destroys transient content data state. */
             virtual void DestroyState(void* state) const;
             
@@ -64,7 +65,7 @@ namespace Neko
              * @param requestData   Parsed data will be saved in request.
              * @param contentDesc   Used to keep data on track.
              */
-            virtual bool Parse(const Neko::String& buffer, Net::Http::RequestDataInternal* requestData, class ContentDesc* contentDesc) const = 0;
+            virtual bool Parse(const Neko::String& buffer, Net::Http::RequestDataInternal& requestData, class ContentDesc* contentDesc) const = 0;
           
         public:
             

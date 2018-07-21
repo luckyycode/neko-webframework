@@ -31,10 +31,10 @@
 
 #pragma once
 
+#include "Prerequisites.h"
+
 #include "../../Engine/Containers/Array.h"
 #include "../../Engine/Utilities/NekoString.h"
-
-#include "../../Engine/Network/Http/HttpMethod.h"
 
 namespace Neko
 {
@@ -51,7 +51,7 @@ namespace Neko
             uint8 ParameterNum;
             bool HasVariableParams;
             
-            Net::Http::Method Method;
+            Http::Method Method;
             
             TArray<String> ComponentList;
             TArray<int16>  KeywordIndexes;

@@ -61,13 +61,13 @@ namespace Neko
             return result;
         }
         
-        long SocketSSL::GetPacketBlocking(void* buffer, const uint32 length, const uint32& timeout) const
+        long SocketSSL::GetPacketBlocking(void* buffer, const ulong length, const uint32& timeout) const
         {
             Net::INetSocket socket;
             socket.Init(this->GetNativeHandle(), Net::ESocketType::TCP);
             
             long result;
-            int innerError;
+            int16 innerError;
             
             do
             {
@@ -86,7 +86,7 @@ namespace Neko
             return result;
         }
         
-        long SocketSSL::SendAllPacketsWait(const void* buffer, const uint32 length, const uint32& timeout) const
+        long SocketSSL::SendAllPacketsWait(const void* buffer, const ulong length, const uint32& timeout) const
         {
             ulong checkSize = length;
             
@@ -99,7 +99,7 @@ namespace Neko
             socket.Init(this->GetNativeHandle(), Net::ESocketType::TCP);
             
             ulong total = 0;
-            int innerError = 0;
+            int16 innerError = 0;
             
             while (total < length)
             {
@@ -131,8 +131,8 @@ namespace Neko
         
         bool SocketSSL::Handshake()
         {
-            int innerResult = 0;
-            int result = 0;
+            int16 innerResult = 0;
+            int32 result = 0;
             
             do
             {
@@ -147,12 +147,12 @@ namespace Neko
             while (innerResult == SSL_ERROR_WANT_READ);
             
             // uhh
-            do
-            {
-                result = SSL_do_handshake(this->Connection);
-                innerResult = SSL_get_error(this->Connection, result);
-            }
-            while (innerResult == SSL_ERROR_WANT_READ || innerResult == SSL_ERROR_WANT_WRITE);
+//            do
+//            {
+//                result = SSL_do_handshake(this->Connection);
+//                innerResult = SSL_get_error(this->Connection, result);
+//            }
+//            while (innerResult == SSL_ERROR_WANT_READ || innerResult == SSL_ERROR_WANT_WRITE);
             
             return true;
         }

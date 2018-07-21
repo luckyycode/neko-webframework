@@ -45,7 +45,7 @@ namespace Neko
             return Name;
         }
         
-        void* IContentType::CreateState(const Net::Http::RequestDataInternal* requestData , const THashMap<String, String>& contentParams) const
+        void* IContentType::CreateState(const Http::RequestDataInternal& requestData , const THashMap<String, String>& contentParams) const
         {
             return nullptr;
         }

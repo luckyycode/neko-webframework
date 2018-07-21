@@ -59,7 +59,7 @@ namespace Neko
              *
              * @returns Instance of a new controller.
              */
-            virtual IController* CreateController(Net::Http::Request& request, Net::Http::Response& response) = 0;
+            virtual IController* CreateController(Http::Request& request, Http::Response& response) = 0;
             
             /** Destroys the given controller. */
             virtual void ReleaseController(IController* controller) = 0;

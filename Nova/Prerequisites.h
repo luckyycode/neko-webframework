@@ -23,39 +23,17 @@
 // | |\  |  __/   < (_) | |  _|| | | (_| | | | | | |  __/\ V  V / (_) | |  |   <
 // |_| \_|\___|_|\_\___/  |_|  |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
 //
-//  ApplicationJson.cpp
+//  Prerequisities.h
 //  Neko Framework
 //
 //  Copyright © 2018 Neko Vision. All rights reserved.
 //
 
-#include "ApplicationJson.h"
-#include "ContentDesc.h"
+#pragma once
+
+#include "Engine/Network/Http/HttpMethod.h"
 
 namespace Neko
 {
-    namespace Skylar
-    {
-        ApplicationJson::ApplicationJson(IAllocator& allocator)
-        : IContentType(allocator)
-        {
-            Name = "application/json";
-        }
-        
-        bool ApplicationJson::Parse(const Neko::String& buffer, Http::RequestDataInternal& requestData, ContentDesc* contentDesc) const
-        {
-            if (buffer.IsEmpty())
-            {
-                return EnsureContentLength(*contentDesc);
-            }
-            
-            requestData.IncomingData.Insert("jsonData", buffer);
-            
-            contentDesc->LeftBytes = 0;
-            contentDesc->BytesReceived = contentDesc->FullSize;
-            
-            return true;
-        }
-    }
+    using namespace Neko::Net;
 }
-

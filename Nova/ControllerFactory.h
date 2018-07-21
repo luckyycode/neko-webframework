@@ -34,7 +34,7 @@
 #include "../../Engine/Containers/Delegate.h"
 #include "../../Engine/Utilities/StringUtil.h"
 
-#include "../Server/IProtocol.h"
+#include "../Skylar/IProtocol.h"
 #include "Router.h"
 
 #include "UserManager.h"
@@ -67,7 +67,7 @@ namespace Neko
              * @param request
              * @param response
              */
-            void ExecuteController(const Routing& routing, Skylar::IProtocol& protocol, Net::Http::Request& request, Net::Http::Response& response);
+            void ExecuteController(const Routing& routing, Skylar::IProtocol& protocol, Http::Request& request, Http::Response& response);
             
             void Clear();
             
@@ -102,7 +102,7 @@ namespace Neko
             
         private:
             
-            void SetSession(Net::Http::Request& request, IController& controller);
+            void SetSession(Http::Request& request, IController& controller);
             
         public:
             

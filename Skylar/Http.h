@@ -41,7 +41,7 @@ namespace Neko
     namespace Skylar
     {
         /// Http 1.1 capable server protocol.
-        class ProtocolHttp : public IProtocol
+        class ProtocolHttp final : public IProtocol
         {
         public:
             
@@ -51,26 +51,26 @@ namespace Neko
             
             virtual IProtocol* Process() override;
             
-            virtual long SendData(const void* source, uint32 size, const uint32& timeout, Net::Http::DataCounter* dataCounter) const override;
+            virtual long SendData(const void* source, uint32 size, const uint32& timeout, Http::DataCounter* dataCounter) const override;
             
-            virtual bool SendHeaders(const Net::Http::StatusCode status, TArray<std::pair<String, String> >& headers, const uint32& timeout, bool end/* = true*/) const override;
+            virtual bool SendHeaders(const Http::StatusCode status, TArray<std::pair<String, String> >& headers, const uint32& timeout, bool end/* = true*/) const override;
             
-            virtual void WriteRequest(TArray<char>& data, const Net::Http::Request& request, const ApplicationSettings& applicationSettings) const override;
+            virtual void WriteRequest(char* data, const Http::Request& request, const ApplicationSettings& applicationSettings) const override;
             
-            virtual void ReadResponse(Net::Http::Request& request, Net::Http::ResponseData& responseData) const override;
+            virtual void ReadResponse(Http::Request& request, Http::ResponseData& responseData) const override;
             
             virtual void Close() override;
             
         private:
             
-            const ApplicationSettings* GetApplicationSettingsForRequest(Net::Http::Request& request, const bool secure) const;
+            const ApplicationSettings* GetApplicationSettingsForRequest(Http::Request& request, const bool secure) const;
             
-            Net::Http::StatusCode GetRequestData(Net::Http::Request& request, String& buffer, const ApplicationSettings& applicationSettings) const;
+            Http::StatusCode GetRequestData(Http::Request& request, String& buffer, const ApplicationSettings& applicationSettings) const;
             
         protected:
             
             /** Process a request using this protocol. */
-            void RunProtocol(Net::Http::Request& request, TArray<char>& data, String& stringBuffer) const;
+            void RunProtocol(Http::Request& request, char* data, String& stringBuffer) const;
         };
     }
 }

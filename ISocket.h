@@ -60,10 +60,10 @@ namespace Neko
             }
             
             /** @copydoc INetSocket::GetPacketBlocking */
-            virtual long GetPacketBlocking(void* buffer, const uint32 length, const uint32& timeout) const = 0;
+            virtual long GetPacketBlocking(void* buffer, const ulong length, const uint32& timeout) const = 0;
             
             /** @copydoc INetSocket::SendAllPacketsWait */
-            virtual long SendAllPacketsWait(const void* buffer, const uint32 length, const uint32& timeout) const = 0;
+            virtual long SendAllPacketsWait(const void* buffer, const ulong length, const uint32& timeout) const = 0;
             
             /** @copydoc INetSocket::Close */
             virtual void Close() = 0;

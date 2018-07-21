@@ -45,9 +45,9 @@ namespace Neko
     using namespace Neko::Skylar;
     namespace Nova
     {
-        bool Router::AddRoute(const Net::Http::Method method, const String& path, const String& controllerAction)
+        bool Router::AddRoute(const Http::Method method, const String& path, const String& controllerAction)
         {
-            assert(method >= Net::Http::Method::Get && method <= Net::Http::Method::Patch);
+            assert(method >= Http::Method::Get && method <= Http::Method::Patch);
             
             // assert
             if (path.Find(ROUTE_PARAMS_TAG) != INDEX_NONE && !EndsWith(*path, ROUTE_PARAMS_TAG))
@@ -132,7 +132,7 @@ namespace Neko
             return true;
         }
         
-        Routing Router::FindRouting(Net::Http::Method method, TArray<String>& components) const
+        Routing Router::FindRouting(Http::Method method, TArray<String>& components) const
         {
             PROFILE_FUNCTION()
             
@@ -173,7 +173,7 @@ namespace Neko
                 }
                 
                 // check if method types match
-                if (route.Method == method || route.Method == Net::Http::Any)
+                if (route.Method == method || route.Method == Http::Any)
                 {
                     // Generates parameters for action
                     TArray<String> params(components);
@@ -209,22 +209,22 @@ namespace Neko
         }
         
         // uh oh no other way
-        class RouteMethodStringMap : public TAssociativeArray<String, Net::Http::Method>
+        class RouteMethodStringMap : public TAssociativeArray<String, Http::Method>
         {
         public:
             
             explicit RouteMethodStringMap(IAllocator& allocator)
-            : TAssociativeArray<String, Net::Http::Method>(allocator)
+            : TAssociativeArray<String, Http::Method>(allocator)
             {
-                Insert("match",    Net::Http::Any);
-                Insert("get",      Net::Http::Get);
-                Insert("post",     Net::Http::Post);
-                Insert("put",      Net::Http::Put);
-                Insert("patch",    Net::Http::Patch);
-                Insert("delete",   Net::Http::Delete);
-                Insert("trace",    Net::Http::Trace);
-                Insert("connect",  Net::Http::Connect);
-                Insert("patch",    Net::Http::Patch);
+                Insert("match",    Http::Any);
+                Insert("get",      Http::Get);
+                Insert("post",     Http::Post);
+                Insert("put",      Http::Put);
+                Insert("patch",    Http::Patch);
+                Insert("delete",   Http::Delete);
+                Insert("trace",    Http::Trace);
+                Insert("connect",  Http::Connect);
+                Insert("patch",    Http::Patch);
             }
         };
         
@@ -237,7 +237,7 @@ namespace Neko
         
         Routing Router::FindRouting(const String& method, TArray<String>& components) const
         {
-            Net::Http::Method methodType = RouteMethodCache().Get(method);
+            Http::Method methodType = RouteMethodCache().Get(method);
             return FindRouting(methodType, components);
         }
         
@@ -246,8 +246,8 @@ namespace Neko
             const char* slash = "/";
             
             // whether start from slash position or no
-            int start = StartsWith(*path, slash) ? 1 : 0;
-            int length = path.Length();
+            int32 start = StartsWith(*path, slash) ? 1 : 0;
+            int32 length = path.Length();
             
             // remove last slash if present
             if (length > 1 && EndsWith(*path, slash))
@@ -255,8 +255,7 @@ namespace Neko
                 --length;
             }
             // parse
-            String substr = path.Mid(start, length - start);
-            substr.ParseIntoArray(outArray, slash, false);
+            path.Mid(start, length - start).ParseIntoArray(outArray, slash, false);
         }
         
         void Router::Clear()

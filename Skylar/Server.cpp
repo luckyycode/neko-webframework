@@ -29,15 +29,15 @@
 //  Copyright © 2018 Neko Vision. All rights reserved.
 //
 
-#include "../../Engine/Core/Log.h"
-#include "../../Engine/Core/Debug.h"
-#include "../../Engine/Core/JobSystem.h"
-#include "../../Engine/Core/Profiler.h"
-#include "../../Engine/Mt/Task.h"
-#include "../../Engine/Platform/Platform.h"
-#include "../../Engine/Network/SocketQueue.h"
-#include "../../Engine/Network/SocketList.h"
-#include "../../Engine/FS/PlatformFile.h"
+#include "Engine/Core/Log.h"
+#include "Engine/Core/Debug.h"
+#include "Engine/Core/JobSystem.h"
+#include "Engine/Core/Profiler.h"
+#include "Engine/Mt/Task.h"
+#include "Engine/Platform/Platform.h"
+#include "Engine/Platform/SocketList.h"
+#include "Engine/Network/SocketQueue.h"
+#include "Engine/FS/PlatformFile.h"
 
 #include "../SocketSSL.h"
 #include "../SocketDefault.h"
@@ -125,7 +125,9 @@ namespace Neko
 
         bool Server::Init()
         {
-            GLogInfo.log("Http") << "Loading server settings";
+            GLogInfo.log("Skylar") << "Server initializing..";
+            
+            GLogInfo.log("Skylar") << "Loading server settings";
             
             // load every application & settings
             bool settingsLoaded = Settings.LoadAppSettings("serversettings.json", Modules);
@@ -144,7 +146,7 @@ namespace Neko
         
         void Server::Shutdown()
         {
-            GLogInfo.log("Http") << "Server shutting down...";
+            GLogInfo.log("Skylar") << "Server shutting down...";
             
             Stop();
             Clear();
@@ -162,19 +164,19 @@ namespace Neko
             
             if (SSL_CTX_use_certificate_file(context, *certificate, SSL_FILETYPE_PEM) <= 0)
             {
-                GLogError.log("Http") << "Couldn't load SSL certificate";
+                GLogError.log("Skylar") << "Couldn't load SSL certificate..  ";
                 goto cleanupSsl;
             }
             
             if (SSL_CTX_use_PrivateKey_file(context, privateKey.IsEmpty() ? *certificate : *privateKey, SSL_FILETYPE_PEM) <= 0)
             {
-                GLogError.log("Http") << "Couldn't load SSL private key (or certificate pair)";
+                GLogError.log("Skylar") << "Couldn't load SSL private key (or certificate pair)..";
                 goto cleanupSsl;
             }
             
             if (!SSL_CTX_check_private_key(context))
             {
-                GLogError.log("Http") << "Couldn't verify SSL private key";
+                GLogError.log("Skylar") << "Couldn't verify SSL private key!";
                 goto cleanupSsl;
             }
             
@@ -192,7 +194,7 @@ namespace Neko
         
         void Server::PrepareApplications()
         {
-            GLogInfo.log("Http") << "Preparing server applications..";
+            GLogInfo.log("Skylar") << "Preparing server applications..";
             
             // Applications settings list
             TArray< ApplicationSettings* > applications(Allocator);
@@ -225,7 +227,7 @@ namespace Neko
                 
                 BindPort(application->Port, ports);
                 
-                GLogInfo.log("Http") << "Content directory: " << *application->RootDirectory;
+                GLogInfo.log("Skylar") << "Content directory: " << *application->RootDirectory;
             }
         }
 
@@ -241,9 +243,8 @@ namespace Neko
             
             if (Listeners.IsEmpty())
             {
-                Debug::DebugColor(Debug::EStdoutColor::Red); // aesthetics
-                GLogError.log("Http") << "## Couldn't run Skylar server, no sockets opened.";
-                Debug::DebugColor(Debug::EStdoutColor::White);
+                // aesthetics
+                GLogError.log("Skylar") << "## Couldn't run Skylar, no sockets opened.";
                 
                 Clear();
                 
@@ -262,7 +263,7 @@ namespace Neko
             // start processing immediately
             Controls.SetActiveFlag();
             
-            GLogInfo.log("Http") << "Creating the main request queue task..";
+            GLogInfo.log("Skylar") << "Creating the main request queue task..";
             
             Net::SocketsQueue sockets(Allocator);
             
@@ -281,7 +282,8 @@ namespace Neko
             JobSystem::RunJobs(&job, 1, nullptr);
             
             Debug::DebugColor(Debug::EStdoutColor::Green);
-            GLogInfo.log("Http") << "## Skylar server is now listening on " << Settings.ResolvedAddressString << " (" << Listeners.GetSize() << " listeners).";
+            GLogInfo.log("Skylar") << "## [^._.^] Skylar is now listening on "
+                << Settings.ResolvedAddressString << " (" << Listeners.GetSize() << " listeners).";
             Debug::DebugColor(Debug::EStdoutColor::White);
             
             
@@ -317,7 +319,7 @@ namespace Neko
                     
                     if (sockets.GetSize() >= Net::QueueMaxLength)
                     {
-                        GLogInfo.log("Http") << "Queue length " << Net::QueueMaxLength << " exceeded.";
+                        GLogInfo.log("Skylar") << "Queue length " << Net::QueueMaxLength << " exceeded.";
                         QueueNotFullEvent.Reset();
                     }
                     
@@ -328,7 +330,7 @@ namespace Neko
             }
             while (Controls.Active || Controls.UpdateModulesEvent.poll());
             
-            GLogInfo.log("Http") << "Server main cycle quit";
+            GLogInfo.log("Skylar") << "Server main cycle quit";
             
             // cleanup
             
@@ -379,7 +381,7 @@ namespace Neko
                     
                     if (result)
                     {
-                        GLogInfo.log("Http") << "Protocol negotiated as " << *protocolName;
+                        GLogInfo.log("Skylar") << "Protocol negotiated as " << *protocolName;
                         
                         if (protocolName == "h2")
                         {
@@ -394,7 +396,7 @@ namespace Neko
                         return protocol;
                     }
                     
-//                    GLogWarning.log("Http") << "Tls session data found, but couldn't negotiate needed protocol";
+//                    GLogWarning.log("Skylar") << "Tls session data found, but couldn't negotiate needed protocol";
                 }
                 
                 protocol = NEKO_NEW(allocator, ProtocolHttp)(socket, &Settings, allocator);
@@ -537,7 +539,7 @@ namespace Neko
             
             // check thread count
             assert (threadMaxCount != 0);
-            GLogInfo.log("Http") << "Using " << threadMaxCount << " threads.";
+            GLogInfo.log("Skylar") << "Using " << threadMaxCount << " threads.";
             
             TArray<MT::Task*> activeTasks(Allocator);
             activeTasks.Reserve(threadMaxCount);
@@ -616,7 +618,7 @@ namespace Neko
             
             TArray<uint32> updatedModules(Allocator);
             
-            GLogInfo.log("Http") << "Updating server applications..";
+            GLogInfo.log("Skylar") << "Updating server applications..";
             
             for (const auto& application : applications)
             {
@@ -626,16 +628,16 @@ namespace Neko
                 if (!updatedModules.Contains(moduleIndex))
                 {
                     // Check if update module is valid and loaded one isn't the same
-                    if (!application->ServerModuleUpdate.IsEmpty()
-                        && application->ServerModuleUpdate != application->ServerModule)
+                    if (!application->ServerModuleUpdatePath.IsEmpty()
+                        && application->ServerModuleUpdatePath != application->ServerModulePath)
                     {
-                        auto updateModuleStat = Neko::Platform::GetFileData(*application->ServerModuleUpdate);
+                        auto updateModuleStat = Neko::Platform::GetFileData(*application->ServerModuleUpdatePath);
                         auto updateModuleSize = updateModuleStat.FileSize;
                         auto updateModuleDate = updateModuleStat.ModificationTime;
                         
                         if (updateModuleStat.bIsValid)
                         {
-                            updateModuleStat = Neko::Platform::GetFileData(*application->ServerModule);
+                            updateModuleStat = Neko::Platform::GetFileData(*application->ServerModulePath);
                             auto moduleSize = updateModuleStat.FileSize;
                             auto moduleDate = updateModuleStat.ModificationTime;
                             
@@ -655,7 +657,7 @@ namespace Neko
                 }
             }
             
-            GLogInfo.log("Http") << "Application modules have been updated..";
+            GLogInfo.log("Skylar") << "Application modules have been updated..";
             
             Controls.SetActiveFlag();
             Controls.UpdateModulesEvent.Reset();
@@ -665,7 +667,7 @@ namespace Neko
         {
             if (ports.Contains(port))
             {
-                GLogError.log("Http") << "Attempt to bind socket with used port " << port << ".";
+                GLogError.log("Skylar") << "Attempt to bind socket with used port " << port << ".";
                 return false;
             }
             
@@ -674,24 +676,27 @@ namespace Neko
             
             if (!socket.Init(*Settings.ResolvedAddressString, port, Net::ESocketType::TCP))
             {
-                GLogError.log("Http") << "Server couldn't start at " << Settings.ResolvedAddressString << ":" << port << ". " << strerror(errno);
+                GLogError.log("Skylar") << "Server couldn't start at " << Settings.ResolvedAddressString << ":" << port << ". " << strerror(errno);
                 return false;
             }
             
             if (!socket.Bind())
             {
-                GLogError.log("Http") << "Server couldn't bind to address. " << strerror(errno);
+                GLogError.log("Skylar") << "Server couldn't bind to address. " << strerror(errno);
                 return false;
             }
             
             const int32 maxBacklog = SOMAXCONN;
             if (!socket.Listen(maxBacklog))
             {
-                GLogError.log("Http") << "Server couldn't be listen. " << strerror(errno);
+                GLogError.log("Skylar") << "Server couldn't be listen. " << strerror(errno);
                 return false;
             }
             
             socket.MakeNonBlocking(true);
+            socket.SetReuseAddress();
+            socket.SetReusePort();
+            
             Listeners.Emplace(Neko::Move(socket));
             
             ports.Push(port);
@@ -717,8 +722,8 @@ namespace Neko
                     
                     // @todo get rid of std function
                     application->OnApplicationInit = std::function<bool(ApplicationInitContext)>();
-                    application->OnApplicationRequest = std::function<int16(Net::Http::RequestData* , Net::Http::ResponseData* )>();
-                    application->OnApplicationPostRequest = std::function<void(Net::Http::ResponseData* )>();
+                    application->OnApplicationRequest = std::function<int16(Http::RequestData* , Http::ResponseData* )>();
+                    application->OnApplicationPostRequest = std::function<void(Http::ResponseData* )>();
                     application->OnApplicationExit = std::function<void()>();
                 }
             }
@@ -727,7 +732,7 @@ namespace Neko
             
             const auto application = *(existing.begin());
             
-            const String& moduleName = application->ServerModule;
+            const String& moduleName = application->ServerModulePath;
             
             const int32 directoryPos = moduleName.Find("/");
             const int32 extensionPos = moduleName.Find(".");
@@ -747,16 +752,16 @@ namespace Neko
             }
             
             FS::CPlatformFile source;
-            if (!source.Open(*application->ServerModuleUpdate, FS::Mode::READ))
+            if (!source.Open(*application->ServerModuleUpdatePath, FS::Mode::READ))
             {
-                GLogError.log("Http") << "File '" << *application->ServerModuleUpdate << "' cannot be open";
+                GLogError.log("Skylar") << "File '" << *application->ServerModuleUpdatePath << "' cannot be open";
                 return false;
             }
             
             FS::CPlatformFile destination;
             if (!destination.Open(*moduleNameNew, FS::Mode::CREATE_AND_WRITE))
             {
-                GLogError.log("Http") << "File '" << *moduleName << "' cannot be open";
+                GLogError.log("Skylar") << "File '" << *moduleName << "' cannot be open";
                 return false;
             }
             
@@ -774,19 +779,19 @@ namespace Neko
             
             if (!Neko::Platform::DeleteFile(*moduleName))
             {
-                GLogError.log("Http") << "File '" << *moduleName << "' could not be removed";
+                GLogError.log("Skylar") << "File '" << *moduleName << "' could not be removed";
                 return false;
             }
             
             if (!Neko::Platform::MoveFile(*moduleNameNew, *moduleName))
             {
-                GLogError.log("Http") << "Module '" << *moduleNameNew << "' could not be renamed";
+                GLogError.log("Skylar") << "Module '" << *moduleNameNew << "' could not be renamed";
                 return false;
             }
             
             if (!module.IsOpen())
             {
-                GLogError.log("Http") << "Application module '" << *moduleName << "' can not be opened";
+                GLogError.log("Skylar") << "Application module '" << *moduleName << "' can not be opened";
                 return false;
             }
             
@@ -829,7 +834,7 @@ namespace Neko
         
         void Server::Stop()
         {
-            GLogInfo.log("Http") << "Server is stopping..";
+            GLogInfo.log("Skylar") << "Server is stopping..";
             
             QueueNotFullEvent.Trigger();
             
@@ -839,7 +844,7 @@ namespace Neko
         
         void Server::Restart()
         {
-            GLogInfo.log("Http") << "Server is restarting..";
+            GLogInfo.log("Skylar") << "Server is restarting..";
             
             Controls.SetRestartFlag();
             
@@ -851,7 +856,7 @@ namespace Neko
         
         void Server::Update()
         {
-            GLogInfo.log("Http") << "Server is updating..";
+            GLogInfo.log("Skylar") << "Server is updating..";
             
             Controls.UpdateApplication();
             Controls.SetActiveFlag(false);
@@ -882,7 +887,7 @@ namespace Neko
             
             if (force)
             {
-                GLogInfo.log("Http") << "Force server startup: " << *name;
+                GLogInfo.log("Skylar") << "Force server startup: " << *name;
                 
                 Neko::Platform::DestroySharedMemory(*name);
             }
@@ -907,7 +912,7 @@ namespace Neko
             
             if (exists)
             {
-                GLogError.log("Http") << "Server instance '" << *name << "' is already running!";
+                GLogError.log("Skylar") << "Server instance '" << *name << "' is already running!";
                 
                 return EXIT_FAILURE;
             }
@@ -919,7 +924,7 @@ namespace Neko
                 if ((memoryId = Neko::Platform::CreateSharedMemory(*name, sizeof(uint32))) == -1)
                 {
                     Mutex.Unlock();
-                    GLogError.log("Http") << "Could not allocate shared memory!";
+                    GLogError.log("Skylar") << "Could not allocate shared memory!";
                     
                     return EXIT_FAILURE;
                 }
@@ -932,7 +937,7 @@ namespace Neko
                 Neko::Platform::DestroySharedMemory(name);
                 Mutex.Unlock();
                 
-                GLogError.log("Http") << "Could not write data to shared memory!";
+                GLogError.log("Skylar") << "Could not write data to shared memory!";
                 
                 return EXIT_FAILURE;
             }

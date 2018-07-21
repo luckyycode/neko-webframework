@@ -31,18 +31,14 @@
 
 #pragma once
 
-#include "Controls.h"
 #include "../Settings.h"
 
-#include "../../Engine/Network/NetSocket.h"
-#include "../../Engine/Network/Http/Request.h"
-#include "../../Engine/Network/Http/Response.h"
-#include "../../Engine/Network/Http/HttpStatusCodes.h"
+#include "Engine/Network/Http/Request.h"
+#include "Engine/Network/Http/Response.h"
+#include "Engine/Network/Http/HttpStatusCodes.h"
 
-#include "../../Engine/Network/Http/Extensions/Extensions.h"
-
-#include "../../Engine/Containers/HashMap.h"
-#include "../../Engine/Utilities/Timer.h"
+#include "Engine/Containers/HashMap.h"
+#include "Engine/Utilities/Timer.h"
 
 #define DEFAULT_HTTPS_PORT      443
 #define DEFAULT_HTTP_PORT       80
@@ -51,6 +47,7 @@
 
 namespace Neko
 {
+    using namespace Neko::Net;
     namespace Skylar
     {
         /// Interface capable for http, websockets, etc.
@@ -86,19 +83,19 @@ namespace Neko
              * @param headers   Headers to send.
              * @param timeout   Timeout in msec.
              */
-            virtual bool SendHeaders(const Net::Http::StatusCode status, TArray<std::pair<String, String> >& headers,
+            virtual bool SendHeaders(const Http::StatusCode status, TArray<std::pair<String, String> >& headers,
                                      const uint32& timeout, bool end = true) const = 0;
             
             /** Sends data by net socket. */
             virtual long SendData(const void* source, uint32 size,
-                                  const uint32& timeout, Net::Http::DataCounter* dataCounter) const = 0;
+                                  const uint32& timeout, Http::DataCounter* dataCounter) const = 0;
             
             /** Writes request data to buffer. */
-            virtual void WriteRequest(TArray<char>& buffer, const Net::Http::Request& request,
+            virtual void WriteRequest(char* buffer, const Http::Request& request,
                                                const ApplicationSettings& applicationSettings) const = 0;
             
             /** Reads request buffer data. */
-            virtual void ReadResponse(Net::Http::Request& request, Net::Http::ResponseData& responseData) const = 0;
+            virtual void ReadResponse(Http::Request& request, Http::ResponseData& responseData) const = 0;
             
             /** Closes this protocol. */
             virtual void Close() = 0;
@@ -106,10 +103,10 @@ namespace Neko
         private:
             
             /** Sends ready response headers. */
-            bool SendHeaders(Net::Http::Response& response, const TArray<std::pair<String, String> >* extra, const uint32& timeout, const bool end = true) const;
+            bool SendHeaders(Http::Response& response, const TArray<std::pair<String, String> >* extra, const uint32& timeout, const bool end = true) const;
 
             // shortcut
-            NEKO_FORCE_INLINE long SendData(const Net::Http::ObjectResult& data, const uint32& timeout) const
+            NEKO_FORCE_INLINE long SendData(const Http::ObjectResult& data, const uint32& timeout) const
             {
                 return SendData(data.Value, data.Size, timeout, nullptr);
             }
@@ -117,12 +114,12 @@ namespace Neko
         public:
             
             /** Writes response. */
-            bool SendResponse(Net::Http::Response& response, const uint32 timeout = Net::Http::DEFAULT_RESPONSE_TIME) const;
+            bool SendResponse(Http::Response& response, const uint32 timeout = Http::DEFAULT_RESPONSE_TIME) const;
             
         public:
             
             /** Creates transient content data. Request content (type, length, params) */
-            static ContentDesc* CreateContentDesc(const Net::Http::RequestDataInternal* requestData, const THashMap< String, IContentType* >& contentTypes, IAllocator& allocator);
+            static ContentDesc* CreateContentDesc(const Http::RequestDataInternal& requestData, const THashMap< String, IContentType* >& contentTypes, IAllocator& allocator);
             
             /** Destroys created content info description. */
             static void DestroyContentDesc(void* source, IAllocator& allocator);
@@ -135,7 +132,7 @@ namespace Neko
              * @param request   Incoming request.
              * @param applicationSettings   Application.
              */
-            void RunApplication(Net::Http::Request& request, const ApplicationSettings& applicationSettings) const;
+            void RunApplication(Http::Request& request, const ApplicationSettings& applicationSettings) const;
             
         protected:
             
@@ -157,7 +154,7 @@ namespace Neko
              *
              * @param request   Request containing outgoing information set (e.g. x-sendfile)
              */
-            bool Sendfile(Net::Http::Request& request) const;
+            bool Sendfile(Http::Request& request) const;
         };
         
         static NEKO_FORCE_INLINE const THashMap<int, const char*>& GetStatusList()

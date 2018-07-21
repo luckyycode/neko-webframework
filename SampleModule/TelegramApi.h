@@ -36,6 +36,7 @@
 
 namespace Neko
 {
+    using namespace Neko::Net;
     /// Provides api for Telegram services.
     class TelegramApi
     {
@@ -45,11 +46,13 @@ namespace Neko
         
         ~TelegramApi();
         
+        /** Set a new bot token. Used for further requests. */
         void SetBotToken(const char* token);
         
-        bool SendBotRequest(String method, const TArray<Net::Http::HttpRequestParam>& parameters, String& response);
+        /** Sends bot request. Returns TRUE if succeeded. Bot token must be a valid value. */
+        bool SendBotRequest(String method, const TArray<Http::HttpRequestParam>& parameters, String& response);
         
-        bool SendRequest(const Net::Http::Url& url, const TArray<Net::Http::HttpRequestParam>& parameters, String& response);
+        bool SendRequest(const Net::Http::Url& url, const TArray<Http::HttpRequestParam>& parameters, String& response);
         
         void SendMessage(long chatId, String message, const char* parseMode = "");
         

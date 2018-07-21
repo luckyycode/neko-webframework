@@ -60,7 +60,7 @@ namespace Neko
              *
              * @param path  Controller url (e.g. can be /files or /api/files).
              */
-            IController(Net::Http::Request& request, Net::Http::Response& response, IAllocator& allocator);
+            IController(Http::Request& request, Http::Response& response, IAllocator& allocator);
             
             virtual ~IController();
 
@@ -88,7 +88,7 @@ namespace Neko
             bool AddCookie(Cookie cookie);
             
             /** This controller's response reference. */
-            const NEKO_FORCE_INLINE Net::Http::Response& GetHttpResponse() { return HttpResponse; }
+            const NEKO_FORCE_INLINE Http::Response& GetHttpResponse() { return HttpResponse; }
             
             /** Parameters from url / arguments tagged as [param] or [params] */
             const NEKO_FORCE_INLINE TArray<String>& GetUrlParameters() const { return this->QueryParameters; }
@@ -111,9 +111,9 @@ namespace Neko
             
             // responses
             
-            void Ok(Net::Http::ObjectResult* result = nullptr);
+            void Ok(Http::ObjectResult* result = nullptr);
             
-            void BadRequest(Net::Http::ObjectResult* result = nullptr);
+            void BadRequest(Http::ObjectResult* result = nullptr);
             
             /** Sets x-sendfile header */
             void PhysicalFile(const String& fileName);
@@ -150,9 +150,9 @@ namespace Neko
             
             // @note Lifetime of these is the same as the lifetime of this controller.
             
-            Net::Http::Response& HttpResponse;
+            Http::Response& HttpResponse;
             
-            Net::Http::Request& HttpRequest;
+            Http::Request& HttpRequest;
         };
     }
 }

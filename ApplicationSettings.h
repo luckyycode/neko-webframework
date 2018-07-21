@@ -32,6 +32,7 @@
 #pragma once
 
 #include "../Engine/Containers/Delegate.h"
+#include "../Engine/Core/Path.h"
 
 #include "../Engine/Network/Http/Request.h"
 #include "../Engine/Network/Http/ResponseData.h"
@@ -62,9 +63,9 @@ namespace Neko
             uint32 RequestMaxSize;
             
             //! wwwroot
-            String RootDirectory;
+            StaticString<MAX_PATH_LENGTH> RootDirectory;
             //! If empty then system default will be used.
-            String TempDirectory;
+            StaticString<MAX_PATH_LENGTH> TempDirectory;
             
             // Ports
             
@@ -76,8 +77,8 @@ namespace Neko
             
             int32 ModuleIndex;
             
-            String ServerModule;
-            String ServerModuleUpdate;
+            String ServerModulePath;
+            String ServerModuleUpdatePath;
             
             // Ssl
             

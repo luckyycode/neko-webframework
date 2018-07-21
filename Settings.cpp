@@ -58,10 +58,10 @@ namespace Neko
             Clear();
         }
         
-        void ServerSettings::AddContentType(IContentType* contentType)
+        void ServerSettings::AddContentType(IContentType& contentType)
         {
-            GLogInfo.log("Http") << "AddContentType: " << *contentType->GetName();
-            ContentTypes.Insert(contentType->GetName(), contentType);
+            GLogInfo.log("Skylar") << "AddContentType: " << *contentType.GetName();
+            ContentTypes.Insert(contentType.GetName(), &contentType);
         }
         
         bool ServerSettings::LoadAppSettings(const String& fileName, TArray<Module>& modules)
@@ -71,7 +71,7 @@ namespace Neko
             
             if (file == nullptr)
             {
-                GLogError.log("Http") << "Couldn't find " << *fileName << " serversettings file.";
+                GLogError.log("Skylar") << "Couldn't find " << *fileName << " serversettings file.";
                 
                 return false;
             }
@@ -116,10 +116,10 @@ namespace Neko
                     {
                         json.DeserializeObjectBegin();
                         json.Deserialize("name", applicationNames.Emplace(), "127.0.0.1");
-                        json.Deserialize("rootDirectory", settings->RootDirectory, String::Empty);
-                        json.Deserialize("tempDirectory", settings->TempDirectory, tempDirectory);
-                        json.Deserialize("module", settings->ServerModule, String::Empty);
-                        json.Deserialize("moduleUpdate", settings->ServerModuleUpdate, String::Empty);
+                        json.Deserialize("rootDirectory", settings->RootDirectory.data, sizeof(settings->RootDirectory.data), "/");
+                        json.Deserialize("tempDirectory", settings->TempDirectory.data, sizeof(settings->TempDirectory.data), "/");
+                        json.Deserialize("module", settings->ServerModulePath, String::Empty);
+                        json.Deserialize("moduleUpdate", settings->ServerModuleUpdatePath, String::Empty);
                         json.DeserializeObjectEnd();
                     }
                     else if (EqualStrings(label, "server"))
@@ -154,12 +154,12 @@ namespace Neko
             {
                 auto* settings = applicationSettingItems[i];
                 
-                int16 moduleIndex = LoadModule(settings->ServerModule, settings->RootDirectory, modules, *settings);
+                int16 moduleIndex = LoadModule(settings->ServerModulePath, settings->RootDirectory.data, modules, *settings);
                 bool success = moduleIndex!= -1;
                 
                 if (!success)
                 {
-                    GLogError.log("Http") << "Couldn't load module " << *settings->ServerModule;
+                    GLogError.log("Skylar") << "Couldn't load module " << *settings->ServerModulePath;
                     return false;
                 }
                 
@@ -173,16 +173,16 @@ namespace Neko
             if (address.AddressType != Net::NA_BAD)
             {
                 this->ResolvedAddressString.Set(address.ToString());
-                GLogWarning.log("Http") << "Resolved address: " << *this->ResolvedAddressString;
+                GLogWarning.log("Skylar") << "Resolved address: " << *this->ResolvedAddressString;
             }
             else
             {
-                GLogWarning.log("Http") << "Couldn't resolve address of " << *applicationNames[0];
+                GLogWarning.log("Skylar") << "Couldn't resolve address of " << *applicationNames[0];
             }
             
             if (List.IsEmpty())
             {
-                GLogWarning.log("Http") << "Server does not contain any application";
+                GLogWarning.log("Skylar") << "Server does not contain any application";
                 return false;
             }
             
@@ -201,9 +201,9 @@ namespace Neko
             SupportedMimeTypes.Insert("3gp", "video/3gp");
             
             // @todo More data content types (e.g. multipart/form-data).
-            AddContentType(NEKO_NEW(Allocator, TextPlain) (Allocator));
-            AddContentType(NEKO_NEW(Allocator, FormUrlencoded) (Allocator));
-            AddContentType(NEKO_NEW(Allocator, ApplicationJson) (Allocator));
+            AddContentType(*NEKO_NEW(Allocator, TextPlain) (Allocator));
+            AddContentType(*NEKO_NEW(Allocator, FormUrlencoded) (Allocator));
+            AddContentType(*NEKO_NEW(Allocator, ApplicationJson) (Allocator));
             
             return true;
         }
@@ -243,15 +243,15 @@ namespace Neko
             
             // @todo get rid of std function
             
-            std::function<int(Net::Http::RequestData* , Net::Http::ResponseData* )> appRequestMethod;
-            appRequestMethod = module.GetMethod<int16(*)(Net::Http::RequestData* , Net::Http::ResponseData* )>("OnApplicationRequest");
+            std::function<int(Http::RequestData* , Http::ResponseData* )> appRequestMethod;
+            appRequestMethod = module.GetMethod<int16(*)(Http::RequestData* , Http::ResponseData* )>("OnApplicationRequest");
             if (appRequestMethod == nullptr)
             {
                 return false;
             };
             
-            std::function<void(Net::Http::ResponseData* )> appPostRequestMethod;
-            appPostRequestMethod = module.GetMethod<void(*)(Net::Http::ResponseData* )>("OnApplicationPostRequest");
+            std::function<void(Http::ResponseData* )> appPostRequestMethod;
+            appPostRequestMethod = module.GetMethod<void(*)(Http::ResponseData* )>("OnApplicationPostRequest");
             if (appPostRequestMethod == nullptr)
             {
                 return false;
@@ -279,21 +279,21 @@ namespace Neko
             return true;
         }
         
-        int16 ServerSettings::LoadModule(const String& name, const String& rootDirectory, TArray<Module>& modules, ApplicationSettings& settings)
+        int16 ServerSettings::LoadModule(const String& name, const char* rootDirectory, TArray<Module>& modules, ApplicationSettings& settings)
         {
             bool success = true;
             Module module(name);
             
             if (!module.IsOpen())
             {
-                GLogError.log("Http") << "Couldn't open '" << *name << "' application module.";
+                GLogError.log("Skylar") << "Couldn't open '" << *name << "' application module.";
                 return -1;
             }
             
             success = SetApplicationModuleMethods(settings, module);
             if (!success)
             {
-                GLogError.log("Http") << "One of application methods is missing.";
+                GLogError.log("Skylar") << "One of application methods is missing.";
                 
                 module.Close();
                 return -1;
@@ -303,14 +303,14 @@ namespace Neko
             
             ApplicationInitContext items
             {
-                *rootDirectory,
+                rootDirectory,
                 &Allocator,
                 &FileSystem
             };
             success = settings.OnApplicationInit(items);
             if (!success)
             {
-                GLogWarning.log("Http") << "Application initialization returned unsuccessful result!";
+                GLogWarning.log("Skylar") << "Application initialization returned unsuccessful result!";
                 
                 module.Close();
                 return -1;
@@ -392,7 +392,7 @@ namespace Neko
             
             if (it.IsValid())
             {
-                GLogWarning.log("Http") << "Attempt to add the application with existing name";
+                GLogWarning.log("Skylar") << "Attempt to add the application with existing name";
                 // @todo something?
                 list = it.value();
             }

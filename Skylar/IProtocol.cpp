@@ -59,14 +59,14 @@ namespace Neko
         , Timer()
         { }
    
-        bool IProtocol::SendResponse(Net::Http::Response& response, const uint32 timeout) const
+        bool IProtocol::SendResponse(Http::Response& response, const uint32 timeout) const
         {
             const auto& responseBody = response.GetBodyData();
             
             const uint8* data = responseBody.Value;
             const ulong size = responseBody.Size;
             
-            assert(response.Status != Net::Http::StatusCode::Empty);
+            assert(response.Status != Http::StatusCode::Empty);
             
             bool result = SendHeaders(response, nullptr, timeout);
             
@@ -80,7 +80,7 @@ namespace Neko
             return result;
         }
         
-        bool IProtocol::SendHeaders(Net::Http::Response& response, const TArray<std::pair<String, String> >* extra, const uint32& timeout, const bool end) const
+        bool IProtocol::SendHeaders(Http::Response& response, const TArray<std::pair<String, String> >* extra, const uint32& timeout, const bool end) const
         {
             TArray<std::pair<String, String> > headers(Allocator);
             
@@ -104,26 +104,27 @@ namespace Neko
             return this->SendHeaders(response.Status, headers, timeout, end);
         }
         
-        void IProtocol::RunApplication(Net::Http::Request& request, const ApplicationSettings& applicationSettings) const
+        void IProtocol::RunApplication(Http::Request& request, const ApplicationSettings& applicationSettings) const
         {
             PROFILE_FUNCTION()
             
-            TArray<char> buffer(Allocator);
-            buffer.Reserve(REQUEST_BUFFER_SIZE);
+            char buffer[REQUEST_BUFFER_SIZE];
+//            TArray<char> buffer(Allocator);
+//            buffer.Reserve(REQUEST_BUFFER_SIZE);
             
             // write headers so application can read these
             WriteRequest(buffer, request, applicationSettings);
             
             // application input
-            Net::Http::RequestData requestData
+            Http::RequestData requestData
             {
                 Socket.GetNativeHandle(),
                 Socket.GetTlsSession(),
-                buffer.GetData()
+                buffer
             };
             
             // application output
-            Net::Http::ResponseData responseData { nullptr, 0 };
+            Http::ResponseData responseData { nullptr, 0 };
             
             assert(applicationSettings.OnApplicationRequest != nullptr);
             
@@ -142,17 +143,17 @@ namespace Neko
             }
             else
             {
-                GLogWarning.log("Http") << "Application " << *applicationSettings.ServerModule << " exited with error.";
+                GLogWarning.log("Skylar") << "Application " << *applicationSettings.ServerModulePath << " exited with error.";
             }
         }
         
-        ContentDesc* IProtocol::CreateContentDesc(const Net::Http::RequestDataInternal* requestData, const THashMap<String, IContentType* >& contentTypes, IAllocator& allocator)
+        ContentDesc* IProtocol::CreateContentDesc(const Http::RequestDataInternal& requestData, const THashMap<String, IContentType* >& contentTypes, IAllocator& allocator)
         {
-            auto it = requestData->IncomingHeaders.Find("content-type");
+            auto it = requestData.IncomingHeaders.Find("content-type");
             
             if (!it.IsValid())
             {
-                GLogInfo.log("Http") << "CreateContentDesc: No content-type header set.";
+                GLogInfo.log("Skylar") << "CreateContentDesc: No content-type header set.";
                 return nullptr;
             }
             
@@ -208,7 +209,7 @@ namespace Neko
             ulong dataLength = 0;
             
             const IContentType* contentType = contentTypeIt.value();
-            const auto contentLengthIt = requestData->IncomingHeaders.Find("content-length");
+            const auto contentLengthIt = requestData.IncomingHeaders.Find("content-length");
             
             if (contentLengthIt.IsValid())
             {
@@ -262,7 +263,7 @@ namespace Neko
             const auto unitIt = rangesUnits.Find(rangeUnitString);
             if (!unitIt.IsValid())
             {
-                GLogWarning.log("Http") << "GetRanges: Unsupported range unit type \"" << *rangeUnitString << "\"";
+                GLogWarning.log("Skylar") << "GetRanges: Unsupported range unit type \"" << *rangeUnitString << "\"";
                 
                 return ranges;
             }
@@ -375,14 +376,14 @@ namespace Neko
             return ranges;
         }
         
-        static bool SendPartial(const IProtocol& protocol, const Net::Http::Request& request, const String& fileName, DateTime fileTime, const ulong fileSize, const String& rangeHeader, TArray<std::pair<String, String> >& extraHeaders, const THashMap<String, String>& mimeTypes, const bool headersOnly, IAllocator& allocator)
+        static bool SendPartial(const IProtocol& protocol, const Http::Request& request, const String& fileName, DateTime fileTime, const ulong fileSize, const String& rangeHeader, TArray<std::pair<String, String> >& extraHeaders, const THashMap<String, String>& mimeTypes, const bool headersOnly, IAllocator& allocator)
         {
             const int32 valueOffset = rangeHeader.Find("=");
             
             // not set
             if (valueOffset == INDEX_NONE)
             {
-                protocol.SendHeaders(Net::Http::StatusCode::BadRequest, extraHeaders, request.Timeout);
+                protocol.SendHeaders(Http::StatusCode::BadRequest, extraHeaders, request.Timeout);
                 
                 return false;
             }
@@ -397,7 +398,7 @@ namespace Neko
             
             if (contentLength == 0)
             {
-                protocol.SendHeaders(Net::Http::StatusCode::RequestRangeNotSatisfiable, extraHeaders, request.Timeout);
+                protocol.SendHeaders(Http::StatusCode::RequestRangeNotSatisfiable, extraHeaders, request.Timeout);
                 
                 return false;
             }
@@ -408,9 +409,9 @@ namespace Neko
             if (!file.Open(*fileName, FS::Mode::READ))
             {
                 file.Close();
-                GLogError.log("Http") << "SendPartial: Couldn't open file for transfer.";
+                GLogError.log("Skylar") << "SendPartial: Couldn't open file for transfer.";
                 
-                protocol.SendHeaders(Net::Http::StatusCode::InternalServerError, extraHeaders, request.Timeout);
+                protocol.SendHeaders(Http::StatusCode::InternalServerError, extraHeaders, request.Timeout);
                 
                 return false;
             }
@@ -429,10 +430,10 @@ namespace Neko
             extraHeaders.Emplace("last-modified", kekas );
             
             // Partial Content
-            if (!protocol.SendHeaders(Net::Http::StatusCode::PartialContent, extraHeaders, request.Timeout, headersOnly))
+            if (!protocol.SendHeaders(Http::StatusCode::PartialContent, extraHeaders, request.Timeout, headersOnly))
             {
                 file.Close();
-                GLogError.log("Http") << "SendPartial: Couldn't send headers";
+                GLogError.log("Skylar") << "SendPartial: Couldn't send headers";
                 
                 return false;
             }
@@ -447,7 +448,7 @@ namespace Neko
             ulong position, length;
             TArray<uint8> buffer(allocator);
             
-            Net::Http::DataCounter dataCounter { contentLength, 0 };
+            Http::DataCounter dataCounter { contentLength, 0 };
             
             for (const auto& range : ranges)
             {
@@ -481,7 +482,7 @@ namespace Neko
             return true;
         }
         
-        static bool Sendfile(const IProtocol& protocol, const Net::Http::Request &request, TArray<std::pair<String, String> >& extraHeaders, const String& fileName, const THashMap<String, String>& mimeTypes, const bool headersOnly, IAllocator& allocator)
+        static bool Sendfile(const IProtocol& protocol, const Http::Request &request, TArray<std::pair<String, String> >& extraHeaders, const String& fileName, const THashMap<String, String>& mimeTypes, const bool headersOnly, IAllocator& allocator)
         {
             // Current time in Gmt
             const auto now = DateTime::GmtNow().ToRfc882();
@@ -496,9 +497,9 @@ namespace Neko
             // File is not found or not valid
             if (!fileInfo.bIsValid)
             {
-                GLogInfo.log("Http") << "Requested file " << *fileName << " not found.";
+                GLogInfo.log("Skylar") << "Requested file " << *fileName << " not found.";
                 
-                protocol.SendHeaders(Net::Http::StatusCode::NotFound, extraHeaders, request.Timeout);
+                protocol.SendHeaders(Http::StatusCode::NotFound, extraHeaders, request.Timeout);
                 
                 return false;
             }
@@ -507,7 +508,7 @@ namespace Neko
                 fileSize = fileInfo.FileSize;
                 fileModificationTime = fileInfo.ModificationTime;
                 
-                GLogInfo.log("Http") << "Requested file " << *fileName << " - " << (fileSize / 1024UL) << " kb.";
+                GLogInfo.log("Skylar") << "Requested file " << *fileName << " - " << (fileSize / 1024UL) << " kb.";
             }
             
             // If-Modified header
@@ -520,7 +521,7 @@ namespace Neko
                 
                 if (fileModificationTime == requestTime)
                 {
-                    protocol.SendHeaders(Net::Http::StatusCode::NotModified, extraHeaders, request.Timeout);
+                    protocol.SendHeaders(Http::StatusCode::NotModified, extraHeaders, request.Timeout);
                     
                     return false;
                 }
@@ -531,7 +532,7 @@ namespace Neko
             
             if (rangeIt.IsValid())
             {
-                GLogInfo.log("Http") << "Range header found, partial transfer...";
+                GLogInfo.log("Skylar") << "Range header found, partial transfer...";
                 
                 return SendPartial(protocol, request, fileName, fileModificationTime, fileSize, rangeIt.value(), extraHeaders, mimeTypes, headersOnly, allocator);
             }
@@ -542,9 +543,9 @@ namespace Neko
             if (!file.Open(*fileName, FS::Mode::READ))
             {
                 file.Close();
-                GLogError.log("Http") << "Couldn't open requested file!";
+                GLogError.log("Skylar") << "Couldn't open requested file!";
                 
-                protocol.SendHeaders(Net::Http::StatusCode::InternalServerError, extraHeaders, request.Timeout);
+                protocol.SendHeaders(Http::StatusCode::InternalServerError, extraHeaders, request.Timeout);
                 
                 return false;
             }
@@ -564,10 +565,10 @@ namespace Neko
             
             // Send Ok header
             bool end = headersOnly || fileSize == 0;
-            if (!protocol.SendHeaders(Net::Http::StatusCode::Ok, extraHeaders, request.Timeout, end))
+            if (!protocol.SendHeaders(Http::StatusCode::Ok, extraHeaders, request.Timeout, end))
             {
                 file.Close();
-                GLogError.log("Http") << "Failed to send headers";
+                GLogError.log("Skylar") << "Failed to send headers";
                 
                 return false;
             }
@@ -584,7 +585,7 @@ namespace Neko
                 long sendSize;
                 long readSize;
                 
-                Net::Http::DataCounter dataCounter { fileSize, 0 };
+                Http::DataCounter dataCounter { fileSize, 0 };
                 
                 do
                 {
@@ -599,7 +600,7 @@ namespace Neko
             return true;
         }
         
-        bool IProtocol::Sendfile(Net::Http::Request& request) const
+        bool IProtocol::Sendfile(Http::Request& request) const
         {
             assert(this->Settings != nullptr);
             
@@ -609,7 +610,7 @@ namespace Neko
             {
                 TArray< std::pair<String, String> > headers(Allocator);
                 
-                if (request.ProtocolVersion == Net::Http::Version::Http_1)
+                if (request.ProtocolVersion == Http::Version::Http_1)
                 {
                     if (IsConnectionReuse(request))
                     {

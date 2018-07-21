@@ -8,7 +8,7 @@
 
 namespace Neko
 {
-    HomeController::HomeController(Net::Http::Request& request, Net::Http::Response& response, IAllocator& allocator)
+    HomeController::HomeController(Http::Request& request, Http::Response& response, IAllocator& allocator)
     : IController(request, response, allocator)
     {
         
@@ -17,7 +17,7 @@ namespace Neko
     void HomeController::Index()
     {
         const char* aaa = GetUserManager().IsUserAuthenticated(Session) ? "Perhaps" : "No";
-        Net::Http::ObjectResult result
+        Http::ObjectResult result
         {
             .Value = (uint8* )aaa,
             .Size = StringLength(aaa)
@@ -48,7 +48,7 @@ namespace Neko
         GetUserManager().UserLogin(user, Session);
         
         const char* aaa = *user.UserName;
-        Net::Http::ObjectResult result
+        Http::ObjectResult result
         {
             .Value = (uint8* )aaa,
             .Size = StringLength(aaa)
