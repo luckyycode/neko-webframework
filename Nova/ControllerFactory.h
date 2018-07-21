@@ -86,7 +86,7 @@ namespace Neko
                 
                 if (context == nullptr)
                 {
-                    GLogError.log("Nova") << "Couldn't create a controller context.";
+                    LogError.log("Nova") << "Couldn't create a controller context.";
                     
                     static ControllerContext<T> dummyContext(Allocator, Router, "", "");
                     return dummyContext;

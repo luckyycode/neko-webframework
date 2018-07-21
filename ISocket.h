@@ -48,22 +48,22 @@ namespace Neko
             virtual ~ISocket() = default;
             
             /** @copydoc INetSocket::GetPacketBlocking */
-            NEKO_FORCE_INLINE long GetPacketBlocking(TArray<String::value_type>& buffer, const uint32& timeout) const
+            NEKO_FORCE_INLINE long GetPacketBlocking(TArray<String::value_type>& buffer, const int32& timeout) const
             {
                 return GetPacketBlocking(&buffer[0], buffer.GetSize(), timeout);
             }
             
             /** @copydoc INetSocket::SendAllPacketsWait */
-            NEKO_FORCE_INLINE long SendAllPacketsWait(const String& buffer, const uint32& timeout) const
+            NEKO_FORCE_INLINE long SendAllPacketsWait(const String& buffer, const int32& timeout) const
             {
                 return SendAllPacketsWait(*buffer, buffer.Length(), timeout);
             }
             
             /** @copydoc INetSocket::GetPacketBlocking */
-            virtual long GetPacketBlocking(void* buffer, const ulong length, const uint32& timeout) const = 0;
+            virtual long GetPacketBlocking(void* buffer, const ulong length, const int32& timeout) const = 0;
             
             /** @copydoc INetSocket::SendAllPacketsWait */
-            virtual long SendAllPacketsWait(const void* buffer, const ulong length, const uint32& timeout) const = 0;
+            virtual long SendAllPacketsWait(const void* buffer, const ulong length, const int32& timeout) const = 0;
             
             /** @copydoc INetSocket::Close */
             virtual void Close() = 0;

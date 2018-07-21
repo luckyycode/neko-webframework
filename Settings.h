@@ -108,6 +108,8 @@ namespace Neko
             int16 LoadModule(const String& name, const char* rootDirectory, TArray< Module >& modules,
                              ApplicationSettings& settings);
             
+            void GetAllApplicationSettings(TArray< ApplicationSettings* >& applications);
+            
         public:
             
             //! Maximum amount of threads that server can use. If 0, we'll machine available cores.

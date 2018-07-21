@@ -105,12 +105,12 @@ namespace Neko
             
             end = Timer.GetAsyncTime();
             
-            GLogInfo.log("Skylar") << "Request completed in " << (end - start).GetMilliSeconds() << "ms";
+            LogInfo.log("Skylar") << "Request completed in " << (end - start).GetMilliSeconds() << "ms";
             
             // see docs
             if (IsConnectionLeaveOpen(request))
             {
-                GLogInfo.log("Skylar") << "Switching to websocket..";
+                LogInfo.log("Skylar") << "Switching to websocket..";
                 
                 return NEKO_NEW(Allocator, ProtocolWebSocket)(*this);
             }
@@ -125,7 +125,7 @@ namespace Neko
             
             if (!hostIt.IsValid())
             {
-                GLogWarning.log("Skylar") << "GetApplicationSettingsForRequest: Request with no host header?!";
+                LogWarning.log("Skylar") << "GetApplicationSettingsForRequest: Request with no host header?!";
                 
                 return nullptr;
             }
@@ -284,7 +284,7 @@ namespace Neko
                 // hmm
                 if (request.Method != "get")
                 {
-                    GLogWarning.log("Skylar") << "Request with no Content-Type";
+                    LogWarning.log("Skylar") << "Request with no Content-Type";
                 }
                 return Http::StatusCode::Empty;
             }
@@ -300,7 +300,7 @@ namespace Neko
             // Check if we support that one
             if (!contentTypeIt.IsValid())
             {
-                GLogWarning.log("Skylar") << "Unsupported content-type " << *contentTypeName;
+                LogWarning.log("Skylar") << "Unsupported content-type " << *contentTypeName;
                 
                 return Http::StatusCode::NotImplemented;
             }
@@ -320,7 +320,7 @@ namespace Neko
             // check limits
             if (applicationSettings.RequestMaxSize > 0 /* if max size is set */ && applicationSettings.RequestMaxSize < contentLength)
             {
-                GLogWarning.log("Skylar") << "Large request " << (uint64)contentLength << "/" << applicationSettings.RequestMaxSize;
+                LogWarning.log("Skylar") << "Large request " << (uint64)contentLength << "/" << applicationSettings.RequestMaxSize;
                 
                 return Http::StatusCode::RequestEntityTooLarge;
             }
@@ -329,7 +329,7 @@ namespace Neko
             
             if (!parsed)
             {
-                GLogError.log("Skylar") << "Couldn't parse data of content-type " << contentTypeName;
+                LogError.log("Skylar") << "Couldn't parse data of content-type " << contentTypeName;
                 // eh
                 
                 // if content-type parser has created some
@@ -343,7 +343,7 @@ namespace Neko
         }
         
         bool ProtocolHttp::SendHeaders(const Http::StatusCode status, TArray< std::pair<String, String> >& headers,
-                                     const uint32& timeout, const bool end) const
+                                     const int32& timeout, const bool end) const
         {
             String string("HTTP/1.1 ", Allocator);
             string += (int)status;
@@ -371,7 +371,7 @@ namespace Neko
             return Socket.SendAllPacketsWait(*string, string.Length(), timeout) > 0;
         }
         
-        long ProtocolHttp::SendData(const void* source, uint32 size, const uint32& timeout, Http::DataCounter* dataCounter/* = nullptr*/) const
+        long ProtocolHttp::SendData(const void* source, ulong size, const int32& timeout, Http::DataCounter* dataCounter/* = nullptr*/) const
         {
             long sendSize = Socket.SendAllPacketsWait(source, size, timeout);
             // check if no error returned
@@ -529,7 +529,7 @@ namespace Neko
             const String& upgrade = outUpgradeIt.value();
             upgrade.ToLowerInline();
             
-            GLogInfo.log("Skylar") << "Upgrade request to " << *upgrade;
+            LogInfo.log("Skylar") << "Upgrade request to " << *upgrade;
             
             if (upgrade == "h2")
             {
@@ -557,7 +557,7 @@ namespace Neko
         
         static inline void CheckRequestKeepAlive(Http::Request& request)
         {
-            GLogInfo.log("Skylar") << "keep-alive connection request";
+            LogInfo.log("Skylar") << "keep-alive connection request";
             
             --request.KeepAliveTimeout;
             
@@ -637,7 +637,7 @@ namespace Neko
             // If application is not found
             if (applicationSettings == nullptr)
             {
-                GLogWarning.log("Skylar") << "Couldn't find application for \"" << request.Host << "\"!";
+                LogWarning.log("Skylar") << "Couldn't find application for \"" << request.Host << "\"!";
                 
                 // send last set status
                 SendStatus(Socket, request, Http::StatusCode::NotFound, Allocator);

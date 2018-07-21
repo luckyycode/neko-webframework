@@ -56,7 +56,7 @@ namespace Neko
             }
             else
             {
-                GLogError.log("Nova") << "Session storage " << GetStoreType() << " not found";
+                LogError.log("Nova") << "Session storage " << GetStoreType() << " not found";
             }
             
             return result;
@@ -77,7 +77,7 @@ namespace Neko
                 }
                 else
                 {
-                    GLogError.log("Nova") << "Session storage \"" << GetStoreType() << "\" not found";
+                    LogError.log("Nova") << "Session storage \"" << GetStoreType() << "\" not found";
                 }
             }
             
@@ -99,7 +99,7 @@ namespace Neko
                 }
                 else
                 {
-                    GLogError.log("Nova") << "Session storage \"" << GetStoreType() << "\" not found";
+                    LogError.log("Nova") << "Session storage \"" << GetStoreType() << "\" not found";
                 }
             }
             
@@ -121,7 +121,7 @@ namespace Neko
                 
                 if (result == 0)
                 {
-                    GLogInfo.log("Nova") << "Clearning session cache...";
+                    LogInfo.log("Nova") << "Clearning session cache...";
                     
                     ISessionStorage* storage = SessionStorageFactory::Get(GetStoreType());
                     if (storage != nullptr)
@@ -185,7 +185,7 @@ namespace Neko
             
             if (i == 3)
             {
-                GLogError.log("Nova") << "Couldn't generate session UID!";
+                LogError.log("Nova") << "Couldn't generate session UID!";
             }
             
             return sessionId;

@@ -87,7 +87,7 @@ namespace Neko
     
     bool TelegramApi::SendRequest(const Http::Url& url, const TArray<Http::HttpRequestParam>& parameters, String& response)
     {
-        GLogInfo.log("Telegram") << "Sending request " << *url.Host;
+        LogInfo.log("Telegram") << "Sending request " << *url.Host;
         
         Net::INetSocket socket;
         socket.Init(*url.Host, TelegramApiPort, Net::ESocketType::TCP);
@@ -100,7 +100,7 @@ namespace Neko
         
         if (result < 0)
         {
-            GLogError.log("Telegram") << "SendRequest failed to connect";
+            LogError.log("Telegram") << "SendRequest failed to connect";
             return false;
         }
         
@@ -110,7 +110,7 @@ namespace Neko
         result = socketSsl.Connect();
         if (result < 0)
         {
-            GLogError.log("Telegram") << "SendRequest failed to connect via SSL";
+            LogError.log("Telegram") << "SendRequest failed to connect via SSL";
             return false;
         }
         
@@ -119,7 +119,7 @@ namespace Neko
         long bytes = socketSsl.SendAllPacketsWait(*requestText, requestText.Length(), -1);
         if (bytes < 0)
         {
-            GLogError.log("Telegram") << "Couldn't send request";
+            LogError.log("Telegram") << "Couldn't send request";
             return false;
         }
         
@@ -127,7 +127,7 @@ namespace Neko
 
         if (bytes <= 0)
         {
-            GLogWarning.log("Telegram") << "SendRequest couldn't get response back, hmm";
+            LogWarning.log("Telegram") << "SendRequest couldn't get response back, hmm";
             return true;
         }
         

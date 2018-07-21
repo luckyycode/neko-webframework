@@ -51,12 +51,12 @@ namespace Neko
             return this;
         }
         
-        long ProtocolWebSocket::SendData(const void* src,uint32 size, const uint32& timeout, Http::DataCounter* dataCounter) const
+        long ProtocolWebSocket::SendData(const void* src,ulong size, const int32& timeout, Http::DataCounter* dataCounter) const
         {
             return 0;
         }
         
-        bool ProtocolWebSocket::SendHeaders(const Http::StatusCode status, TArray< std::pair<String, String> >& headers, const uint32& timeout, bool end) const
+        bool ProtocolWebSocket::SendHeaders(const Http::StatusCode status, TArray< std::pair<String, String> >& headers, const int32& timeout, bool end) const
         {
             return false;
         }

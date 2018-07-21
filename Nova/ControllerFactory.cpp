@@ -143,7 +143,7 @@ namespace Neko
                         verified = controller->VerifyRequest();
                         if (!verified)
                         {
-                            GLogWarning.log("Nova") << "Incorrect authenticity token!";
+                            LogWarning.log("Nova") << "Incorrect authenticity token!";
                         }
                     }
                 }
@@ -159,7 +159,7 @@ namespace Neko
 
                             // make new session id
                             controller->Session.Id = SessionManager.GenerateSessionId();
-                            GLogInfo.log("Nova") << "New session ID: " << *controller->Session.Id;
+                            LogInfo.log("Nova") << "New session ID: " << *controller->Session.Id;
                         }
 
                         // update csrf data
@@ -168,7 +168,7 @@ namespace Neko
                     
                     const auto& action = routing.Action;
                     
-                    if (controller->PreFilter(action))
+                    if (controller->PreFilter(*action))
                     {
                         // execute controller action
                         context->InvokeAction(*controller, *action);
@@ -186,7 +186,7 @@ namespace Neko
                             else
                             {
                                 // shouldn't happen
-                                GLogWarning.log("Nova") << "Couldn't store a requested session!";
+                                LogWarning.log("Nova") << "Couldn't store a requested session!";
                             }
                         }
                     }

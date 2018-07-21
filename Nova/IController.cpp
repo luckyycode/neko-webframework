@@ -70,7 +70,7 @@ namespace Neko
             {
                 if (Session.GetId().IsEmpty())
                 {
-                    GLogError.log("Nova") << "Request forgery protection requires a cookie session";
+                    LogError.log("Nova") << "Request forgery protection requires a cookie session";
                     return false;
                 }
             }
@@ -83,7 +83,7 @@ namespace Neko
             
             if (!csrfTokenIt.IsValid())
             {
-                GLogWarning.log("Nova") << "CSRF token is empty!";
+                LogWarning.log("Nova") << "CSRF token is empty!";
                 return false;
             }
             
@@ -109,7 +109,7 @@ namespace Neko
                 
                 if (csrfId.IsEmpty())
                 {
-                    GLogError.log("Nova") << "Csrf ID for session is empty!";
+                    LogError.log("Nova") << "Csrf ID for session is empty!";
                 }
                 
                 return csrfId;
@@ -137,7 +137,7 @@ namespace Neko
             
             if (name.IsEmpty() || FindFirstOf(*name, ";, \"") != INDEX_NONE)
             {
-                GLogError.log("Nova") << "Couldn't add cookie with incorrect name: \"" << *name << "\"";
+                LogError.log("Nova") << "Couldn't add cookie with incorrect name: \"" << *name << "\"";
                 
                 return false;
             }

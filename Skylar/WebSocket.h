@@ -48,8 +48,8 @@ namespace Neko
 
             ProtocolWebSocket(const IProtocol& protocol);
             
-            virtual bool    SendHeaders(const Http::StatusCode status, TArray< std::pair<String, String> >& headers, const uint32& timeout, bool end) const override;
-            virtual long    SendData(const void* source, uint32 size, const uint32& timeout, Http::DataCounter* dataCounter) const override;
+            virtual bool    SendHeaders(const Http::StatusCode status, TArray< std::pair<String, String> >& headers, const int32& timeout, bool end) const override;
+            virtual long    SendData(const void* source, ulong size, const int32& timeout, Http::DataCounter* dataCounter) const override;
             
             virtual void    WriteRequest(char* buffer, const Http::Request& repuest, const ApplicationSettings& applicationSettings) const override;
             virtual void    ReadResponse(Http::Request& request, Http::ResponseData& responseData) const override;

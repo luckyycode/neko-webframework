@@ -97,7 +97,7 @@ namespace Neko
                 
                 if (dataHash != digest)
                 {
-//                    GLogWarning.log("Nova") << "Probably a tampered cookie detected!";
+//                    LogWarning.log("Nova") << "Probably a tampered cookie detected!";
                     return session;
                 }
                 

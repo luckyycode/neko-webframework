@@ -51,9 +51,9 @@ namespace Neko
             
             virtual IProtocol* Process() override;
             
-            virtual long SendData(const void* source, uint32 size, const uint32& timeout, Http::DataCounter* dataCounter) const override;
+            virtual long SendData(const void* source, ulong size, const int32& timeout, Http::DataCounter* dataCounter) const override;
             
-            virtual bool SendHeaders(const Http::StatusCode status, TArray<std::pair<String, String> >& headers, const uint32& timeout, bool end/* = true*/) const override;
+            virtual bool SendHeaders(const Http::StatusCode status, TArray<std::pair<String, String> >& headers, const int32& timeout, bool end/* = true*/) const override;
             
             virtual void WriteRequest(char* data, const Http::Request& request, const ApplicationSettings& applicationSettings) const override;
             

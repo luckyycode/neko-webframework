@@ -80,11 +80,11 @@ namespace Neko
             return result;
         }
         
-        bool IProtocol::SendHeaders(Http::Response& response, const TArray<std::pair<String, String> >* extra, const uint32& timeout, const bool end) const
+        bool IProtocol::SendHeaders(Http::Response& response, const TArray<std::pair<String, String> >* extra, const int32& timeout, const bool end) const
         {
             TArray<std::pair<String, String> > headers(Allocator);
             
-            const int32 size = response.Headers.GetSize() + (extra != nullptr ? extra->GetSize() : 0);
+            const uint32 size = response.Headers.GetSize() + (extra != nullptr ? extra->GetSize() : 0);
 
             headers.Reserve(size);
             
@@ -143,7 +143,7 @@ namespace Neko
             }
             else
             {
-                GLogWarning.log("Skylar") << "Application " << *applicationSettings.ServerModulePath << " exited with error.";
+                LogWarning.log("Skylar") << "Application " << *applicationSettings.ServerModulePath << " exited with error.";
             }
         }
         
@@ -153,7 +153,7 @@ namespace Neko
             
             if (!it.IsValid())
             {
-                GLogInfo.log("Skylar") << "CreateContentDesc: No content-type header set.";
+                LogInfo.log("Skylar") << "CreateContentDesc: No content-type header set.";
                 return nullptr;
             }
             
@@ -250,10 +250,10 @@ namespace Neko
         }
         
         // helpers
-        static TArray< Tuple<ulong, ulong> > GetRanges(const String& rangeHeader, const uint32 valueOffset, const uint32 fileSize, String* resultRangeHeader, ulong* contentLength, IAllocator& allocator)
+        static TArray< Tuple<ulong, ulong> > GetRanges(const String& rangeHeader, const uint32 valueOffset, const ulong fileSize, String* resultRangeHeader, ulong* contentLength, IAllocator& allocator)
         {
             // supported range units
-            static const THashMap< String, ulong > rangesUnits({ { "bytes", 1 } }, allocator);
+            static const THashMap< String, uint32 > rangesUnits({ { "bytes", 1 } }, allocator);
             
             TArray< Tuple<ulong, ulong> > ranges(allocator);
             
@@ -263,7 +263,7 @@ namespace Neko
             const auto unitIt = rangesUnits.Find(rangeUnitString);
             if (!unitIt.IsValid())
             {
-                GLogWarning.log("Skylar") << "GetRanges: Unsupported range unit type \"" << *rangeUnitString << "\"";
+                LogWarning.log("Skylar") << "GetRanges: Unsupported range unit type \"" << *rangeUnitString << "\"";
                 
                 return ranges;
             }
@@ -363,7 +363,7 @@ namespace Neko
             if (!ranges.IsEmpty())
             {
                 // build range string
-                uint32 l = resultRangeHeader->Length() - 1;
+                int32 l = resultRangeHeader->Length() - 1;
                 (*resultRangeHeader)[l] = '/'; // format
                 
                 String temp = *resultRangeHeader; // uhh
@@ -409,7 +409,7 @@ namespace Neko
             if (!file.Open(*fileName, FS::Mode::READ))
             {
                 file.Close();
-                GLogError.log("Skylar") << "SendPartial: Couldn't open file for transfer.";
+                LogError.log("Skylar") << "SendPartial: Couldn't open file for transfer.";
                 
                 protocol.SendHeaders(Http::StatusCode::InternalServerError, extraHeaders, request.Timeout);
                 
@@ -433,7 +433,7 @@ namespace Neko
             if (!protocol.SendHeaders(Http::StatusCode::PartialContent, extraHeaders, request.Timeout, headersOnly))
             {
                 file.Close();
-                GLogError.log("Skylar") << "SendPartial: Couldn't send headers";
+                LogError.log("Skylar") << "SendPartial: Couldn't send headers";
                 
                 return false;
             }
@@ -459,7 +459,7 @@ namespace Neko
                 
                 file.Seek(ESeekLocator::Begin, position);
                 
-                long sendSizeLeft = length;
+                ulong sendSizeLeft = length;
                 long sendSize;
                 long readSize;
                 
@@ -497,7 +497,7 @@ namespace Neko
             // File is not found or not valid
             if (!fileInfo.bIsValid)
             {
-                GLogInfo.log("Skylar") << "Requested file " << *fileName << " not found.";
+                LogInfo.log("Skylar") << "Requested file " << *fileName << " not found.";
                 
                 protocol.SendHeaders(Http::StatusCode::NotFound, extraHeaders, request.Timeout);
                 
@@ -505,10 +505,15 @@ namespace Neko
             }
             else
             {
-                fileSize = fileInfo.FileSize;
+                fileSize = static_cast<uint64>(fileInfo.FileSize);
                 fileModificationTime = fileInfo.ModificationTime;
                 
-                GLogInfo.log("Skylar") << "Requested file " << *fileName << " - " << (fileSize / 1024UL) << " kb.";
+                if (fileSize == -1) // @see GetFileData
+                {
+                    return false;
+                }
+                
+                LogInfo.log("Skylar") << "Requested file " << *fileName << " - " << (fileSize / 1024ULL) << " kb.";
             }
             
             // If-Modified header
@@ -532,7 +537,7 @@ namespace Neko
             
             if (rangeIt.IsValid())
             {
-                GLogInfo.log("Skylar") << "Range header found, partial transfer...";
+                LogInfo.log("Skylar") << "Range header found, partial transfer...";
                 
                 return SendPartial(protocol, request, fileName, fileModificationTime, fileSize, rangeIt.value(), extraHeaders, mimeTypes, headersOnly, allocator);
             }
@@ -543,7 +548,7 @@ namespace Neko
             if (!file.Open(*fileName, FS::Mode::READ))
             {
                 file.Close();
-                GLogError.log("Skylar") << "Couldn't open requested file!";
+                LogError.log("Skylar") << "Couldn't open requested file!";
                 
                 protocol.SendHeaders(Http::StatusCode::InternalServerError, extraHeaders, request.Timeout);
                 
@@ -568,7 +573,7 @@ namespace Neko
             if (!protocol.SendHeaders(Http::StatusCode::Ok, extraHeaders, request.Timeout, end))
             {
                 file.Close();
-                GLogError.log("Skylar") << "Failed to send headers";
+                LogError.log("Skylar") << "Failed to send headers";
                 
                 return false;
             }

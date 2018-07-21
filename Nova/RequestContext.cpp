@@ -61,7 +61,7 @@ namespace Neko
         /**
          * Creates socket object from native client socket.
          */
-        static ISocket* CreateSocket(Net::INetSocket& socket, Http::RequestData* request, void* addr, bool& secure)
+        static inline ISocket* CreateSocket(Net::INetSocket& socket, Http::RequestData* request, void* addr, bool& secure)
         {
             socket.Init(request->Socket, Net::ESocketType::TCP);
             
@@ -74,7 +74,7 @@ namespace Neko
             return new (addr) SocketDefault(socket);
         }
         
-        static void DestroySocket(ISocket* adapter)
+        static inline void DestroySocket(ISocket* adapter)
         {
             if (adapter != nullptr)
             {
@@ -123,7 +123,7 @@ namespace Neko
             }
         };
  
-        static void WriteResponseData(Http::Response& response, Http::ResponseData& responseData, IAllocator& allocator)
+        static inline void WriteResponseData(Http::Response& response, Http::ResponseData& responseData, IAllocator& allocator)
         {
             // these will be processed by server after running this app
             auto& outHeaders = response.GetHeaders();
@@ -131,7 +131,6 @@ namespace Neko
             {
                 uint32 size = InputBlob::GetContainerSize(response.GetHeaders());
                 uint8* data = static_cast<uint8* >(allocator.Allocate(size * sizeof(uint8)));
-                
                 responseData.Data = data;
                 responseData.Size = size;
                 // write headers
@@ -144,18 +143,15 @@ namespace Neko
         {
             PROFILE_SECTION("mvc process request")
             
-            String clearUri(Allocator);
-            TArray< String > components(Allocator);
-            THashMap< String, String > requestCookies(Allocator);
+            String clearUri;
             
             // Remove uri query parameters if present
             ClearRequestUri(request.Path, clearUri);
-            
+  
             // Match route
-            Router::SplitPath(components, clearUri); // for parsing
             
             // route request to controllers
-            auto routing = MainRouter.FindRouting(request.Method, components);
+            auto routing = MainRouter.FindRouting(request.Method, clearUri);
             
             if (routing.Valid)
             {
@@ -205,7 +201,7 @@ namespace Neko
                 }
                 else
                 {
-                    GLogInfo.log("Skylar") << "Request to unmapped url - " << *request.Path;
+                    LogInfo.log("Skylar") << "Request to unmapped url - " << *request.Path;
                     // @todo something
                     
                     response.SetStatusCode(Http::StatusCode::NotFound);
@@ -214,27 +210,30 @@ namespace Neko
             }
         }
         
-        int32 RequestContext::Execute(Http::RequestData& requestData, Http::ResponseData& responseData)
+        int16 RequestContext::Execute(Http::RequestData& requestData, Http::ResponseData& responseData)
         {
             PROFILE_FUNCTION()
             
-            // Initialize socket from existing native socket descriptor
-            
-            uint8 stack[sizeof(SocketSSL)]; // large socket object
             bool secure;
+            // http version
+            uint8 protocolVersion;
+            // socket wrapper
             Net::INetSocket netSocket;
+            // application document root
+            char documentRoot[MAX_PATH_LENGTH];
+            // large socket object
+            uint8 stack[sizeof(SocketSSL)];
+            
+            // Initialize socket from existing native socket descriptor
             ISocket* socket = CreateSocket(netSocket, &requestData, &stack, secure);
             
             // incoming protocol type by request
             IProtocol* protocol = nullptr;
             
             // Read incoming header info
-            InputBlob blob((void* )requestData.Data, INT_MAX);
+            InputBlob blob(const_cast<void* >(requestData.Data), INT_MAX);
             
-            char documentRoot[MAX_PATH_LENGTH];
-            // http version
-            uint8 protocolVersion;
-            blob.Read(protocolVersion);
+            blob << protocolVersion;
             
             const auto version = static_cast<Http::Version>(protocolVersion);
             
@@ -263,7 +262,7 @@ namespace Neko
             
             // process request
             
-            GLogInfo.log("Skylar") << "Request ## Http " << static_cast<uint32>(protocolVersion) << " " << request.Path << " /" << request.Method;
+            LogInfo.log("Skylar") << "Request ## Http " << static_cast<uint32>(protocolVersion) << " " << request.Path << " /" << request.Method;
             
             ProcessRequest(*protocol, request, response, documentRoot, secure);
             

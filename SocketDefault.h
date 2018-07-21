@@ -48,9 +48,9 @@ namespace Neko
             SocketDefault() = delete;
             SocketDefault(const Net::INetSocket& socket);
             
-            virtual long GetPacketBlocking(void* buffer, const ulong length, const uint32& timeout) const override;
+            virtual long GetPacketBlocking(void* buffer, const ulong length, const int32& timeout) const override;
             
-            virtual long SendAllPacketsWait(const void* buffer, const ulong length, const uint32& timeout) const override;
+            virtual long SendAllPacketsWait(const void* buffer, const ulong length, const int32& timeout) const override;
             
             virtual void Close() override;
             

@@ -94,7 +94,7 @@ namespace Neko
                 }
                 else
                 {
-                    GLogWarning.log("Nova") << "Couldn't add route for incorrect controller!";
+                    LogWarning.log("Nova") << "Couldn't add route for incorrect controller!";
                 }
                 
                 return *this;

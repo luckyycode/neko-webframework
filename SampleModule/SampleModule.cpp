@@ -60,13 +60,12 @@ static IWebApplication* Application = nullptr;
 
 extern "C"
 {
-
     /**
      * This is called on early module initialization.
      */
     bool OnApplicationInit(ApplicationInitContext context)
     {
-        GLogInfo.log("Skylar") << "Sample module init";
+        LogInfo.log("Nova") << "Sample module init";
 
         const char* rootDirectory = context.RootDirectory;
         SampleModule::DocumentRoot.Assign(rootDirectory);
@@ -97,7 +96,7 @@ extern "C"
     {
         printf("FINAL KEK WAVE\n");
         auto& allocator = Application->GetAllocator();
-        NEKO_DELETE(allocator, Application) ;
+        NEKO_DELETE(allocator, Application);
         
         Application = nullptr;
     };

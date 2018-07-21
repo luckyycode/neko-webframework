@@ -84,11 +84,11 @@ namespace Neko
              * @param timeout   Timeout in msec.
              */
             virtual bool SendHeaders(const Http::StatusCode status, TArray<std::pair<String, String> >& headers,
-                                     const uint32& timeout, bool end = true) const = 0;
+                                     const int32& timeout, bool end = true) const = 0;
             
             /** Sends data by net socket. */
-            virtual long SendData(const void* source, uint32 size,
-                                  const uint32& timeout, Http::DataCounter* dataCounter) const = 0;
+            virtual long SendData(const void* source, ulong size,
+                                  const int32& timeout, Http::DataCounter* dataCounter) const = 0;
             
             /** Writes request data to buffer. */
             virtual void WriteRequest(char* buffer, const Http::Request& request,
@@ -103,7 +103,7 @@ namespace Neko
         private:
             
             /** Sends ready response headers. */
-            bool SendHeaders(Http::Response& response, const TArray<std::pair<String, String> >* extra, const uint32& timeout, const bool end = true) const;
+            bool SendHeaders(Http::Response& response, const TArray<std::pair<String, String> >* extra, const int32& timeout, const bool end = true) const;
 
             // shortcut
             NEKO_FORCE_INLINE long SendData(const Http::ObjectResult& data, const uint32& timeout) const

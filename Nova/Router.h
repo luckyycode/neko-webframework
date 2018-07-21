@@ -76,6 +76,8 @@ namespace Neko
             /** @copydoc Router::FindRouting */
             Routing FindRouting(Http::Method method, TArray<String>& components) const;
             
+            Routing FindRouting(const String& method, const String& uri) const;
+            
             /** Builds url with action and controller with parameters. */
             String FindUrl(const String& controller, const String& action, const TArray<String>& params) const;
             

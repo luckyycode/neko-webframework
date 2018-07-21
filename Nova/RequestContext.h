@@ -50,7 +50,7 @@ namespace Neko
             /**
              * Executes the given request with the higher level logic.
              */
-            int32 Execute(Http::RequestData& requestData, Http::ResponseData& responseData);
+            int16 Execute(Http::RequestData& requestData, Http::ResponseData& responseData);
             
             /**
              * Called after request execution, clean up for a response data.

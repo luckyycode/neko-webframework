@@ -57,19 +57,19 @@ namespace Neko
         {
             if (user.GetIdentityKey().IsEmpty())
             {
-                GLogWarning.log("Nova") << "User identity key is empty!";
+                LogWarning.log("Nova") << "User identity key is empty!";
                 return false;
             }
             
             if (IsUserAuthenticated(session))
             {
-                GLogInfo.log("Nova") << "User is already authenticated!";
+                LogInfo.log("Nova") << "User is already authenticated!";
                 return true;
             }
             
             session.Insert(SESSION_USER_NAME, user.GetIdentityKey());
             
-            GLogInfo.log("Nova") << "User logged in!";
+            LogInfo.log("Nova") << "User logged in!";
             
             return true;
         }
@@ -79,7 +79,7 @@ namespace Neko
             const auto keyIt = session.Find(SESSION_USER_NAME);
             if (keyIt.IsValid())
             {
-                GLogInfo.log("Nova") << "User logged out.";
+                LogInfo.log("Nova") << "User logged out.";
                 session.Erase(keyIt);
             }
         }

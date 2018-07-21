@@ -40,7 +40,7 @@ namespace Neko
         {
         }
         
-        long SocketDefault::GetPacketBlocking(void* buffer, const ulong length, const uint32& timeout) const
+        long SocketDefault::GetPacketBlocking(void* buffer, const ulong length, const int32& timeout) const
         {
             long size = 0;
             bool result = Socket.GetPacketBlocking(nullptr, buffer, size, length, timeout);
@@ -49,7 +49,7 @@ namespace Neko
             return size;
         }
         
-        long SocketDefault::SendAllPacketsWait(const void* buffer, const ulong length, const uint32& timeout) const
+        long SocketDefault::SendAllPacketsWait(const void* buffer, const ulong length, const int32& timeout) const
         {
             //Net::NetAddress address;
             //bool succeeded = Socket.GetAddress(address);

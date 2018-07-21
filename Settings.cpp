@@ -60,7 +60,7 @@ namespace Neko
         
         void ServerSettings::AddContentType(IContentType& contentType)
         {
-            GLogInfo.log("Skylar") << "AddContentType: " << *contentType.GetName();
+            LogInfo.log("Skylar") << "AddContentType: " << *contentType.GetName();
             ContentTypes.Insert(contentType.GetName(), &contentType);
         }
         
@@ -71,7 +71,7 @@ namespace Neko
             
             if (file == nullptr)
             {
-                GLogError.log("Skylar") << "Couldn't find " << *fileName << " serversettings file.";
+                LogError.log("Skylar") << "Couldn't find " << *fileName << " serversettings file.";
                 
                 return false;
             }
@@ -159,7 +159,7 @@ namespace Neko
                 
                 if (!success)
                 {
-                    GLogError.log("Skylar") << "Couldn't load module " << *settings->ServerModulePath;
+                    LogError.log("Skylar") << "Couldn't load module " << *settings->ServerModulePath;
                     return false;
                 }
                 
@@ -173,16 +173,16 @@ namespace Neko
             if (address.AddressType != Net::NA_BAD)
             {
                 this->ResolvedAddressString.Set(address.ToString());
-                GLogWarning.log("Skylar") << "Resolved address: " << *this->ResolvedAddressString;
+                LogWarning.log("Skylar") << "Resolved address: " << *this->ResolvedAddressString;
             }
             else
             {
-                GLogWarning.log("Skylar") << "Couldn't resolve address of " << *applicationNames[0];
+                LogWarning.log("Skylar") << "Couldn't resolve address of " << *applicationNames[0];
             }
             
             if (List.IsEmpty())
             {
-                GLogWarning.log("Skylar") << "Server does not contain any application";
+                LogWarning.log("Skylar") << "Server does not contain any application";
                 return false;
             }
             
@@ -286,14 +286,14 @@ namespace Neko
             
             if (!module.IsOpen())
             {
-                GLogError.log("Skylar") << "Couldn't open '" << *name << "' application module.";
+                LogError.log("Skylar") << "Couldn't open '" << *name << "' application module.";
                 return -1;
             }
             
             success = SetApplicationModuleMethods(settings, module);
             if (!success)
             {
-                GLogError.log("Skylar") << "One of application methods is missing.";
+                LogError.log("Skylar") << "One of application methods is missing.";
                 
                 module.Close();
                 return -1;
@@ -310,14 +310,14 @@ namespace Neko
             success = settings.OnApplicationInit(items);
             if (!success)
             {
-                GLogWarning.log("Skylar") << "Application initialization returned unsuccessful result!";
+                LogWarning.log("Skylar") << "Application initialization returned unsuccessful result!";
                 
                 module.Close();
                 return -1;
             }
             
             // Calculate module index
-            int16 moduleIndex = INDEX_NONE;
+            int32 moduleIndex = INDEX_NONE;
             
             for (int32 i = 0; i < modules.GetSize(); ++i)
             {
@@ -335,6 +335,11 @@ namespace Neko
             }
             
             return moduleIndex;
+        }
+        
+        void ServerSettings::GetAllApplicationSettings(TArray<ApplicationSettings* >& applications)
+        {
+            List.GetAllApplicationSettings(applications);
         }
         
         bool ServerSettings::AddApplication(const String& application, ApplicationSettings* settings)
@@ -392,7 +397,7 @@ namespace Neko
             
             if (it.IsValid())
             {
-                GLogWarning.log("Skylar") << "Attempt to add the application with existing name";
+                LogWarning.log("Skylar") << "Attempt to add the application with existing name";
                 // @todo something?
                 list = it.value();
             }

@@ -52,7 +52,7 @@ namespace Neko
             // assert
             if (path.Find(ROUTE_PARAMS_TAG) != INDEX_NONE && !EndsWith(*path, ROUTE_PARAMS_TAG))
             {
-                GLogError.log("Nova") << "[params] tag must be set as last parameter.";
+                LogError.log("Nova") << "[params] tag must be set as last parameter.";
                 return false;
             }
             
@@ -86,7 +86,7 @@ namespace Neko
                 {
                     if (item != ROUTE_PARAM_TAG && item != ROUTE_PARAMS_TAG)
                     {
-                        GLogError.log("Nova") << "Found tag begin symbol '[' but didn't match any of existing ones.";
+                        LogError.log("Nova") << "Found tag begin symbol '[' but didn't match any of existing ones.";
                         
                         return false;
                     }
@@ -113,7 +113,7 @@ namespace Neko
                 }
                 else
                 {
-                    GLogError.log("Nova") << "Invalid controller action - " << *controllerAction;
+                    LogError.log("Nova") << "Invalid controller action - " << *controllerAction;
                     return false;
                 }
             }
@@ -127,7 +127,7 @@ namespace Neko
             // save
             Routes.Push(route);
             
-            GLogInfo.log("Nova") << "Added Url route: " << *path << ", method /" << route.Method << ", controller \"" << route.Controller.c_str() << "\", action \"" << route.Action.c_str() << "\", params: " << route.HasVariableParams;
+            LogInfo.log("Nova") << "Added Url route: " << *path << ", method /" << route.Method << ", controller \"" << route.Controller.c_str() << "\", action \"" << route.Action.c_str() << "\", params: " << route.HasVariableParams;
             
             return true;
         }
@@ -138,7 +138,7 @@ namespace Neko
             
             if (this->Routes.IsEmpty())
             {
-                GLogWarning.log("Nova") << "FindRouting: No routes";
+                LogWarning.log("Nova") << "FindRouting: No routes";
                 
                 return Routing(Allocator);
             }
@@ -235,6 +235,16 @@ namespace Neko
             return hash;
         }
         
+        Routing Router::FindRouting(const String& method, const String& uri) const
+        {
+            TArray< String > components(Allocator);
+            
+            Router::SplitPath(components, uri); // for parsing
+            
+            Http::Method methodType = RouteMethodCache().Get(method);
+            return FindRouting(methodType, components);
+        }
+        
         Routing Router::FindRouting(const String& method, TArray<String>& components) const
         {
             Http::Method methodType = RouteMethodCache().Get(method);
@@ -267,7 +277,7 @@ namespace Neko
         {
             for (const auto& route : Routes)
             {
-                GLogInfo.log("Nova") << "Route: \n"
+                LogInfo.log("Nova") << "Route: \n"
                     << "\tController: " << route.Controller << "\n"
                     << "\tAction: " << route.Action << "\n"
                     << "\t# of parameters: " << route.ParameterNum << " (variable params: " << route.HasVariableParams << ")";
@@ -280,7 +290,7 @@ namespace Neko
             
             if (Routes.IsEmpty())
             {
-                GLogWarning.log("Nova") << "FindUrl: No routes";
+                LogWarning.log("Nova") << "FindUrl: No routes";
                 
                 return String::Empty;
             }

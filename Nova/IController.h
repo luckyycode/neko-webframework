@@ -65,28 +65,36 @@ namespace Neko
             virtual ~IController();
 
         public:
+            // middleware additions
             
             /** Called before request action execution. */
-            virtual bool PreFilter(const String& action) { return true; };
+            virtual bool PreFilter(const char* action) { return true; };
             
             /** Called after request action execution. */
             virtual void PostFilter() { };
 
-            virtual bool IsSessionEnabled() const { return true; }
+        public:
+            // csrf/authentication
             
             virtual bool IsCsrfProtectionEnabled() const { return true; }
             
-            String GetAuthToken();
+            virtual bool IsCsrflessAction(const char* action) const { return true; }
             
-            bool IsCsrflessAction(const char* action) const { return true; }
+            String GetAuthToken();
             
             bool VerifyRequest();
             
+        public:
+            // session
+            
+            virtual bool IsSessionEnabled() const { return true; }
+            
+            /** Sets the request session data. */
             void SetSession(const Session& session);
-            void SetUserManager(UserManager* userManager) { this->UserManager = userManager; }
             
             bool AddCookie(Cookie cookie);
             
+        public:
             /** This controller's response reference. */
             const NEKO_FORCE_INLINE Http::Response& GetHttpResponse() { return HttpResponse; }
             
@@ -94,21 +102,14 @@ namespace Neko
             const NEKO_FORCE_INLINE TArray<String>& GetUrlParameters() const { return this->QueryParameters; }
 
             /** Sets this controller arguments for action. */
-            void SetUrlParameters(const TArray<String>& arguments)
-            {
-                this->QueryParameters = arguments;
-            }
+            void SetUrlParameters(const TArray<String>& arguments) { this->QueryParameters = arguments; }
             
             /** Requests transaction rollback. */
-            void RollbackTransaction()
-            {
-                this->Rollback = true;
-            }
+            void RollbackTransaction() { this->Rollback = true; }
             
             bool NEKO_FORCE_INLINE IsRollbackRequested() const { return Rollback; }
             
         public:
-            
             // responses
             
             void Ok(Http::ObjectResult* result = nullptr);
@@ -132,6 +133,9 @@ namespace Neko
             }
             
         private:
+            friend class ControllerFactory;
+            
+            void SetUserManager(UserManager* userManager) { this->UserManager = userManager; }
             
             bool Rollback;
             

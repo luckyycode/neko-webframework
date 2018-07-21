@@ -55,19 +55,19 @@ namespace Neko
             assert(connection != nullptr);
         }
         
-        int16 SocketSSL::Connect()
+        int32 SocketSSL::Connect()
         {
-            int16 result = SSL_connect(this->Connection);
+            int32 result = SSL_connect(this->Connection);
             return result;
         }
         
-        long SocketSSL::GetPacketBlocking(void* buffer, const ulong length, const uint32& timeout) const
+        long SocketSSL::GetPacketBlocking(void* buffer, const ulong length, const int32& timeout) const
         {
             Net::INetSocket socket;
             socket.Init(this->GetNativeHandle(), Net::ESocketType::TCP);
             
             long result;
-            int16 innerError;
+            int32 innerError;
             
             do
             {
@@ -86,7 +86,7 @@ namespace Neko
             return result;
         }
         
-        long SocketSSL::SendAllPacketsWait(const void* buffer, const ulong length, const uint32& timeout) const
+        long SocketSSL::SendAllPacketsWait(const void* buffer, const ulong length, const int32& timeout) const
         {
             ulong checkSize = length;
             
@@ -99,7 +99,7 @@ namespace Neko
             socket.Init(this->GetNativeHandle(), Net::ESocketType::TCP);
             
             ulong total = 0;
-            int16 innerError = 0;
+            int32 innerError = 0;
             
             while (total < length)
             {
@@ -131,7 +131,7 @@ namespace Neko
         
         bool SocketSSL::Handshake()
         {
-            int16 innerResult = 0;
+            int32 innerResult = 0;
             int32 result = 0;
             
             do
