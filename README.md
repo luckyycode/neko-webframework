@@ -8,7 +8,9 @@ Neko server / framework. Work in progress, not ready for production in any way y
 
 Fast and efficient server with higher level mvc code for developing web applications.
 
-## See the Wiki page for more info.
+# See the Wiki page [here](https://github.com/luckyycode/neko-webframework/wiki) for more info.
+
+Structure:
 
 | Directory                  | Description       
 | --------------------- |:-----------------------------------------------------------------:|
