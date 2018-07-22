@@ -45,6 +45,9 @@
 
 #include "Model.h"
 
+// helper
+#define NOVA_CONTROLLER(x)  x(Http::Request& request, Http::Response& response, IAllocator& allocator);
+
 namespace Neko
 {
     using namespace Neko::Skylar;
@@ -78,8 +81,6 @@ namespace Neko
             
             virtual bool IsCsrfProtectionEnabled() const { return true; }
             
-            virtual bool IsCsrflessAction(const char* action) const { return true; }
-            
             String GetAuthToken();
             
             bool VerifyRequest();
@@ -92,9 +93,11 @@ namespace Neko
             /** Sets the request session data. */
             void SetSession(const Session& session);
             
-            bool AddCookie(Cookie cookie);
+            /** Adds cookie to this controller's cookie jar. */
+            bool AddCookie(const Cookie& cookie);
             
         public:
+            
             /** This controller's response reference. */
             const NEKO_FORCE_INLINE Http::Response& GetHttpResponse() { return HttpResponse; }
             

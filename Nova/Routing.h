@@ -46,7 +46,7 @@ namespace Neko
             : Params(allocator)
             , Controller(allocator)
             , Action(allocator)
-            , Valid(false)
+            , IsValid(false)
             {
             }
             
@@ -54,7 +54,7 @@ namespace Neko
             : Controller(controller)
             , Action(action)
             , Params(params)
-            , Valid(valid)
+            , IsValid(valid)
             {
             };
             
@@ -66,7 +66,7 @@ namespace Neko
             };
             
             //! Says whether routing has valid values.
-            bool Valid;
+            bool IsValid;
             
             String Controller;
             String Action;

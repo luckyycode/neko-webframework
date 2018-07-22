@@ -10,11 +10,5 @@
 
 namespace Neko
 {
-    /// Shared module settings.
-    class SampleModule
-    {
-    public:
-        
-        static String DocumentRoot;
-    };
+
 }

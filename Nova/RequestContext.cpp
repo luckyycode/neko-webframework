@@ -61,25 +61,25 @@ namespace Neko
         /**
          * Creates socket object from native client socket.
          */
-        static inline ISocket* CreateSocket(Net::INetSocket& socket, Http::RequestData* request, void* addr, bool& secure)
+        static inline ISocket* CreateSocket(Net::INetSocket& socket, Http::RequestData* request, void* stack, bool& secure)
         {
             socket.Init(request->Socket, Net::ESocketType::TCP);
             
             secure = request->TlsSession != nullptr;
             if (secure)
             {
-                return new (addr) SocketSSL(socket, (SSL* )request->TlsSession);
+                return new (stack) SocketSSL(socket, (SSL* )request->TlsSession);
             }
             
-            return new (addr) SocketDefault(socket);
+            return new (stack) SocketDefault(socket);
         }
         
-        static inline void DestroySocket(ISocket* adapter)
+        static inline void DestroySocket(ISocket* socket)
         {
-            if (adapter != nullptr)
+            if (socket != nullptr)
             {
                 // was allocated on a stack
-                adapter->~ISocket();
+                socket->~ISocket();
             }
         }
         
@@ -153,7 +153,7 @@ namespace Neko
             // route request to controllers
             auto routing = MainRouter.FindRouting(request.Method, clearUri);
             
-            if (routing.Valid)
+            if (routing.IsValid)
             {
                 // route is valid.. controller should be too
                 ControllerFactory.ExecuteController(routing, protocol, request, response);

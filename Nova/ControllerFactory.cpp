@@ -133,7 +133,7 @@ namespace Neko
                 bool verified = true;
                 
                 // verify authentication token
-                if (Options::SessionOptions().IsCsrfProtectionEnabled && controller->IsCsrfProtectionEnabled() && controller->IsCsrflessAction(*routing.Action))
+                if (Options::SessionOptions().IsCsrfProtectionEnabled && controller->IsCsrfProtectionEnabled())
                 {
                     // only for specified methods
                     const auto& method = request.Method;
@@ -159,7 +159,6 @@ namespace Neko
 
                             // make new session id
                             controller->Session.Id = SessionManager.GenerateSessionId();
-                            LogInfo.log("Nova") << "New session ID: " << *controller->Session.Id;
                         }
 
                         // update csrf data

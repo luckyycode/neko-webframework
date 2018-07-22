@@ -119,10 +119,10 @@ namespace Neko
         public:
             
             /** Creates transient content data. Request content (type, length, params) */
-            static ContentDesc* CreateContentDesc(const Http::RequestDataInternal& requestData, const THashMap< String, IContentType* >& contentTypes, IAllocator& allocator);
+            static ContentDesc* CreateContentDescriptor(const Http::RequestDataInternal& requestData, const THashMap< String, IContentType* >& contentTypes, IAllocator& allocator);
             
             /** Destroys created content info description. */
-            static void DestroyContentDesc(void* source, IAllocator& allocator);
+            static void DestroyContentDescriptor(void* source, IAllocator& allocator);
             
         protected:
             

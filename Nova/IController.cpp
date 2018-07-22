@@ -42,8 +42,7 @@ namespace Neko
     namespace Nova
     {
         IController::IController(Http::Request& request, Http::Response& response, IAllocator& allocator)
-        : Allocator(allocator)
-        , QueryParameters(allocator)
+        : Allocator(allocator), QueryParameters(allocator)
         , CookieJar(allocator)
         , HttpRequest(request)
         , HttpResponse(response)
@@ -83,7 +82,7 @@ namespace Neko
             
             if (!csrfTokenIt.IsValid())
             {
-                LogWarning.log("Nova") << "CSRF token is empty!";
+                LogWarning.log("Nova") << "CSRF token is empty or not set!";
                 return false;
             }
             
@@ -131,7 +130,7 @@ namespace Neko
             this->Session = session;
         }
         
-        bool IController::AddCookie(Cookie cookie)
+        bool IController::AddCookie(const Cookie& cookie)
         {
             const String& name = cookie.Name;
             
@@ -144,7 +143,7 @@ namespace Neko
             
             CookieJar.Push(cookie);
             
-            auto cookieIt = HttpResponse.Headers.Find("Set-Cookie");
+            auto cookieIt = HttpResponse.Headers.Find("set-cookie");
             if (cookieIt.IsValid())
             {
                 HttpResponse.Headers.Erase(cookieIt);
@@ -153,7 +152,7 @@ namespace Neko
             for (auto& cookie : CookieJar)
             {
                 const auto& cookieString = cookie.ToString();
-                HttpResponse.AddHeader("Set-Cookie", cookieString);
+                HttpResponse.AddHeader("set-cookie", cookieString);
             }
             return true;
         }

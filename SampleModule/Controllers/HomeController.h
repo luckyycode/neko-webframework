@@ -9,8 +9,7 @@ namespace Neko
     {
     public:
         
-        HomeController(Http::Request& request, Http::Response& response,
-                       IAllocator& allocator);
+        NOVA_CONTROLLER(HomeController);
         
         void Index();
         void Get();

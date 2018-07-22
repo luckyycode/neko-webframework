@@ -21,8 +21,7 @@
 
 using namespace Neko;
 using namespace Neko::Nova;
-using namespace Neko::Skylar;
-using namespace Neko::Http;
+using namespace Neko::Net::Http;
 
 class WebApplication : public IWebApplication
 {
@@ -33,13 +32,8 @@ public:
     {
         LoadSettings();
         
-        RegisterControllers();
-    }
-
-    void RegisterControllers()
-    {
         auto& cf = GetContext().GetControllerFactory();
-    
+        
         cf.CreateContext<HomeController>("home", "/api")
             .RouteAction<&HomeController::Index>(Method::Get, "index")
             .RouteAction<&HomeController::Get>(Method::Get, "get", "[params]")
@@ -56,53 +50,5 @@ public:
     }
 };
 
-static IWebApplication* Application = nullptr;
 
-extern "C"
-{
-    /**
-     * This is called on early module initialization.
-     */
-    bool OnApplicationInit(ApplicationInitContext context)
-    {
-        LogInfo.log("Nova") << "Sample module init";
-
-        const char* rootDirectory = context.RootDirectory;
-        SampleModule::DocumentRoot.Assign(rootDirectory);
-        
-        auto& allocator = *context.AppAllocator;
-        Application = NEKO_NEW(allocator, WebApplication) (context);
-        
-        return Application != nullptr;
-    }
-    
-    /**
-     * This is called when requested application has been found.
-     */
-    int16 OnApplicationRequest(Neko::Http::RequestData* request, Neko::Http::ResponseData * response)
-    {
-        return Application->ProcessRequest(*request, *response);
-    }
-    
-    /**
-     * Called when request has finished.
-     */
-    void OnApplicationPostRequest(Neko::Http::ResponseData * response)
-    {
-        Application->CleanupResponseData(*response);
-    }
-    
-    void OnApplicationExit()
-    {
-        printf("FINAL KEK WAVE\n");
-        auto& allocator = Application->GetAllocator();
-        NEKO_DELETE(allocator, Application);
-        
-        Application = nullptr;
-    };
-}
-
-namespace Neko
-{
-    String SampleModule::DocumentRoot = String();
-}
+NOVA_APPLICATION_ENTRY(WebApplication)

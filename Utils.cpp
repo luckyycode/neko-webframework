@@ -143,11 +143,11 @@ namespace Neko
             
                     body += R"(</font></i>
                     <table style="width:75%">
-                    <tr>
-                    <th style="text-align:left">Name</th>
-                    <th style="text-align:left">Last modified</th>
-                    <th style="text-align:left">Size</th>
-                    </tr><hr>
+                        <tr>
+                            <th style="text-align:left">Name</th>
+                            <th style="text-align:left">Last modified</th>
+                            <th style="text-align:left">Size</th>
+                        </tr><hr>
                 )";
             
             Platform::FileInfo info;

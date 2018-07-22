@@ -75,7 +75,7 @@ namespace Neko
             {
                 result = SendData(data, size, timeout, nullptr) > 0;
                 
-                Allocator.Deallocate((void* )data);
+                response.ClearBodyData();
             }
             return result;
         }
@@ -85,18 +85,15 @@ namespace Neko
             TArray<std::pair<String, String> > headers(Allocator);
             
             const uint32 size = response.Headers.GetSize() + (extra != nullptr ? extra->GetSize() : 0);
-
             headers.Reserve(size);
             
-            for (auto iter = response.Headers.begin(), end = response.Headers.end(); iter != end; ++iter)
-            {
+            for (auto iter = response.Headers.begin(), end = response.Headers.end(); iter != end; ++iter) {
                 headers.Emplace(iter.key(), iter.value());
             }
             
             if (extra != nullptr)
             {
-                for (auto& iter : *extra)
-                {
+                for (auto& iter : *extra) {
                     headers.Emplace(iter.first, iter.second);
                 }
             }
@@ -143,17 +140,17 @@ namespace Neko
             }
             else
             {
-                LogWarning.log("Skylar") << "Application " << *applicationSettings.ServerModulePath << " exited with error.";
+                LogWarning.log("Skylar") << "Application " << *applicationSettings.ServerModulePath << " exited with a error.";
             }
         }
         
-        ContentDesc* IProtocol::CreateContentDesc(const Http::RequestDataInternal& requestData, const THashMap<String, IContentType* >& contentTypes, IAllocator& allocator)
+        ContentDesc* IProtocol::CreateContentDescriptor(const Http::RequestDataInternal& requestData, const THashMap<String, IContentType* >& contentTypes, IAllocator& allocator)
         {
             auto it = requestData.IncomingHeaders.Find("content-type");
             
             if (!it.IsValid())
             {
-                LogInfo.log("Skylar") << "CreateContentDesc: No content-type header set.";
+                LogInfo.log("Skylar") << "CreateContentDescriptor: No content-type header set.";
                 return nullptr;
             }
             
@@ -231,9 +228,9 @@ namespace Neko
             return contentDesc;
         }
         
-        void IProtocol::DestroyContentDesc(void* source, IAllocator& allocator)
+        void IProtocol::DestroyContentDescriptor(void* source, IAllocator& allocator)
         {
-            ContentDesc* content = (ContentDesc* )source;
+            ContentDesc* content = static_cast<ContentDesc* >(source);
             
             if (content != nullptr)
             {
@@ -241,7 +238,7 @@ namespace Neko
                 
                 if (content->Data)
                 {
-                    NEKO_DELETE(allocator, (String* )content->Data) ;
+                    NEKO_DELETE(allocator, static_cast<String* >(content->Data)) ;
                     content->Data = nullptr;
                 }
             }
@@ -376,7 +373,8 @@ namespace Neko
             return ranges;
         }
         
-        static bool SendPartial(const IProtocol& protocol, const Http::Request& request, const String& fileName, DateTime fileTime, const ulong fileSize, const String& rangeHeader, TArray<std::pair<String, String> >& extraHeaders, const THashMap<String, String>& mimeTypes, const bool headersOnly, IAllocator& allocator)
+        static bool SendPartial(const IProtocol& protocol, const Http::Request& request, const String& fileName, DateTime fileTime,
+                                const ulong fileSize, const String& rangeHeader, TArray<std::pair<String, String> >& extraHeaders, const THashMap<String, String>& mimeTypes, const bool headersOnly, IAllocator& allocator)
         {
             const int32 valueOffset = rangeHeader.Find("=");
             
@@ -455,7 +453,7 @@ namespace Neko
                 Neko::Tie(position, length) = range;
                 
                 const uint32 size = 512 * 1024;
-                buffer.Resize(length < size ? length : size);
+                buffer.Reserve(length < size ? length : size);
                 
                 file.Seek(ESeekLocator::Begin, position);
                 
@@ -467,10 +465,10 @@ namespace Neko
                 {
                     if (sendSizeLeft < size)
                     {
-                        buffer.Resize(sendSizeLeft);
+                        buffer.Reserve(sendSizeLeft);
                     }
                     
-                    readSize = file.Read((void* )buffer.GetData(), buffer.GetSize());
+                    readSize = file.Read((void* )buffer.GetData(), buffer.GetCapacity());
                     sendSize = protocol.SendData(buffer.GetData(), readSize, request.Timeout, &dataCounter);
                     sendSizeLeft -= sendSize;
                 }
@@ -482,7 +480,8 @@ namespace Neko
             return true;
         }
         
-        static bool Sendfile(const IProtocol& protocol, const Http::Request &request, TArray<std::pair<String, String> >& extraHeaders, const String& fileName, const THashMap<String, String>& mimeTypes, const bool headersOnly, IAllocator& allocator)
+        static bool Sendfile(const IProtocol& protocol, const Http::Request &request, TArray<std::pair<String, String> >& extraHeaders,
+                             const String& fileName, const THashMap<String, String>& mimeTypes, const bool headersOnly, IAllocator& allocator)
         {
             // Current time in Gmt
             const auto now = DateTime::GmtNow().ToRfc882();
@@ -585,7 +584,7 @@ namespace Neko
                 const uint32 size = 512 * 1024;
                 
                 TArray<uint8> buffer(allocator);
-                buffer.Resize(fileSize < size ? fileSize : size);
+                buffer.Reserve(fileSize < size ? fileSize : size);
                 
                 long sendSize;
                 long readSize;
@@ -594,7 +593,7 @@ namespace Neko
                 
                 do
                 {
-                    readSize = file.Read((void* )buffer.GetData(), buffer.GetSize());
+                    readSize = file.Read((void* )buffer.GetData(), buffer.GetCapacity());
                     sendSize = protocol.SendData(buffer.GetData(), readSize, request.Timeout, &dataCounter);
                 }
                 while (!file.IsEof() && (dataCounter.FullSize - dataCounter.SendTotal) && sendSize > 0);

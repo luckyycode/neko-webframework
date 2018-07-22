@@ -90,13 +90,15 @@ namespace Neko
         LogInfo.log("Telegram") << "Sending request " << *url.Host;
         
         Net::INetSocket socket;
-        socket.Init(*url.Host, TelegramApiPort, Net::ESocketType::TCP);
+        Net::NetAddress address;
+        
+        address = socket.Init(*url.Host, TelegramApiPort, Net::ESocketType::TCP);
         
         socket.MakeNonBlocking(false);
         socket.SetSocketStreamNoDelay();
         
         // connect using inner socket
-        int16 result = socket.Connect();
+        int32 result = socket.Connect(address);
         
         if (result < 0)
         {

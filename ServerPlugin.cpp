@@ -58,41 +58,42 @@ namespace Neko
         {
             bool forceStart = false;
             char serverName[64] = { DEFAULT_SERVER_NAME };
-            uint64 maxMemory = 1024 * 1024 * 128; // in mb
-            
-            char commandLine[2048];
-            Platform::GetSystemCommandLine(commandLine, Neko::lengthOf(commandLine));
-            
-            CCommandLineParser parser(commandLine);
-            while (parser.Next())
             {
-                if (parser.CurrentEquals("--force"))
+                uint64 maxMemory = 1024 * 1024 * 128; // in mb
+                char commandLine[2048];
+                Platform::GetSystemCommandLine(commandLine, Neko::lengthOf(commandLine));
+                
+                CCommandLineParser parser(commandLine);
+                while (parser.Next())
                 {
-                    forceStart = true;
-                }
-                else if (parser.CurrentEquals("--name"))
-                {
+                    if (parser.CurrentEquals("--force"))
+                    {
+                        forceStart = true;
+                    }
+                    else if (parser.CurrentEquals("--name"))
+                    {
+                        if (!parser.Next())
+                        {
+                            break;
+                        }
+                        
+                        parser.GetCurrent(serverName, Neko::lengthOf(serverName));
+                    }
+                    else if (parser.CurrentEquals("--maxmemory"))
+                    {
+                        if (!parser.Next())
+                        {
+                            break;
+                        }
+                        
+                        char memory[8];
+                        parser.GetCurrent(memory, Neko::lengthOf(memory));
+                        maxMemory = StringToUnsignedLong(memory);
+                    }
                     if (!parser.Next())
                     {
                         break;
                     }
-                    
-                    parser.GetCurrent(serverName, Neko::lengthOf(serverName));
-                }
-                else if (parser.CurrentEquals("--maxmemory"))
-                {
-                    if (!parser.Next())
-                    {
-                        break;
-                    }
-                    
-                    char memory[8];
-                    parser.GetCurrent(memory, Neko::lengthOf(memory));
-                    maxMemory = StringToUnsignedLong(memory);
-                }
-                if (!parser.Next())
-                {
-                    break;
                 }
             }
             

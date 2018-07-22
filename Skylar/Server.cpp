@@ -120,7 +120,7 @@ namespace Neko
         , FileSystem(fileSystem)
         , Settings(fileSystem, allocator)
         {
-            SetDefaultAllocator(allocator);
+            SetThreadDefaultAllocator(allocator);
         };
 
         bool Server::Init()
@@ -141,6 +141,8 @@ namespace Neko
             SocketSSL::Init();
 #   endif
 
+            LogInfo.log("Skylar") << "Server initialization complete.";
+            
             return true;
         }
         
@@ -159,6 +161,8 @@ namespace Neko
             
             const auto& certificate = application.CertificateFile;
             const auto& privateKey = application.KeyFile;
+            
+            LogInfo.log("Skylar") << "Configuring ssl configuration for the application..";
             
             context = SSL_CTX_new(SSLv23_server_method());
             
@@ -263,7 +267,7 @@ namespace Neko
             // start processing immediately
             Controls.SetActiveFlag();
             
-            LogInfo.log("Skylar") << "Creating the main request queue task..";
+            LogInfo.log("Skylar") << "Creating the main request task..";
             
             Net::SocketsQueue sockets(Allocator);
             
@@ -284,7 +288,7 @@ namespace Neko
             Debug::DebugColor(Debug::EStdoutColor::Green);
             {
                 LogInfo.log("Skylar") << "## [^._.^] Skylar is now listening on "
-                << Settings.ResolvedAddressString << " (" << Listeners.GetSize() << " listeners).";
+                    << Settings.ResolvedAddressString << " (" << Listeners.GetSize() << " listeners).\n";
             }
             
             // list of new connections
@@ -433,7 +437,7 @@ namespace Neko
             
             virtual int32 DoTask() override
             {
-                SetDefaultAllocator(Allocator);
+                SetThreadDefaultAllocator(Allocator);
                 
                 while (true)
                 {
@@ -673,14 +677,17 @@ namespace Neko
             
             // setup socket
             Net::INetSocket socket;
+            Net::NetAddress address;
             
-            if (!socket.Init(*Settings.ResolvedAddressString, port, Net::ESocketType::TCP))
+            address = socket.Init(*Settings.ResolvedAddressString, port, Net::ESocketType::TCP);
+            
+            if (address.AddressType == NA_BAD)
             {
                 LogError.log("Skylar") << "Server couldn't start at " << Settings.ResolvedAddressString << ":" << port << ". " << strerror(errno);
                 return false;
             }
             
-            if (!socket.Bind())
+            if (!socket.Bind(address))
             {
                 LogError.log("Skylar") << "Server couldn't bind to address. " << strerror(errno);
                 return false;
