@@ -4,6 +4,7 @@
 
 ![alt text](https://img.shields.io/badge/repo%20status-active-blue.svg)
 ![alt text](https://img.shields.io/github/last-commit/luckyycode/neko-webframework.svg)
+[![Build Status](https://travis-ci.org/luckyycode/neko-webframework.svg?branch=master)](https://travis-ci.org/luckyycode/neko-webframework)
 
 Neko server / framework. Work in progress, not ready for production in any way yet.
 
