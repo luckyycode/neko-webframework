@@ -75,21 +75,20 @@ namespace Neko
             }
             
             auto csrfTokenIt = HttpRequest.IncomingHeaders.Find("x-csrftoken");
-            if (!csrfTokenIt.IsValid())
+            if (not csrfTokenIt.IsValid())
             {
                 csrfTokenIt = HttpRequest.IncomingData.Find("authenticity_token");
             }
             
-            if (!csrfTokenIt.IsValid())
+            if (not csrfTokenIt.IsValid())
             {
                 LogWarning.log("Nova") << "CSRF token is empty or not set!";
                 return false;
             }
             
-            if (!Options::SessionOptions().SuppressXFrameOptionsHeader)
+            if (not Options::SessionOptions().SuppressXFrameOptionsHeader)
             {
-                auto frameIt = HttpResponse.Headers.Find("x-frame-options");
-                if (!frameIt.IsValid())
+                if (auto frameIt = HttpResponse.Headers.Find("x-frame-options"); !frameIt.IsValid())
                 {
                     // http://tools.ietf.org/html/draft-ietf-websec-x-frame-options-10
                     HttpResponse.AddHeader("x-frame-options", "SAMEORIGIN");
@@ -132,9 +131,7 @@ namespace Neko
         
         bool IController::AddCookie(const Cookie& cookie)
         {
-            const String& name = cookie.Name;
-            
-            if (name.IsEmpty() || FindFirstOf(*name, ";, \"") != INDEX_NONE)
+            if (const String& name = cookie.Name; name.IsEmpty() or FindFirstOf(*name, ";, \"") != INDEX_NONE)
             {
                 LogError.log("Nova") << "Couldn't add cookie with incorrect name: \"" << *name << "\"";
                 
@@ -143,8 +140,7 @@ namespace Neko
             
             CookieJar.Push(cookie);
             
-            auto cookieIt = HttpResponse.Headers.Find("set-cookie");
-            if (cookieIt.IsValid())
+            if (auto cookieIt = HttpResponse.Headers.Find("set-cookie"); cookieIt.IsValid())
             {
                 HttpResponse.Headers.Erase(cookieIt);
             }

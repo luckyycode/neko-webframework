@@ -76,8 +76,7 @@ namespace Neko
         
         void UserManager::UserLogout(Session& session)
         {
-            const auto keyIt = session.Find(SESSION_USER_NAME);
-            if (keyIt.IsValid())
+            if (const auto keyIt = session.Find(SESSION_USER_NAME); keyIt.IsValid())
             {
                 LogInfo.log("Nova") << "User logged out.";
                 session.Erase(keyIt);

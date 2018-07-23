@@ -65,7 +65,7 @@ namespace Neko
         {
         }
         
-        void ProtocolWebSocket::ReadResponse(Http::Request& request, Http::ResponseData& responseData) const
+        void ProtocolWebSocket::ReadResponse(Http::Request& request, const Http::ResponseData& responseData) const
         {
             
         }

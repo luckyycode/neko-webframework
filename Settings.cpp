@@ -102,13 +102,13 @@ namespace Neko
             
             json.DeserializeArrayBegin("applications");
             
-            while (!json.IsArrayEnd())
+            while (not json.IsArrayEnd())
             {
                 ApplicationSettings* settings = NEKO_NEW(Allocator, ApplicationSettings) ();
                 applicationSettingItems.Push(settings);
                 
                 json.DeserializeObjectBegin();
-                while (!json.IsObjectEnd())
+                while (not json.IsObjectEnd())
                 {
                     json.DeserializeLabel(label, 255);
                     
@@ -157,7 +157,7 @@ namespace Neko
                 int16 moduleIndex = LoadModule(settings->ServerModulePath, settings->RootDirectory.data, modules, *settings);
                 bool success = moduleIndex!= -1;
                 
-                if (!success)
+                if (not success)
                 {
                     LogError.log("Skylar") << "Couldn't load module " << *settings->ServerModulePath;
                     return false;
@@ -168,9 +168,7 @@ namespace Neko
                 this->AddApplication(applicationNames[i], settings);
             }
             
-            Net::NetAddress address;
-            address.Resolve(*applicationNames[0], Net::NA_UNSPEC);
-            if (address.AddressType != Net::NA_BAD)
+            if (Net::NetAddress address; address.Resolve(*applicationNames[0], Net::NA_UNSPEC))
             {
                 this->ResolvedAddressString.Set(address.ToString());
                 LogWarning.log("Skylar") << "Resolved address: " << *this->ResolvedAddressString;
@@ -210,7 +208,7 @@ namespace Neko
         
         void ServerSettings::Clear()
         {
-            if (!List.IsEmpty())
+            if (not List.IsEmpty())
             {
                 TArray< ApplicationSettings* > applications(Allocator);
                 
@@ -226,7 +224,7 @@ namespace Neko
                 applications.Clear();
             }
             
-            if (!ContentTypes.IsEmpty())
+            if (not ContentTypes.IsEmpty())
             {
                 for (auto type : ContentTypes)
                 {
@@ -284,14 +282,14 @@ namespace Neko
             bool success = true;
             Module module(name);
             
-            if (!module.IsOpen())
+            if (not module.IsOpen())
             {
                 LogError.log("Skylar") << "Couldn't open '" << *name << "' application module.";
                 return -1;
             }
             
             success = SetApplicationModuleMethods(settings, module);
-            if (!success)
+            if (not success)
             {
                 LogError.log("Skylar") << "One of application methods is missing.";
                 
@@ -362,7 +360,7 @@ namespace Neko
         ApplicationSettings* ServerSettings::ApplicationsList::Find(const String& name) const
         {
             auto it = List.Find(name);
-            if (!it.IsValid())
+            if (not it.IsValid())
             {
                 return ApplicationSettings;
             }
@@ -393,9 +391,7 @@ namespace Neko
         {
             ServerSettings::ApplicationsList* list = nullptr;
             
-            auto it = List.Find(name);
-            
-            if (it.IsValid())
+            if (auto it = List.Find(name); it.IsValid())
             {
                 LogWarning.log("Skylar") << "Attempt to add the application with existing name";
                 // @todo something?
@@ -414,7 +410,7 @@ namespace Neko
         
         void ServerSettings::ApplicationsList::Clear()
         {
-            if (!List.IsEmpty())
+            if (not List.IsEmpty())
             {
                 for (auto it : List)
                 {

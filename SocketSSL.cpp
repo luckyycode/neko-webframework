@@ -71,7 +71,7 @@ namespace Neko
             
             do
             {
-                if (!socket.WaitForDataInternal(timeout, false))
+                if (not socket.WaitForDataInternal(timeout, false))
                 {
                     // timeout
                     result = -1;
@@ -81,7 +81,7 @@ namespace Neko
                 result = ::SSL_read(this->Connection, buffer, length);
                 innerError = SSL_get_error(this->Connection, result);
             }
-            while (innerError == SSL_ERROR_WANT_READ || innerError == SSL_ERROR_WANT_WRITE);
+            while (innerError == SSL_ERROR_WANT_READ or innerError == SSL_ERROR_WANT_WRITE);
             
             return result;
         }
@@ -113,7 +113,7 @@ namespace Neko
                 do
                 {
                     // Wait for send all data to client
-                    if (!socket.WaitForAnyDataInternal(-1, true))
+                    if (not socket.WaitForAnyDataInternal(-1, true))
                     {
                         continue;
                     }
@@ -136,7 +136,7 @@ namespace Neko
             
             do
             {
-                if (!Socket.WaitForAnyDataInternal(-1, false))
+                if (not Socket.WaitForAnyDataInternal(-1, false))
                 {
                     continue;
                 }

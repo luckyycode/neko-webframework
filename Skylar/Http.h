@@ -57,7 +57,7 @@ namespace Neko
             
             virtual void WriteRequest(char* data, const Http::Request& request, const ApplicationSettings& applicationSettings) const override;
             
-            virtual void ReadResponse(Http::Request& request, Http::ResponseData& responseData) const override;
+            virtual void ReadResponse(Http::Request& request, const Http::ResponseData& responseData) const override;
             
             virtual void Close() override;
             

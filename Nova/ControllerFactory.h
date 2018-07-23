@@ -82,7 +82,7 @@ namespace Neko
             template<class T>
             ControllerContext<T>& CreateContext(const char* controllerName, const char* pathToController)
             {
-                ControllerContext<T>* context = NEKO_NEW(Allocator, ControllerContext<T>)(Allocator, Router, pathToController, controllerName);
+                auto* context = NEKO_NEW(Allocator, ControllerContext<T>)(Allocator, Router, pathToController, controllerName);
                 
                 if (context == nullptr)
                 {

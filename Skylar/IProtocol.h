@@ -95,7 +95,7 @@ namespace Neko
                                                const ApplicationSettings& applicationSettings) const = 0;
             
             /** Reads request buffer data. */
-            virtual void ReadResponse(Http::Request& request, Http::ResponseData& responseData) const = 0;
+            virtual void ReadResponse(Http::Request& request, const Http::ResponseData& responseData) const = 0;
             
             /** Closes this protocol. */
             virtual void Close() = 0;

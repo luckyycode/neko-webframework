@@ -52,7 +52,7 @@ namespace Neko
             virtual long    SendData(const void* source, ulong size, const int32& timeout, Http::DataCounter* dataCounter) const override;
             
             virtual void    WriteRequest(char* buffer, const Http::Request& repuest, const ApplicationSettings& applicationSettings) const override;
-            virtual void    ReadResponse(Http::Request& request, Http::ResponseData& responseData) const override;
+            virtual void    ReadResponse(Http::Request& request, const Http::ResponseData& responseData) const override;
             
             virtual IProtocol* Process() override;
             virtual void Close() override;

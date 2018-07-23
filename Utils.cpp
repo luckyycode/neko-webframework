@@ -48,14 +48,13 @@ namespace Neko
         String GetMimeByFileName(const String& fileName, const THashMap<String, String>& mimes)
         {
             // find extension start
-            const int32 extensionPos = fileName.Find("."); // @todo possible optimization? FromEnd
             
-            if (extensionPos != INDEX_NONE)
+            if (const int32 extensionPos = fileName.Find("."); extensionPos != INDEX_NONE)
+                // @todo possible optimization? FromEnd
             {
                 String extension = fileName.Mid(extensionPos + 1 /* skip dot */).ToLower() ;
-                const auto mimeIt = mimes.Find(extension);
                 
-                if (mimeIt.IsValid())
+                if (const auto mimeIt = mimes.Find(extension); mimeIt.IsValid())
                 {
                     return mimeIt.value();
                 }
@@ -78,7 +77,7 @@ namespace Neko
                 const int32 finish = uri.Find("#");
                 
                 // # is missing or found and must be at the end..
-                if (finish == INDEX_NONE || (finish != INDEX_NONE && finish > start))
+                if (finish == INDEX_NONE or (finish != INDEX_NONE && finish > start))
                 {
                     for (int32 paramCur = start + 1, paramEnd = 0; paramEnd != INDEX_NONE; paramCur = paramEnd + 1)
                     {
@@ -187,7 +186,7 @@ namespace Neko
                 body += "</td>";
                 
                 // size
-                if (!isDirectory)
+                if (not isDirectory)
                 {
                     body += "<td>";
                     char unit[4];

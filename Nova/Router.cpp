@@ -50,7 +50,7 @@ namespace Neko
             assert(method >= Http::Method::Get && method <= Http::Method::Patch);
             
             // assert
-            if (path.Find(ROUTE_PARAMS_TAG) != INDEX_NONE && !EndsWith(*path, ROUTE_PARAMS_TAG))
+            if (path.Find(ROUTE_PARAMS_TAG) != INDEX_NONE and !EndsWith(*path, ROUTE_PARAMS_TAG))
             {
                 LogError.log("Nova") << "[params] tag must be set as last parameter.";
                 return false;
@@ -173,12 +173,12 @@ namespace Neko
                 }
                 
                 // check if method types match
-                if (route.Method == method || route.Method == Http::Any)
+                if (route.Method == method or route.Method == Http::Any)
                 {
                     // Generates parameters for action
                     TArray<String> params(components);
                     
-                    if (params.GetSize() == 1 && params[0].IsEmpty())
+                    if (params.GetSize() == 1 and params[0].IsEmpty())
                     {
                         // empty path ( or / )
                         params.Clear();
@@ -260,7 +260,7 @@ namespace Neko
             int32 length = path.Length();
             
             // remove last slash if present
-            if (length > 1 && EndsWith(*path, slash))
+            if (length > 1 and EndsWith(*path, slash))
             {
                 --length;
             }
@@ -297,9 +297,9 @@ namespace Neko
             
             for (const auto& route : Routes)
             {
-                if (route.Controller == controller && route.Action == action
-                    && ((route.ParameterNum == params.GetSize() && !route.HasVariableParams)
-                        || (route.ParameterNum <= params.GetSize() && route.HasVariableParams)))
+                if (route.Controller == controller and route.Action == action
+                    and ((route.ParameterNum == params.GetSize() and !route.HasVariableParams)
+                        or (route.ParameterNum <= params.GetSize() and route.HasVariableParams)))
                 {
                     return GeneratePath(route.ComponentList, params);
                 }
@@ -313,13 +313,13 @@ namespace Neko
             String result("/", Allocator);
             int count = 0;
             
-            for (auto& c : components)
+            for (auto& component : components)
             {
-                if (c == "[param]")
+                if (component == "[param]")
                 {
                     result += params[count++];
                 }
-                else if (c == "[params]")
+                else if (component == "[params]")
                 {
                     TArray<String> left(Allocator);
                     left.Append(params, count, params.GetSize() - count);
@@ -329,7 +329,7 @@ namespace Neko
                 }
                 else
                 {
-                    result += c;
+                    result += component;
                 }
                 result += "/";
             }

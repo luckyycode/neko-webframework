@@ -64,7 +64,7 @@ namespace Neko
         
         bool SessionManager::Remove(const String& sessionId)
         {
-            if (!sessionId.IsEmpty())
+            if (not sessionId.IsEmpty())
             {
                 ISessionStorage* storage = SessionStorageFactory::Get(GetStoreType());
                 
@@ -88,7 +88,7 @@ namespace Neko
         {
             Session session;
             
-            if (!sessionId.IsEmpty())
+            if (not sessionId.IsEmpty())
             {
                 ISessionStorage* storage = SessionStorageFactory::Get(GetStoreType());
                 
@@ -117,11 +117,11 @@ namespace Neko
             
             if (probability > 0)
             {
-                int16 result = Math::rand(0, probability - 1);
+                int32 result = Math::rand(0, probability - 1);
                 
                 if (result == 0)
                 {
-                    LogInfo.log("Nova") << "Clearning session cache...";
+                    LogInfo.log("Nova") << "Clearing session cache...";
                     
                     ISessionStorage* storage = SessionStorageFactory::Get(GetStoreType());
                     if (storage != nullptr)

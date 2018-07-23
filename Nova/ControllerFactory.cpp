@@ -56,12 +56,12 @@ namespace Neko
         static void StoreSessionCookie(IController& controller)
         {
             const int32& cookieLifetime = Options::SessionOptions().Lifetime;
-            const String& cookiePath = Options::SessionOptions().CookiePath;
+            const auto& cookiePath = Options::SessionOptions().CookiePath;
             
             TimeValue value;
             
             value.SetSeconds(static_cast<int64>(cookieLifetime));
-            DateTime expire = DateTime::UtcNow() + value;
+            const DateTime expire = DateTime::UtcNow() + value;
             
             Cookie cookie(Session::GetSessionName(), controller.Session.GetId());
             
@@ -77,16 +77,14 @@ namespace Neko
         void ControllerFactory::SetSession(Http::Request& request, IController& controller)
         {
             // session
-            if (!controller.IsSessionEnabled())
+            if (not controller.IsSessionEnabled())
             {
                 return;
             }
             
-            auto cookieIt = request.IncomingHeaders.Find("cookie");
-            
             Session session;
             
-            if (cookieIt.IsValid())
+            if (auto cookieIt = request.IncomingHeaders.Find("cookie"); cookieIt.IsValid())
             {
                 TArray<Cookie> cookies;
                 
@@ -115,10 +113,9 @@ namespace Neko
             PROFILE_SECTION("controller context execute")
             
             // get controller context
-            auto contextIt = ControllerDispatcher.Find(*routing.Controller);
-            if (contextIt.IsValid())
+            if (auto contextIt = ControllerDispatcher.Find(*routing.Controller); contextIt.IsValid())
             {
-                auto* context = contextIt.value();
+                auto* const context = contextIt.value();
                 
                 // create a brand new controller
                 IController* controller = context->CreateController(request, response);
@@ -136,9 +133,9 @@ namespace Neko
                 if (Options::SessionOptions().IsCsrfProtectionEnabled && controller->IsCsrfProtectionEnabled())
                 {
                     // only for specified methods
-                    const auto& method = request.Method;
                     
-                    if (method != "get" && method != "head" && method != "options" && method != "trace")
+                    if (const auto& method = request.Method;
+                        method != "get" && method != "head" && method != "options" && method != "trace")
                     {
                         verified = controller->VerifyRequest();
                         if (!verified)
@@ -165,9 +162,8 @@ namespace Neko
                         SessionManager.SetCsrfProtectionData(controller->Session);
                     }
                     
-                    const auto& action = routing.Action;
-                    
-                    if (controller->PreFilter(*action))
+                
+                    if (const auto& action = routing.Action; controller->PreFilter(*action))
                     {
                         // execute controller action
                         context->InvokeAction(*controller, *action);
@@ -200,7 +196,7 @@ namespace Neko
                 else
                 {
                     // response has no data and empty status codes
-                    if (!response.HasBodyData())
+                    if (not response.HasBodyData())
                     {
                         response.SetStatusCode(Http::StatusCode::InternalServerError);
                     }

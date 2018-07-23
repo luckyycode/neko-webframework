@@ -52,7 +52,7 @@ namespace Neko
                 
                 int32 delimiter = cookieHeader.Find("=", current);
                 
-                if (delimiter == INDEX_NONE || delimiter > c)
+                if (delimiter == INDEX_NONE or delimiter > c)
                 {
                     return false;
                 }
@@ -100,19 +100,19 @@ namespace Neko
                 if (HttpOnly) { result += "; httpOnly"; }
                 if (SameSite) { result += "; samesite"; }
                 
-                if (!IsSessionCookie())
+                if (not IsSessionCookie())
                 {
                     result += "; expires=";
                     result += ExpirationDate.ToRfc882();
                 }
                 
-                if (!Domain.IsEmpty())
+                if (not Domain.IsEmpty())
                 {
                     result += "; domain=";
                     result += Domain;
                 }
                 
-                if (!Path.IsEmpty())
+                if (not Path.IsEmpty())
                 {
                     result += "; path=";
                     result += Path;

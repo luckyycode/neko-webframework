@@ -34,9 +34,9 @@ namespace Neko
         struct Options
         {
             template<typename TFunc>
-            inline void Configure(TFunc func)
+            inline Options& ConfigureSession(TFunc func)
             {
-                func(*this);
+                func(this->Session);
             }
             
             static Options& Instance();

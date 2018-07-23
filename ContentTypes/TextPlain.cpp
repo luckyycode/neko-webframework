@@ -55,7 +55,7 @@ namespace Neko
                 // find the next param
                 end = buffer.Find("&", pos);
                 
-                if (end == INDEX_NONE && contentDesc->FullSize != contentDesc->BytesReceived)
+                if (end == INDEX_NONE and contentDesc->FullSize != contentDesc->BytesReceived)
                 {
                     // end of params but we still have something to read
                     

@@ -72,7 +72,7 @@ namespace Neko
             blob << request.IncomingHeaders << request.IncomingData << request.IncomingFiles /* files */;
         }
         
-        void ProtocolHttp::ReadResponse(Http::Request& request, Http::ResponseData& responseData) const
+        void ProtocolHttp::ReadResponse(Http::Request& request, const Http::ResponseData& responseData) const
         {
             InputBlob blob(responseData.Data, INT_MAX);
             // write response headers to request
@@ -123,7 +123,7 @@ namespace Neko
             // Get domain or address from incoming request
             auto hostIt = request.IncomingHeaders.Find("host");
             
-            if (!hostIt.IsValid())
+            if (not hostIt.IsValid())
             {
                 LogWarning.log("Skylar") << "GetApplicationSettingsForRequest: Request with no host header?!";
                 
@@ -143,13 +143,15 @@ namespace Neko
             request.Host = (delimiter == INDEX_NONE) ? hostHeader : hostHeader.Mid(0, delimiter);  // name/address
             
             // port value
-            const uint16 port = (delimiter != INDEX_NONE) ? ::atoi(*hostHeader.Mid(delimiter + 1)) : defaultPort;
+            const uint16 port = (delimiter != INDEX_NONE)
+                ? static_cast<uint16>(::atoi(*hostHeader.Mid(delimiter + 1)))
+                : defaultPort;
             
             // get application settings by name
             const ApplicationSettings* applicationSettings = Settings->List.Find(request.Host) ;
             
             // app is found
-            if (applicationSettings != nullptr && (applicationSettings->Port == port || applicationSettings->TlsPort == port))
+            if (applicationSettings != nullptr and (applicationSettings->Port == port or applicationSettings->TlsPort == port))
             {
                 return applicationSettings;
             }
@@ -231,7 +233,7 @@ namespace Neko
             // Parse content
             bool result = contentTypeData->Parse(contentBuffer, requestData, &contentDesc);
             
-            while (result && contentDesc.FullSize > contentDesc.BytesReceived)
+            while (result and contentDesc.FullSize > contentDesc.BytesReceived)
             {
                 TArray<char> buffer(allocator);
                 
@@ -279,7 +281,7 @@ namespace Neko
             // Get content type and check if we have any data
             auto it = request.IncomingHeaders.Find("content-type");
             
-            if (!it.IsValid())
+            if (not it.IsValid())
             {
                 // hmm
                 if (request.Method != "get")
@@ -298,7 +300,7 @@ namespace Neko
             // Get variant-data by name
             const auto contentTypeIt = Settings->ContentTypes.Find(contentTypeName);
             // Check if we support that one
-            if (!contentTypeIt.IsValid())
+            if (not contentTypeIt.IsValid())
             {
                 LogWarning.log("Skylar") << "Unsupported content-type " << *contentTypeName;
                 
@@ -318,7 +320,7 @@ namespace Neko
             }
             
             // check limits
-            if (applicationSettings.RequestMaxSize > 0 /* if max size is set */ && applicationSettings.RequestMaxSize < contentLength)
+            if (applicationSettings.RequestMaxSize > 0 /* if max size is set */ and applicationSettings.RequestMaxSize < contentLength)
             {
                 LogWarning.log("Skylar") << "Large request " << (uint64)contentLength << "/" << applicationSettings.RequestMaxSize;
                 
@@ -327,7 +329,7 @@ namespace Neko
             
             const bool parsed = ParseRequestContentType(request, stringBuffer, contentTypeData, contentTypeName, contentLength, contentParams, Socket, Allocator);
             
-            if (!parsed)
+            if (not parsed)
             {
                 LogError.log("Skylar") << "Couldn't parse data of content-type " << contentTypeName;
                 // eh
@@ -489,7 +491,7 @@ namespace Neko
             size = socket.GetPacketBlocking((void* )buffer, REQUEST_BUFFER_SIZE, request.Timeout);
             
             // no content or error
-            if (size < 0 && stringBuffer.IsEmpty())
+            if (size < 0 and stringBuffer.IsEmpty())
             {
                 return false;
             }
@@ -521,7 +523,7 @@ namespace Neko
         {
             auto outUpgradeIt = request.OutgoingHeaders.Find("upgrade");
             
-            if (!outUpgradeIt.IsValid())
+            if (not outUpgradeIt.IsValid())
             {
                 return;
             }
@@ -542,7 +544,7 @@ namespace Neko
             }
             else if (upgrade == "h2c")
             {
-                if (!secure)
+                if (not secure)
                 {
                     // set protocol
                     request.ProtocolVersion = Http::Version::Http_2;
@@ -578,7 +580,7 @@ namespace Neko
             auto outConnectionIt = request.OutgoingHeaders.Find("connection");
             
             // check if incoming/outgoing connection parameters are set
-            if (InConnectionIt.IsValid() && outConnectionIt.IsValid())
+            if (InConnectionIt.IsValid() and outConnectionIt.IsValid())
             {
                 const String& connectionIn = InConnectionIt.value();
                 const String& connectionOut = outConnectionIt.value();
@@ -617,7 +619,7 @@ namespace Neko
             // these can be null
             assert(this->Settings != nullptr);
             
-            if (!GetRequest(Socket, request, buffer, stringBuffer))
+            if (not GetRequest(Socket, request, buffer, stringBuffer))
             {
                 return;
             }

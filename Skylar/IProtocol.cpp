@@ -71,7 +71,7 @@ namespace Neko
             bool result = SendHeaders(response, nullptr, timeout);
             
             // send data if have any
-            if (result && data != nullptr && size > 0)
+            if (result and data != nullptr and size > 0)
             {
                 result = SendData(data, size, timeout, nullptr) > 0;
                 
@@ -105,7 +105,7 @@ namespace Neko
         {
             PROFILE_FUNCTION()
             
-            char buffer[REQUEST_BUFFER_SIZE];
+            char buffer[REQUEST_BUFFER_SIZE]; // @todo resizable
 //            TArray<char> buffer(Allocator);
 //            buffer.Reserve(REQUEST_BUFFER_SIZE);
             
@@ -130,7 +130,7 @@ namespace Neko
             // check results
             if (request.ApplicationExitCode == APPLICATION_EXIT_SUCCESS)
             {
-                if (responseData.Data != nullptr && responseData.Size > 0)
+                if (responseData.Data != nullptr and responseData.Size > 0)
                 {
                     ReadResponse(request, responseData);
                     
@@ -148,7 +148,7 @@ namespace Neko
         {
             auto it = requestData.IncomingHeaders.Find("content-type");
             
-            if (!it.IsValid())
+            if (not it.IsValid())
             {
                 LogInfo.log("Skylar") << "CreateContentDescriptor: No content-type header set.";
                 return nullptr;
@@ -198,7 +198,7 @@ namespace Neko
             
             const auto contentTypeIt = contentTypes.Find(contentTypeName);
             
-            if (!contentTypeIt.IsValid())
+            if (not contentTypeIt.IsValid())
             {
                 return nullptr;
             }
@@ -258,7 +258,7 @@ namespace Neko
             const String rangeUnitString(rangeHeader, 0, delimiter);
             
             const auto unitIt = rangesUnits.Find(rangeUnitString);
-            if (!unitIt.IsValid())
+            if (not unitIt.IsValid())
             {
                 LogWarning.log("Skylar") << "GetRanges: Unsupported range unit type \"" << *rangeUnitString << "\"";
                 
@@ -276,7 +276,7 @@ namespace Neko
                 // 0-1024
                 const int32 rangePos = rangeHeader.Find("-", strPos);
                 
-                if (rangePos < delimiter || delimiter == INDEX_NONE)
+                if (rangePos < delimiter or delimiter == INDEX_NONE)
                 {
                     int32 c = rangePos - strPos;
                     const String rangeStrBegin(rangeHeader, strPos, c);
@@ -285,7 +285,7 @@ namespace Neko
                     const String rangeStrEnd(rangeHeader, rangePos + 1, c);
                     
                     
-                    if (!rangeStrBegin.IsEmpty())
+                    if (not rangeStrBegin.IsEmpty())
                     {
                         const ulong rangeBeginValue = StringToUnsignedLong(*rangeStrBegin) * rangeUnit;
                         
@@ -293,7 +293,7 @@ namespace Neko
                         if (rangeBeginValue < fileSize)
                         {
                             // end value is set..
-                            if (!rangeStrEnd.IsEmpty())
+                            if (not rangeStrEnd.IsEmpty())
                             {
                                 ulong rangeEndValue = StringToUnsignedLong(*rangeStrEnd) * rangeUnit;
                                 // end value always should have more length than begin value
@@ -334,7 +334,7 @@ namespace Neko
                             }
                         }
                     }
-                    else if (!rangeStrEnd.IsEmpty())
+                    else if (not rangeStrEnd.IsEmpty())
                     {
                         ulong rangeEndValue = StringToUnsignedLong(*rangeStrEnd) * rangeUnit; // convert
                         
@@ -357,7 +357,7 @@ namespace Neko
             }
             
             // check if range(s) processed
-            if (!ranges.IsEmpty())
+            if (not ranges.IsEmpty())
             {
                 // build range string
                 int32 l = resultRangeHeader->Length() - 1;
@@ -402,9 +402,9 @@ namespace Neko
             }
             
             // Range(s) transfer
-            FS::CPlatformFile file;
+            FS::PlatformFile file;
             
-            if (!file.Open(*fileName, FS::Mode::READ))
+            if (not file.Open(*fileName, FS::Mode::READ))
             {
                 file.Close();
                 LogError.log("Skylar") << "SendPartial: Couldn't open file for transfer.";
@@ -428,7 +428,7 @@ namespace Neko
             extraHeaders.Emplace("last-modified", kekas );
             
             // Partial Content
-            if (!protocol.SendHeaders(Http::StatusCode::PartialContent, extraHeaders, request.Timeout, headersOnly))
+            if (not protocol.SendHeaders(Http::StatusCode::PartialContent, extraHeaders, request.Timeout, headersOnly))
             {
                 file.Close();
                 LogError.log("Skylar") << "SendPartial: Couldn't send headers";
@@ -472,7 +472,7 @@ namespace Neko
                     sendSize = protocol.SendData(buffer.GetData(), readSize, request.Timeout, &dataCounter);
                     sendSizeLeft -= sendSize;
                 }
-                while (!file.IsEof() && sendSizeLeft && sendSize > 0);
+                while (not file.IsEof() and sendSizeLeft and sendSize > 0);
             }
             
             file.Close();
@@ -494,7 +494,7 @@ namespace Neko
             DateTime fileModificationTime;
             
             // File is not found or not valid
-            if (!fileInfo.bIsValid)
+            if (not fileInfo.bIsValid)
             {
                 LogInfo.log("Skylar") << "Requested file " << *fileName << " not found.";
                 
@@ -516,10 +516,10 @@ namespace Neko
             }
             
             // If-Modified header
-            const auto modifiedIt = request.IncomingHeaders.Find("if-modified-since");
             
             // if its valid, check file moditification time
-            if (modifiedIt.IsValid())
+            if (
+                const auto modifiedIt = request.IncomingHeaders.Find("if-modified-since"); modifiedIt.IsValid())
             {
                 const auto requestTime = DateTime::FromRfc822(*modifiedIt.value());
                 
@@ -542,9 +542,9 @@ namespace Neko
             }
             
             // File transfer
-            FS::CPlatformFile file;
+            FS::PlatformFile file;
             
-            if (!file.Open(*fileName, FS::Mode::READ))
+            if (not file.Open(*fileName, FS::Mode::READ))
             {
                 file.Close();
                 LogError.log("Skylar") << "Couldn't open requested file!";
@@ -568,8 +568,8 @@ namespace Neko
             extraHeaders.Emplace("accept-ranges", "bytes"); // @todo what if we'll have more unit types
             
             // Send Ok header
-            bool end = headersOnly || fileSize == 0;
-            if (!protocol.SendHeaders(Http::StatusCode::Ok, extraHeaders, request.Timeout, end))
+            bool end = headersOnly or fileSize == 0;
+            if (not protocol.SendHeaders(Http::StatusCode::Ok, extraHeaders, request.Timeout, end))
             {
                 file.Close();
                 LogError.log("Skylar") << "Failed to send headers";
@@ -578,7 +578,7 @@ namespace Neko
             }
             
             // send a requested file
-            if (!headersOnly && fileSize)
+            if (not headersOnly and fileSize)
             {
                 // minimum size
                 const uint32 size = 512 * 1024;
@@ -596,7 +596,7 @@ namespace Neko
                     readSize = file.Read((void* )buffer.GetData(), buffer.GetCapacity());
                     sendSize = protocol.SendData(buffer.GetData(), readSize, request.Timeout, &dataCounter);
                 }
-                while (!file.IsEof() && (dataCounter.FullSize - dataCounter.SendTotal) && sendSize > 0);
+                while (not file.IsEof() and (dataCounter.FullSize - dataCounter.SendTotal) and sendSize > 0);
             }
             
             file.Close();

@@ -132,7 +132,7 @@ namespace Neko
             // load every application & settings
             bool settingsLoaded = Settings.LoadAppSettings("serversettings.json", Modules);
             
-            if (!settingsLoaded)
+            if (not settingsLoaded)
             {
                 return false;
             }
@@ -178,7 +178,7 @@ namespace Neko
                 goto cleanupSsl;
             }
             
-            if (!SSL_CTX_check_private_key(context))
+            if (not SSL_CTX_check_private_key(context))
             {
                 LogError.log("Skylar") << "Couldn't verify SSL private key!";
                 goto cleanupSsl;
@@ -238,7 +238,7 @@ namespace Neko
         uint32 Server::Run()
         {
             bool initialized = Init();
-            if (!initialized)
+            if (not initialized)
             {
                 return EXIT_FAILURE;
             }
@@ -272,15 +272,13 @@ namespace Neko
             Net::SocketsQueue sockets(Allocator);
             
             // Create a job which will process all worker threads
-            SocketServerData  data;
-            data.server = this;
-            data.queue = &sockets;
+            SocketServerData  data { this, &sockets };
             
             JobSystem::JobDecl job;
             job.data = (void* )&data;
             job.task = [](void* data)
             {
-                SocketServerData* thisData = static_cast<SocketServerData* >(data);
+                auto* thisData = static_cast<SocketServerData* >(data);
                 thisData->server->ProcessWorkerThreads(thisData);
             };
             JobSystem::RunJobs(&job, 1, nullptr);
@@ -332,7 +330,7 @@ namespace Neko
                     QueueNotFullEvent.Wait();
                 }
             }
-            while (Controls.Active || Controls.UpdateModulesEvent.poll());
+            while (Controls.Active or Controls.UpdateModulesEvent.poll());
             
             LogInfo.log("Skylar") << "Server main cycle quit";
             
@@ -340,7 +338,7 @@ namespace Neko
             
             Controls.ProcessQueueEvent.Trigger();
             
-            if (!Listeners.IsEmpty())
+            if (not Listeners.IsEmpty())
             {
                 CloseListeners();
                 Listeners.Clear();
@@ -390,7 +388,7 @@ namespace Neko
                         if (protocolName == "h2")
                         {
                             // @todo
-                            protocol = NEKO_NEW(allocator, ProtocolHttp)(socket, &Settings, allocator);
+                            protocol = nullptr;
                         }
                         else if (protocolName == "http/1.1")
                         {
@@ -410,7 +408,7 @@ namespace Neko
             
             void ThreadRequestProc(ISocket& socket, Net::SocketsQueue& sockets, void* stream) const
             {
-                IProtocol* protocol = CreateProto(socket, stream, Allocator);
+                auto* protocol = CreateProto(socket, stream, Allocator);
                 
                 if (protocol)
                 {
@@ -448,7 +446,7 @@ namespace Neko
                     
                     ThreadRequestEvent.Wait();
                     
-                    if (!Controls.Active)
+                    if (not Controls.Active)
                     {
                         break;
                     }
@@ -456,7 +454,7 @@ namespace Neko
                     Sockets.Mutex.Lock();
                     
                     // get socket and stream data
-                    if (!Sockets.IsEmpty())
+                    if (not Sockets.IsEmpty())
                     {
                         Tie(socket, streamData) = Sockets.front();
                         Sockets.Pop();
@@ -474,15 +472,13 @@ namespace Neko
                     {
                         ++ThreadsWorkingCount;
                         
-                        Net::NetAddress address;
-                        bool success = socket.GetAddress(address);
-                        if (success)
+                        // resolve
+                        if (Net::NetAddress address; socket.GetAddress(address))
                         {
                             const uint16 port = address.Port;
-                            auto it = TlsData.Find(port);
                             
                             // it's a valid tls data, secured
-                            if (it.IsValid())
+                            if (auto it = TlsData.Find(port); it.IsValid())
                             {
                                 auto* context = it.value();
                                 assert(context != nullptr);
@@ -532,8 +528,8 @@ namespace Neko
         
         uint16 Server::ProcessWorkerThreads(void* kek)
         {
-            SocketServerData* data = static_cast<SocketServerData* >(kek);
-            Net::SocketsQueue& sockets = static_cast<Net::SocketsQueue&>(*data->queue);
+            auto* data = static_cast<SocketServerData* >(kek);
+            auto& sockets = static_cast<Net::SocketsQueue&>(*data->queue);
             
             ThreadsWorkingCount.Set(0);
             
@@ -561,9 +557,9 @@ namespace Neko
                 {
                     // create initial threads
                     while (activeTasks.GetSize() == ThreadsWorkingCount.GetValue()
-                           && activeTasks.GetSize() < threadMaxCount && !sockets.IsEmpty())
+                       and activeTasks.GetSize() < threadMaxCount and !sockets.IsEmpty())
                     {
-                        RequestTask* task = NEKO_NEW(Allocator, RequestTask)(*this, Allocator, sockets, threadsProcessEvent);
+                        auto* task = NEKO_NEW(Allocator, RequestTask)(*this, Allocator, sockets, threadsProcessEvent);
                         
                         StaticString<32> taskName("Skylar requests task #", ThreadsWorkingCount.GetValue() + 1);
                         
@@ -590,7 +586,7 @@ namespace Neko
                 
                 threadsProcessEvent.Trigger();
                 
-                if (!activeTasks.IsEmpty())
+                if (not activeTasks.IsEmpty())
                 {
                     // cleanup threads
                     for (auto thread : activeTasks)
@@ -629,11 +625,11 @@ namespace Neko
                 const uint32 moduleIndex = application->ModuleIndex;
                 
                 // If module is not updated (not checked)
-                if (!updatedModules.Contains(moduleIndex))
+                if (not updatedModules.Contains(moduleIndex))
                 {
                     // Check if update module is valid and loaded one isn't the same
-                    if (!application->ServerModuleUpdatePath.IsEmpty()
-                        && application->ServerModuleUpdatePath != application->ServerModulePath)
+                    if (not application->ServerModuleUpdatePath.IsEmpty()
+                        and application->ServerModuleUpdatePath != application->ServerModulePath)
                     {
                         auto updateModuleStat = Neko::Platform::GetFileData(*application->ServerModuleUpdatePath);
                         auto updateModuleSize = updateModuleStat.FileSize;
@@ -649,7 +645,7 @@ namespace Neko
                             
                             if (updateModuleStat.bIsValid)
                             {
-                                if (moduleSize != updateModuleSize || moduleDate < updateModuleDate)
+                                if (moduleSize != updateModuleSize or moduleDate < updateModuleDate)
                                 {
                                     UpdateApplication(module, applications, moduleIndex);
                                 }
@@ -687,14 +683,14 @@ namespace Neko
                 return false;
             }
             
-            if (!socket.Bind(address))
+            if (not socket.Bind(address))
             {
                 LogError.log("Skylar") << "Server couldn't bind to address. " << strerror(errno);
                 return false;
             }
             
             const int32 maxBacklog = SOMAXCONN;
-            if (!socket.Listen(maxBacklog))
+            if (not socket.Listen(maxBacklog))
             {
                 LogError.log("Skylar") << "Server couldn't be listen. " << strerror(errno);
                 return false;
@@ -739,14 +735,14 @@ namespace Neko
             
             const auto application = *(existing.begin());
             
-            const String& moduleName = application->ServerModulePath;
+            const auto& moduleName = application->ServerModulePath;
             
             const int32 directoryPos = moduleName.Find("/");
             const int32 extensionPos = moduleName.Find(".");
             
             String moduleNameNew(Allocator);
             
-            if (extensionPos != INDEX_NONE && (directoryPos == INDEX_NONE || directoryPos < extensionPos))
+            if (extensionPos != INDEX_NONE and (directoryPos == INDEX_NONE or directoryPos < extensionPos))
             {
                 moduleNameNew = moduleName.Mid(0, extensionPos);
                 moduleNameNew += Math::RandGUID();
@@ -758,15 +754,15 @@ namespace Neko
                 moduleNameNew += Math::RandGUID();
             }
             
-            FS::CPlatformFile source;
-            if (!source.Open(*application->ServerModuleUpdatePath, FS::Mode::READ))
+            FS::PlatformFile source;
+            if (not source.Open(*application->ServerModuleUpdatePath, FS::Mode::READ))
             {
                 LogError.log("Skylar") << "File '" << *application->ServerModuleUpdatePath << "' cannot be open";
                 return false;
             }
             
-            FS::CPlatformFile destination;
-            if (!destination.Open(*moduleNameNew, FS::Mode::CREATE_AND_WRITE))
+            FS::PlatformFile destination;
+            if (not destination.Open(*moduleNameNew, FS::Mode::CREATE_AND_WRITE))
             {
                 LogError.log("Skylar") << "File '" << *moduleName << "' cannot be open";
                 return false;
@@ -784,19 +780,19 @@ namespace Neko
             // Open updated module
             module.Open(moduleNameNew);
             
-            if (!Neko::Platform::DeleteFile(*moduleName))
+            if (not Neko::Platform::DeleteFile(*moduleName))
             {
                 LogError.log("Skylar") << "File '" << *moduleName << "' could not be removed";
                 return false;
             }
             
-            if (!Neko::Platform::MoveFile(*moduleNameNew, *moduleName))
+            if (not Neko::Platform::MoveFile(*moduleNameNew, *moduleName))
             {
                 LogError.log("Skylar") << "Module '" << *moduleNameNew << "' could not be renamed";
                 return false;
             }
             
-            if (!module.IsOpen())
+            if (not module.IsOpen())
             {
                 LogError.log("Skylar") << "Application module '" << *moduleName << "' can not be opened";
                 return false;
@@ -804,7 +800,7 @@ namespace Neko
             
             // Set application module methods
             bool success = Settings.SetApplicationModuleMethods(*application, module);
-            if (!success)
+            if (not success)
             {
                 return false;
             }
@@ -960,7 +956,7 @@ namespace Neko
                 
                 code = Run();
             }
-            while (Controls.Active || Controls.Restart);
+            while (Controls.Active or Controls.Restart);
             
             // cleanup
             Neko::Platform::DestroySharedMemory(name);
@@ -972,21 +968,21 @@ namespace Neko
         {
             const uint32 processId = GetServerProcessId(serverName);
             
-            return processId > 1 && Neko::Platform::SendSignal(processId, SIGUSR1) ? EXIT_SUCCESS : EXIT_FAILURE;
+            return processId > 1 and Neko::Platform::SendSignal(processId, SIGUSR1) ? EXIT_SUCCESS : EXIT_FAILURE;
         }
         
         uint16 Server::ExitCommand(const String& serverName) const
         {
             const uint32 processId = GetServerProcessId(serverName);
             
-            return processId > 1 && Neko::Platform::SendSignal(processId, SIGTERM) ? EXIT_SUCCESS : EXIT_FAILURE;
+            return processId > 1 and Neko::Platform::SendSignal(processId, SIGTERM) ? EXIT_SUCCESS : EXIT_FAILURE;
         }
         
         uint16 Server::UpdateModulesCommand(const String& serverName) const
         {
             const uint32 processId = GetServerProcessId(serverName);
             
-            return processId > 1 && Neko::Platform::SendSignal(processId, SIGUSR2) ? EXIT_SUCCESS : EXIT_FAILURE;
+            return processId > 1 and Neko::Platform::SendSignal(processId, SIGUSR2) ? EXIT_SUCCESS : EXIT_FAILURE;
         }
         
         void Server::Clear()
@@ -997,7 +993,7 @@ namespace Neko
             
             Settings.Clear();
             
-            if (!TlsData.IsEmpty())
+            if (not TlsData.IsEmpty())
             {
                 for (auto& item : TlsData)
                 {
@@ -1008,7 +1004,7 @@ namespace Neko
                 TlsData.Clear();
             }
             
-            if (!Modules.IsEmpty())
+            if (not Modules.IsEmpty())
             {
                 for (auto& module : Modules)
                 {

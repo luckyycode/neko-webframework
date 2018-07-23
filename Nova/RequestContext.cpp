@@ -92,10 +92,8 @@ namespace Neko
             // defaults
             auto& options = Options::Instance();
             
-            options.Configure([&](Options& options)
+            options.ConfigureSession([&](SessionOptions& session)
             {
-                auto& session = options.Session;
-                
                 session.Name = "Neko.CoolCookie";
                 session.AutoIdRenewal = false;
                 session.CookiePath = "cookiePath";
@@ -127,7 +125,7 @@ namespace Neko
         {
             // these will be processed by server after running this app
             auto& outHeaders = response.GetHeaders();
-            if (!outHeaders.IsEmpty())
+            if (not outHeaders.IsEmpty())
             {
                 uint32 size = InputBlob::GetContainerSize(response.GetHeaders());
                 uint8* data = static_cast<uint8* >(allocator.Allocate(size * sizeof(uint8)));
@@ -278,7 +276,7 @@ namespace Neko
         
         void RequestContext::CleanupResponseData(void* responseData, uint32 responseSize)
         {
-            if (responseData != nullptr && responseSize > 0)
+            if (responseData != nullptr and responseSize > 0)
             {
                 Allocator.Deallocate(responseData);
             }
