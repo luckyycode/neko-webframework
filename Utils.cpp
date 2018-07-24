@@ -77,7 +77,7 @@ namespace Neko
                 const int32 finish = uri.Find("#");
                 
                 // # is missing or found and must be at the end..
-                if (finish == INDEX_NONE or (finish != INDEX_NONE && finish > start))
+                if (finish == INDEX_NONE or finish > start)
                 {
                     for (int32 paramCur = start + 1, paramEnd = 0; paramEnd != INDEX_NONE; paramCur = paramEnd + 1)
                     {
