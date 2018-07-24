@@ -85,7 +85,7 @@ namespace Neko
             /** Shuts down the server. */
             void Shutdown();
             
-            uint32 Run();
+            uint16 Run();
             
             /** Clears cached data and settings. */
             void Clear();

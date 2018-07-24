@@ -112,7 +112,7 @@ namespace Neko
     {
     public:
         
-        Network(IEngine& engine)
+        explicit Network(IEngine& engine)
         : Engine(engine)
         , Allocator(engine.GetAllocator())
         {

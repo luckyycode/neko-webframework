@@ -235,7 +235,7 @@ namespace Neko
             }
         }
 
-        uint32 Server::Run()
+        uint16 Server::Run()
         {
             bool initialized = Init();
             if (not initialized)
@@ -817,6 +817,7 @@ namespace Neko
                 ApplicationInitContext items
                 {
                     *app->RootDirectory,
+                    
                     &Allocator,
                     &FileSystem
                 };
@@ -947,7 +948,7 @@ namespace Neko
             
             Mutex.Unlock();
             
-            uint32 code = EXIT_FAILURE;
+            uint16 code = EXIT_FAILURE;
             
             do
             {

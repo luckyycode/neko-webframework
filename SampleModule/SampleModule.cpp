@@ -27,7 +27,7 @@ class WebApplication : public IWebApplication
 {
 public:
     
-    WebApplication(const ApplicationInitContext& context)
+    explicit WebApplication(const ApplicationInitContext& context)
     : IWebApplication(context)
     {
         LoadSettings();
