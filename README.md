@@ -2,6 +2,7 @@
 
 ![alt text](https://c.radikal.ru/c25/1807/13/e500422fd6a7.png)
 
+![alt text](https://d25lcipzij17d.cloudfront.net/badge.svg?id=gh&type=6&v=dev&x2=0)
 ![alt text](https://img.shields.io/badge/repo%20status-active-blue.svg)
 ![alt text](https://img.shields.io/github/last-commit/luckyycode/neko-webframework.svg)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/1153bf48ef35457597c2e05af41a5dd7)](https://app.codacy.com/app/luckyycode/neko-webframework?utm_source=github.com&utm_medium=referral&utm_content=luckyycode/neko-webframework&utm_campaign=badger)
