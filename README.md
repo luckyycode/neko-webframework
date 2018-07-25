@@ -60,4 +60,5 @@ See Issues for more info, but the most important and global now are the followin
 ## License
 
 soon
-![alt text](https://d.radikal.ru/d34/1806/1b/a9e011b101ec.png)
+![alt text]
+(https://d.radikal.ru/d34/1806/1b/a9e011b101ec.png)
