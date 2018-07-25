@@ -30,16 +30,16 @@
 //
 
 #include "IProtocol.h"
+#include "../Sockets/ISocket.h"
 #include "../ContentTypes/ContentDesc.h"
-#include "../ISocket.h"
 #include "../Utils.h"
 
-#include "../../Engine/Core/Profiler.h"
-#include "../../Engine/Network/Http/Response.h"
-#include "../../Engine/Platform/Platform.h"
-#include "../../Engine/FS/PlatformFile.h"
+#include "Engine/Core/Profiler.h"
+#include "Engine/Network/Http/Response.h"
+#include "Engine/Platform/Platform.h"
+#include "Engine/FS/PlatformFile.h"
 
-#include "../../Engine/Core/Log.h"
+#include "Engine/Core/Log.h"
 
 namespace Neko
 {
@@ -404,7 +404,7 @@ namespace Neko
             // Range(s) transfer
             FS::PlatformFile file;
             
-            if (not file.Open(*fileName, FS::Mode::READ))
+            if (not file.Open(*fileName, FS::Mode::Read))
             {
                 file.Close();
                 LogError.log("Skylar") << "SendPartial: Couldn't open file for transfer.";
@@ -544,7 +544,7 @@ namespace Neko
             // File transfer
             FS::PlatformFile file;
             
-            if (not file.Open(*fileName, FS::Mode::READ))
+            if (not file.Open(*fileName, FS::Mode::Read))
             {
                 file.Close();
                 LogError.log("Skylar") << "Couldn't open requested file!";

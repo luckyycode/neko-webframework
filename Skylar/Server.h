@@ -53,7 +53,7 @@ namespace Neko
         {
         public:
             
-            Server(IAllocator& allocator, class FS::FileSystem& fileSystem);
+            Server(IAllocator& allocator, class FS::IFileSystem& fileSystem);
             
             ~Server() { }
             
@@ -110,7 +110,7 @@ namespace Neko
             
             IAllocator& Allocator;
             
-            FS::FileSystem& FileSystem;
+            FS::IFileSystem& FileSystem;
             
         public:
             

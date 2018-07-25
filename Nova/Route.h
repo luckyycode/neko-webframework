@@ -33,8 +33,8 @@
 
 #include "Prerequisites.h"
 
-#include "../../Engine/Containers/Array.h"
-#include "../../Engine/Utilities/NekoString.h"
+#include "Engine/Containers/Array.h"
+#include "Engine/Utilities/NekoString.h"
 
 namespace Neko
 {

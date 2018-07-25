@@ -43,7 +43,7 @@ namespace Neko
         {
         public:
             
-            RequestContext(IAllocator& allocator, FS::FileSystem& fileSystem);
+            RequestContext(IAllocator& allocator, FS::IFileSystem& fileSystem);
             
             ~RequestContext();
             
@@ -79,7 +79,7 @@ namespace Neko
             ControllerFactory ControllerFactory;
             
             IAllocator& Allocator;
-            FS::FileSystem& FileSystem;
+            FS::IFileSystem& FileSystem;
         };
     }
 }

@@ -29,14 +29,14 @@
 //  Created by Neko on 6/29/18.
 //
 
-#include "../../Engine/Network/Http/Url.h"
-#include "../../Engine/Network/NetSocket.h"
-#include "../../Engine/Containers/HashMap.h"
-#include "../../Engine/Core/Log.h"
+#include "Engine/Network/Http/Url.h"
+#include "Engine/Network/NetSocket.h"
+#include "Engine/Containers/HashMap.h"
+#include "Engine/Core/Log.h"
 
 #include "TelegramApi.h"
 
-#include "../SocketSSL.h"
+#include "../Sockets/SocketSSL.h"
 #include "../Utils.h"
 
 namespace Neko

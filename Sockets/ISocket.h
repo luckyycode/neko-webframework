@@ -31,8 +31,8 @@
 
 #pragma once
 
-#include "../Engine/Utilities/NekoString.h"
-#include "../Engine/Network/NetSocket.h"
+#include "Engine/Utilities/NekoString.h"
+#include "Engine/Network/NetSocket.h"
 
 #define USE_OPENSSL 1
 

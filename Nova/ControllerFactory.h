@@ -31,8 +31,8 @@
 
 #pragma once
 
-#include "../../Engine/Containers/Delegate.h"
-#include "../../Engine/Utilities/StringUtil.h"
+#include "Engine/Containers/Delegate.h"
+#include "Engine/Utilities/StringUtil.h"
 
 #include "../Skylar/IProtocol.h"
 #include "Router.h"

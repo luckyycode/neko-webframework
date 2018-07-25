@@ -31,16 +31,16 @@
 
 #pragma once
 
-#include "../Engine/Core/Module.h"
-#include "ContentTypes/IContentType.h"
+#include "Engine/Core/Module.h"
 
+#include "ContentTypes/IContentType.h"
 #include "ApplicationSettings.h"
 
 namespace Neko
 {
     namespace FS
     {
-        class FileSystem;
+        class IFileSystem;
     }
     
     namespace Skylar
@@ -79,7 +79,7 @@ namespace Neko
             
         public:
             
-            ServerSettings(FS::FileSystem& fileSystem, IAllocator& allocator);
+            ServerSettings(FS::IFileSystem& fileSystem, IAllocator& allocator);
             
             ~ServerSettings();
             
@@ -132,7 +132,7 @@ namespace Neko
         private:
             
             IAllocator& Allocator;
-            FS::FileSystem& FileSystem;
+            FS::IFileSystem& FileSystem;
         };
     }
 }

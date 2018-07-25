@@ -29,8 +29,8 @@
 //  Copyright © 2018 Neko Vision. All rights reserved.
 //
 
-#include "../../Engine/Core/Log.h"
-#include "../../Engine/Utilities/Date.h"
+#include "Engine/Core/Log.h"
+#include "Engine/Utilities/Date.h"
 
 #include "Options.h"
 #include "SessionStorageFactory.h"

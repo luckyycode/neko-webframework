@@ -32,9 +32,10 @@
 #pragma once
 
 #include "IProtocol.h"
-#include "../../Engine/Network/NetSocket.h"
-#include "../../Engine/Network/Http/HttpStatusCodes.h"
-#include "../../Engine/Network/Http/Request.h"
+
+#include "Engine/Network/NetSocket.h"
+#include "Engine/Network/Http/HttpStatusCodes.h"
+#include "Engine/Network/Http/Request.h"
 
 namespace Neko
 {

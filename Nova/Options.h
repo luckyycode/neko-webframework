@@ -37,6 +37,7 @@ namespace Neko
             inline Options& ConfigureSession(TFunc func)
             {
                 func(this->Session);
+                return *this;
             }
             
             static Options& Instance();

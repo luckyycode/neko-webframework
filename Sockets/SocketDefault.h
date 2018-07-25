@@ -23,7 +23,7 @@
 // | |\  |  __/   < (_) | |  _|| | | (_| | | | | | |  __/\ V  V / (_) | |  |   <
 // |_| \_|\___|_|\_\___/  |_|  |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
 //
-//  SocketSSL.h
+//  SocketDefault.h
 //  Neko Framework
 //
 //  Copyright © 2018 Neko Vision. All rights reserved.
@@ -33,29 +33,22 @@
 
 #include "ISocket.h"
 
-#if USE_OPENSSL
-
-#   include "../Engine/Network/NetSocket.h"
-
-#   include <openssl/ssl.h>
+#include "Engine/Network/NetSocket.h"
 
 namespace Neko
 {
     namespace Skylar
     {
-        /// OpenSSL socket wrapper
-        class SocketSSL : public ISocket
+        /// Default network socket. Wrapper around Net::INetSocket.
+        class SocketDefault : public ISocket
         {
         public:
             
-            // @see ISocket for comments
+            // see ISocket for comments
             
-            SocketSSL() = delete;
-            /** Created new SSL connection based on existing context (server/client). */
-            SocketSSL(const Net::INetSocket& socket, SSL_CTX* context);
-            /** Initiates from existing SSL connection. */
-			SocketSSL(const Net::INetSocket& socket, SSL* connection);
-			
+            SocketDefault() = delete;
+            SocketDefault(const Net::INetSocket& socket);
+            
             virtual long GetPacketBlocking(void* buffer, const ulong length, const int32& timeout) const override;
             
             virtual long SendAllPacketsWait(const void* buffer, const ulong length, const int32& timeout) const override;
@@ -65,22 +58,13 @@ namespace Neko
             
             virtual NEKO_FORCE_INLINE Net::SOCKET GetNativeHandle() const override { return Socket.GetNativeHandle(); };
             
-            virtual NEKO_FORCE_INLINE void* GetTlsSession() const override { return (void* )Connection; };
-            
-            /** Higher level SSL connect */
-            int32 Connect();
-            
-			bool Handshake();
-			
-            static bool Init();
+            virtual NEKO_FORCE_INLINE void* GetTlsSession() const override { return nullptr; };
             
         private:
             
             Net::INetSocket Socket;
             
-            SSL* Connection;
         };
     }
 }
 
-#endif

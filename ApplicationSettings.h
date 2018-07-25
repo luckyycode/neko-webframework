@@ -31,11 +31,11 @@
 
 #pragma once
 
-#include "../Engine/Containers/Delegate.h"
-#include "../Engine/Core/Path.h"
+#include "Engine/Containers/Delegate.h"
+#include "Engine/Core/Path.h"
 
-#include "../Engine/Network/Http/Request.h"
-#include "../Engine/Network/Http/ResponseData.h"
+#include "Engine/Network/Http/Request.h"
+#include "Engine/Network/Http/ResponseData.h"
 
 #include <functional>
 
@@ -43,7 +43,7 @@ namespace Neko
 {
     namespace FS
     {
-        class FileSystem;
+        class IFileSystem;
     }
     namespace Skylar
     {
@@ -52,7 +52,7 @@ namespace Neko
         {
             const char* RootDirectory = nullptr;
             IAllocator* AppAllocator = nullptr;
-            FS::FileSystem* FileSystem = nullptr;
+            FS::IFileSystem* FileSystem = nullptr;
         };
         
         /** Server settings for each application. */

@@ -31,8 +31,8 @@
 
 #include "Cookie.h"
 
-#include "../../Engine/Utilities/Templates.h"
-#include "../../Engine/Utilities/Utilities.h"
+#include "Engine/Utilities/Templates.h"
+#include "Engine/Utilities/Utilities.h"
 
 namespace Neko
 {

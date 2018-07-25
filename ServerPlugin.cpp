@@ -48,7 +48,7 @@ namespace Neko
     {
     public:
         
-        ServerTask(IAllocator& allocator, FS::FileSystem& fileSystem)
+        ServerTask(IAllocator& allocator, FS::IFileSystem& fileSystem)
         : Task(allocator)
         , FileSystem(fileSystem)
         {
@@ -105,7 +105,7 @@ namespace Neko
         
     private:
         
-        FS::FileSystem& FileSystem;
+        FS::IFileSystem& FileSystem;
     };
     
     class Network : public IPlugin

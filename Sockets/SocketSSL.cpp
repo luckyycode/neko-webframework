@@ -63,11 +63,11 @@ namespace Neko
         
         long SocketSSL::GetPacketBlocking(void* buffer, const ulong length, const int32& timeout) const
         {
-            Net::INetSocket socket;
-            socket.Init(this->GetNativeHandle(), Net::ESocketType::TCP);
-            
             long result;
             int32 innerError;
+            
+            Net::INetSocket socket;
+            socket.Init(this->GetNativeHandle(), Net::ESocketType::TCP);
             
             do
             {
@@ -95,11 +95,11 @@ namespace Neko
                 return -1;
             }
             
-            Net::INetSocket socket;
-            socket.Init(this->GetNativeHandle(), Net::ESocketType::TCP);
-            
             ulong total = 0;
             int32 innerError = 0;
+            
+            Net::INetSocket socket;
+            socket.Init(this->GetNativeHandle(), Net::ESocketType::TCP);
             
             while (total < length)
             {
@@ -119,7 +119,7 @@ namespace Neko
                     }
                     
                     result = ::SSL_write(this->Connection, reinterpret_cast<const uint8_t *>(buffer) + total, checkSize);
-                    innerError = SSL_get_error(this->Connection, result);
+                    innerError = ::SSL_get_error(this->Connection, result);
                 }
                 while (innerError == SSL_ERROR_WANT_WRITE);
                 

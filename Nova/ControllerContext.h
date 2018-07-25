@@ -31,9 +31,9 @@
 
 #pragma once
 
-#include "../../Engine/Network/Http/Request.h"
-#include "../../Engine/Network/Http/Response.h"
-#include "../../Engine/Containers/Delegate.h"
+#include "Engine/Network/Http/Request.h"
+#include "Engine/Network/Http/Response.h"
+#include "Engine/Containers/Delegate.h"
 
 #include "IControllerContext.h"
 

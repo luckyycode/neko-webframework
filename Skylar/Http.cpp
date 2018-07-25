@@ -40,7 +40,7 @@
 #include "Engine/Platform/Platform.h"
 
 #include "../ContentTypes/ContentDesc.h"
-#include "../ISocket.h"
+#include "../Sockets/ISocket.h"
 #include "../Utils.h"
 
 // Http 1.1 capable protocol
@@ -57,7 +57,7 @@ namespace Neko
 
         void ProtocolHttp::WriteRequest(char* buffer, const Http::Request& request, const ApplicationSettings& applicationSettings) const
         {
-            OutputBlob blob(reinterpret_cast<void* >(buffer), INT_MAX);
+            OutputData blob(reinterpret_cast<void* >(buffer), INT_MAX);
             
             // version
             blob.Write(uint8(Http::Version::Http_1));
@@ -74,7 +74,7 @@ namespace Neko
         
         void ProtocolHttp::ReadResponse(Http::Request& request, const Http::ResponseData& responseData) const
         {
-            InputBlob blob(responseData.Data, INT_MAX);
+            InputData blob(responseData.Data, INT_MAX);
             // write response headers to request
             blob >> request.OutgoingHeaders;
         }

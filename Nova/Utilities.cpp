@@ -30,8 +30,9 @@
 //
 
 #include "Utilities.h"
-#include "../../Engine/Utilities/Utilities.h"
-#include "../../Engine/Utilities/Crc32.h"
+
+#include "Engine/Utilities/Utilities.h"
+#include "Engine/Utilities/Crc32.h"
 
 namespace Neko
 {

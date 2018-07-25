@@ -29,7 +29,7 @@
 //  Copyright © 2018 Neko Vision. All rights reserved.
 //
 
-#include "../../Engine/Core/Log.h"
+#include "Engine/Core/Log.h"
 
 #include "UserManager.h"
 #include "SessionManager.h"

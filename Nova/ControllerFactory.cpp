@@ -29,9 +29,9 @@
 //  Copyright © 2018 Neko Vision. All rights reserved.
 //
 
-#include "../../Engine/Core/Profiler.h"
-
 #include "../Skylar/IProtocol.h"
+
+#include "Engine/Core/Profiler.h"
 
 #include "Options.h"
 #include "UserManager.h"

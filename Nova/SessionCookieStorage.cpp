@@ -46,12 +46,12 @@ namespace Neko
                 return true;
             }
             
-            const uint32 size = InputBlob::GetContainerSize(session);
+            const uint32 size = InputData::GetContainerSize(session);
             
             String sessionData(size);
             
             // Write session data
-            OutputBlob data((void* )*sessionData, INT_MAX);
+            OutputData data((void* )*sessionData, INT_MAX);
             data << *static_cast<const SessionMap* >(&session);
             // to hex
             session.Id = Util::BytesToHex((uint8* )*sessionData, size);
@@ -101,7 +101,7 @@ namespace Neko
                     return session;
                 }
                 
-                InputBlob data((void* )*unhexSessionData, INT_MAX);
+                InputData data((void* )*unhexSessionData, INT_MAX);
                 data >> *static_cast<SessionMap* >(&session);
             }
             return session;

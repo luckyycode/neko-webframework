@@ -44,8 +44,8 @@
 #include "../Skylar/IProtocol.h"
 #include "../Skylar/Http.h"
 
-#include "../SocketSSL.h"
-#include "../SocketDefault.h"
+#include "../Sockets/SocketSSL.h"
+#include "../Sockets/SocketDefault.h"
 #include "../Utils.h"
 
 #include "Options.h"
@@ -83,7 +83,7 @@ namespace Neko
             }
         }
         
-        RequestContext::RequestContext(IAllocator& allocator, FS::FileSystem& fileSystem)
+        RequestContext::RequestContext(IAllocator& allocator, FS::IFileSystem& fileSystem)
         : Allocator(allocator)
         , FileSystem(fileSystem)
         , MainRouter(allocator)
@@ -127,12 +127,12 @@ namespace Neko
             auto& outHeaders = response.GetHeaders();
             if (not outHeaders.IsEmpty())
             {
-                uint32 size = InputBlob::GetContainerSize(response.GetHeaders());
+                uint32 size = InputData::GetContainerSize(response.GetHeaders());
                 uint8* data = static_cast<uint8* >(allocator.Allocate(size * sizeof(uint8)));
                 responseData.Data = data;
                 responseData.Size = size;
                 // write headers
-                OutputBlob blob(responseData.Data, INT_MAX);
+                OutputData blob(responseData.Data, INT_MAX);
                 blob << outHeaders;
             }
         }
@@ -229,7 +229,7 @@ namespace Neko
             IProtocol* protocol = nullptr;
             
             // Read incoming header info
-            InputBlob blob(const_cast<void* >(requestData.Data), INT_MAX);
+            InputData blob(const_cast<void* >(requestData.Data), INT_MAX);
             
             blob << protocolVersion;
             

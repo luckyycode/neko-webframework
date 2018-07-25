@@ -29,10 +29,12 @@
 //  Copyright © 2018 Neko Vision. All rights reserved.
 //
 
-#include "../Engine/Core/Log.h"
-#include "../Engine/Data/JsonSerializer.h"
-#include "../Engine/FS/PlatformFile.h"
-#include "../Engine/Platform/Platform.h"
+#include "Engine/Core/Log.h"
+#include "Engine/Core/Path.h"
+#include "Engine/Data/JsonSerializer.h"
+#include "Engine/FS/PlatformFile.h"
+#include "Engine/FS/FileSystem.h"
+#include "Engine/Platform/Platform.h"
 
 #include "ContentTypes/ContentTypes.h"
 
@@ -42,7 +44,7 @@ namespace Neko
 {
     namespace Skylar
     {
-        ServerSettings::ServerSettings(FS::FileSystem& fileSystem, IAllocator& allocator)
+        ServerSettings::ServerSettings(FS::IFileSystem& fileSystem, IAllocator& allocator)
         : Allocator(allocator)
         , FileSystem(fileSystem)
         , List(allocator)
@@ -66,8 +68,8 @@ namespace Neko
         
         bool ServerSettings::LoadAppSettings(const String& fileName, TArray<Module>& modules)
         {
-            Neko::CPath path(*fileName);
-            IStream* file = FileSystem.Open(FileSystem.GetDiskDevice(), path, FS::Mode::READ);
+            Neko::Path path(*fileName);
+            IStream* file = FileSystem.Open(FileSystem.GetDiskDevice(), path, FS::Mode::Read);
             
             if (file == nullptr)
             {
@@ -76,7 +78,7 @@ namespace Neko
                 return false;
             }
             
-            const String tempDirectory = Neko::Platform::GetTempDirectory();
+            const auto tempDirectory = Neko::Platform::GetTempDirectory();
             const uint32 requestMaxSize = 10485760;
             const uint64 maxDefaultSize = Megabyte(64);
             
@@ -104,7 +106,7 @@ namespace Neko
             
             while (not json.IsArrayEnd())
             {
-                ApplicationSettings* settings = NEKO_NEW(Allocator, ApplicationSettings) ();
+                auto* const settings = NEKO_NEW(Allocator, ApplicationSettings) ();
                 applicationSettingItems.Push(settings);
                 
                 json.DeserializeObjectBegin();
@@ -305,6 +307,7 @@ namespace Neko
                 &Allocator,
                 &FileSystem
             };
+            
             success = settings.OnApplicationInit(items);
             if (!success)
             {
@@ -376,7 +379,7 @@ namespace Neko
         {
             for (auto node : List)
             {
-                const ServerSettings::ApplicationsList* subList = node;
+                const auto* subList = node;
                 
                 if (subList->ApplicationSettings != nullptr)
                 {

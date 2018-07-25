@@ -145,7 +145,7 @@ namespace Neko
             IAllocator& Allocator;
             
             //! Used for various timings
-            CTimer Timer;
+            Timer Timer;
             
         public:
             

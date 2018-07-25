@@ -31,9 +31,9 @@
 
 #pragma once
 
-#include "../../Engine/Utilities/NekoString.h"
-#include "../../Engine/Network/Http/Response.h"
-#include "../../Engine/Network/Http/Request.h"
+#include "Engine/Utilities/NekoString.h"
+#include "Engine/Network/Http/Response.h"
+#include "Engine/Network/Http/Request.h"
 
 #include "../Utils.h"
 

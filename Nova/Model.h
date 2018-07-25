@@ -31,9 +31,9 @@
 
 #pragma once
 
-#include "../../Engine/Utilities/NekoString.h"
-#include "../../Engine/RTTI/IReflectable.h"
-#include "../../Engine/RTTI/IReflectionType.h"
+#include "Engine/Utilities/NekoString.h"
+#include "Engine/RTTI/IReflectable.h"
+#include "Engine/RTTI/IReflectionType.h"
 
 namespace Neko
 {

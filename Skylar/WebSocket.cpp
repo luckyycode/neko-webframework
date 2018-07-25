@@ -30,7 +30,7 @@
 //
 
 #include "WebSocket.h"
-#include "../ISocket.h"
+#include "../Sockets/ISocket.h"
 
 namespace Neko
 {

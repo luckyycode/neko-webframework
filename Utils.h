@@ -31,10 +31,10 @@
 
 #pragma once
 
-#include "../Engine/Containers/HashMap.h"
-#include "../Engine/Utilities/NekoString.h"
+#include "Engine/Containers/HashMap.h"
+#include "Engine/Utilities/NekoString.h"
 
-#include "../Engine/Network/Http/Request.h"
+#include "Engine/Network/Http/Request.h"
 
 namespace Neko
 {

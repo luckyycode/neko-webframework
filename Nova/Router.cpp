@@ -31,9 +31,9 @@
 
 #include "Router.h"
 
-#include "../../Engine/Containers/AssociativeArray.h"
-#include "../../Engine/Core/Profiler.h"
-#include "../../Engine/Core/Log.h"
+#include "Engine/Containers/AssociativeArray.h"
+#include "Engine/Core/Profiler.h"
+#include "Engine/Core/Log.h"
 
 #include "../Utils.h"
 

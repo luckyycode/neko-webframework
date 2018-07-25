@@ -29,7 +29,7 @@
 //  Copyright © 2018 Neko Vision. All rights reserved.
 //
 
-#include "../../Engine/Utilities/Utilities.h"
+#include "Engine/Utilities/Utilities.h"
 
 #include "../Utils.h"
 #include "ContentDesc.h"

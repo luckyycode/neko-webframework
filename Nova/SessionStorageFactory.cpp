@@ -32,7 +32,7 @@
 #include "SessionStorageFactory.h"
 #include "SessionCookieStorage.h"
 
-#include "../../Engine/Utilities/NekoString.h"
+#include "Engine/Utilities/NekoString.h"
 
 #include "Session.h"
 

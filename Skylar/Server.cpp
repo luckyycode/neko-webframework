@@ -39,8 +39,8 @@
 #include "Engine/Network/SocketQueue.h"
 #include "Engine/FS/PlatformFile.h"
 
-#include "../SocketSSL.h"
-#include "../SocketDefault.h"
+#include "../Sockets/SocketSSL.h"
+#include "../Sockets/SocketDefault.h"
 
 #include "Server.h"
 #include "Http.h"
@@ -109,7 +109,7 @@ namespace Neko
             Net::SocketsQueue* queue = nullptr;
         };
  
-        Server::Server(IAllocator& allocator, FS::FileSystem& fileSystem)
+        Server::Server(IAllocator& allocator, FS::IFileSystem& fileSystem)
         : Mutex(false)
         , QueueNotFullEvent(true)
         , Allocator(allocator)
@@ -274,7 +274,7 @@ namespace Neko
             // Create a job which will process all worker threads
             SocketServerData  data { this, &sockets };
             
-            JobSystem::JobDecl job;
+            JobSystem::JobData job;
             job.data = (void* )&data;
             job.task = [](void* data)
             {
@@ -330,7 +330,7 @@ namespace Neko
                     QueueNotFullEvent.Wait();
                 }
             }
-            while (Controls.Active or Controls.UpdateModulesEvent.poll());
+            while (Controls.Active or Controls.UpdateModulesEvent.Poll());
             
             LogInfo.log("Skylar") << "Server main cycle quit";
             
@@ -547,7 +547,7 @@ namespace Neko
             // Update applications
             do
             {
-                if (Controls.UpdateModulesEvent.poll())
+                if (Controls.UpdateModulesEvent.Poll())
                 {
                     UpdateApplications();
                 }
@@ -600,7 +600,7 @@ namespace Neko
                 
                 QueueNotFullEvent.Trigger();
             }
-            while (Controls.UpdateModulesEvent.poll(false));
+            while (Controls.UpdateModulesEvent.Poll(false));
             
             SocketsList.Destroy();
             
@@ -755,14 +755,14 @@ namespace Neko
             }
             
             FS::PlatformFile source;
-            if (not source.Open(*application->ServerModuleUpdatePath, FS::Mode::READ))
+            if (not source.Open(*application->ServerModuleUpdatePath, FS::Mode::Read))
             {
                 LogError.log("Skylar") << "File '" << *application->ServerModuleUpdatePath << "' cannot be open";
                 return false;
             }
             
             FS::PlatformFile destination;
-            if (not destination.Open(*moduleNameNew, FS::Mode::CREATE_AND_WRITE))
+            if (not destination.Open(*moduleNameNew, FS::Mode::CreateAndWrite))
             {
                 LogError.log("Skylar") << "File '" << *moduleName << "' cannot be open";
                 return false;

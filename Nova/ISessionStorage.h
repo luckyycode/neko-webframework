@@ -33,8 +33,6 @@
 
 #include "Session.h"
 
-#include "../../Engine/Utilities/Date.h"
-
 namespace Neko
 {
     namespace Nova
@@ -60,7 +58,7 @@ namespace Neko
             virtual bool Remove(const String& sessionId) = 0;
             
             /** Removes session cache. */
-            virtual int32 ClearCache(const DateTime& expiryDate) = 0;
+            virtual int32 ClearCache(const class DateTime& expiryDate) = 0;
         };
         
     }

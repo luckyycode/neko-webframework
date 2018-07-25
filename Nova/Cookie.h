@@ -31,8 +31,8 @@
 
 #pragma once
 
-#include "../../Engine/Utilities/Date.h"
-#include "../../Engine/Utilities/NekoString.h"
+#include "Engine/Utilities/Date.h"
+#include "Engine/Utilities/NekoString.h"
 
 namespace Neko
 {

@@ -31,8 +31,8 @@
 
 #pragma once
 
-#include "../../Engine/Containers/Array.h"
-#include "../../Engine/Utilities/NekoString.h"
+#include "Engine/Containers/Array.h"
+#include "Engine/Utilities/NekoString.h"
 
 #include "Route.h"
 #include "Routing.h"
