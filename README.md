@@ -18,10 +18,10 @@ Structure:
 
 | Directory                  | Description       
 | --------------------- |:-----------------------------------------------------------------:|
-| /Nova/                     | contains higher level logic (e.g. controllers, routing)
+| /Nova/                     | Contains higher level logic (e.g. controllers, routing)
 | /Skylar/                  | Skylar server, contains lower level logic for processing requests      
-| /ContentTypes/        | supported content data parsers for content-type      
-| /SampleModule/     | sample project 
+| /ContentTypes/        | Supported content data parsers for content-type      
+| /SampleModule/     | Sample project 
 
 
 ### Prerequisites
@@ -29,8 +29,8 @@ Structure:
 To build this you'll need
 
 ```
-Neko Framework (no sub-dependencies!) - will be available soon in my repositories
-OpenSSL (optional)
+- Neko Framework (no sub-dependencies!) - will be available soon in my repositories
+- OpenSSL (optional)
 ```
 
 ### Installing
