@@ -39,8 +39,8 @@ You'll need premake5. Launch the following commands:
 
 ```
 1. cd ../project_dir/
-2. premake5 --file=Neko.lua (see lua file for customizable flags, e.g. use-openssl)
-3. Open with desired ide
+2. premake5 --file=Neko.lua (see lua file for customizable flags, e.g. use-openssl) <project target>
+3. Open with desired ide/make
 ```
 Sample project is also available in this repository, check out SampleModule folder.
 
