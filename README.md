@@ -8,7 +8,7 @@
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/1153bf48ef35457597c2e05af41a5dd7)](https://app.codacy.com/app/luckyycode/neko-webframework?utm_source=github.com&utm_medium=referral&utm_content=luckyycode/neko-webframework&utm_campaign=badger)
 [![Build Status](https://travis-ci.org/luckyycode/neko-webframework.svg?branch=master)](https://travis-ci.org/luckyycode/neko-webframework)
 
-Neko server / framework. Work in progress, not ready for production in any way yet.
+Neko server / web framework. Work in progress, not ready for production in any way yet.
 
 Fast and efficient server with higher level mvc code for developing web applications.
 
