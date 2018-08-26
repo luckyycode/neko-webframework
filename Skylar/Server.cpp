@@ -39,12 +39,13 @@
 #include "Engine/Network/SocketQueue.h"
 #include "Engine/FS/PlatformFile.h"
 
-#include "../Sockets/SocketSSL.h"
-#include "../Sockets/SocketDefault.h"
-
 #include "Server.h"
 #include "Http.h"
+#include "ISsl.h"
 #include "IProtocol.h"
+
+#include "../Sockets/SocketSSL.h"
+#include "../Sockets/SocketDefault.h"
 
 #include <signal.h> // commands
 
@@ -52,56 +53,6 @@ namespace Neko
 {
     namespace Skylar
     {
-        static bool NegotiateProtocol(void* session, String& protocol)
-        {
-#   if USE_OPENSSL
-            const Byte* proto = nullptr;
-            uint32 length = 0;
-            
-            // ALPN
-            SSL_get0_alpn_selected((SSL* )session, &proto, &length);
-            if (length == 0)
-            {
-                // NPN
-                SSL_get0_next_proto_negotiated((SSL* )session, &proto, &length);
-            }
-            
-            bool ok = length > 0;
-            if (ok)
-            {
-                protocol.Assign((const char*)proto, length);
-            }
-            
-            return ok;
-#   endif
-        }
-        
-#   if USE_OPENSSL
-        /**
-         * Called by OpenSSL when a client sends an ALPN request to check if protocol is supported.
-         * The server later will check a type and decide which protocol to use.
-         */
-        static int AlpnCallback(SSL* session, const Byte** out, Byte* outLength, const Byte* in, uint32 inLength, void* arg)
-        {
-            for (uint32 i = 0; i < inLength; i += in[i] + 1)
-            {
-                String protocol = String((const char* ) &in[i + 1]).Mid(0, in[i]);
-                
-                if (StartsWith(*protocol, "h2"))
-                {
-                    *out = (Byte* ) in + i + 1;
-                    *outLength = in[i];
-                    
-                    // success
-                    return SSL_TLSEXT_ERR_OK;
-                }
-            }
-            
-            // noop, fallback to http/1.1
-            return SSL_TLSEXT_ERR_NOACK;
-        }
-#   endif
-        
         // transient data
         struct SocketServerData
         {
@@ -115,7 +66,6 @@ namespace Neko
         , Allocator(allocator)
         , Modules(allocator)
         , Listeners(allocator)
-        , TlsData(allocator)
         , SocketsList(allocator)
         , FileSystem(fileSystem)
         , Settings(fileSystem, allocator)
@@ -137,10 +87,8 @@ namespace Neko
                 return false;
             }
         
-#   if USE_OPENSSL
-            SocketSSL::Init();
-#   endif
-
+            this->Ssl = ISsl::Create(Allocator);
+            
             LogInfo.log("Skylar") << "Server initialization complete.";
             
             return true;
@@ -152,48 +100,16 @@ namespace Neko
             
             Stop();
             Clear();
+            
+            if (this->Ssl != nullptr)
+            {
+                ISsl::Destroy(*this->Ssl);
+            }
         }
 
         void* Server::InitSsl(const ApplicationSettings& application)
         {
-#   if USE_OPENSSL
-            SSL_CTX* context = nullptr;
-            
-            const auto& certificate = application.CertificateFile;
-            const auto& privateKey = application.KeyFile;
-            
-            LogInfo.log("Skylar") << "Configuring ssl configuration for the application..";
-            
-            context = SSL_CTX_new(SSLv23_server_method());
-            
-            if (SSL_CTX_use_certificate_file(context, *certificate, SSL_FILETYPE_PEM) <= 0)
-            {
-                LogError.log("Skylar") << "Couldn't load SSL certificate..  ";
-                goto cleanupSsl;
-            }
-            
-            if (SSL_CTX_use_PrivateKey_file(context, privateKey.IsEmpty() ? *certificate : *privateKey, SSL_FILETYPE_PEM) <= 0)
-            {
-                LogError.log("Skylar") << "Couldn't load SSL private key (or certificate pair)..";
-                goto cleanupSsl;
-            }
-            
-            if (not SSL_CTX_check_private_key(context))
-            {
-                LogError.log("Skylar") << "Couldn't verify SSL private key!";
-                goto cleanupSsl;
-            }
-            
-            // SSL_CTX_set_alpn_select_cb(context, AlpnCallback, nullptr);
-            
-            return context;
-            
-        cleanupSsl:
-            {
-                SSL_CTX_free(context);
-                return nullptr;
-            }
-#   endif
+            return this->Ssl->InitSsl(application);
         }
         
         void Server::PrepareApplications()
@@ -224,7 +140,7 @@ namespace Neko
                         if (BindPort(tlsPort, ports))
                         {
                             // save context
-                            TlsData.Insert(tlsPort, context);
+                            this->Ssl->AddSession(tlsPort, context);
                         }
                     }
                 }
@@ -283,7 +199,7 @@ namespace Neko
             };
             JobSystem::RunJobs(&job, 1, nullptr);
             
-            Debug::DebugColor(Debug::EStdoutColor::Green);
+            Debug::PrintColor(Debug::EStdoutColor::Green);
             {
                 LogInfo.log("Skylar") << "## [^._.^] Skylar is now listening on "
                     << Settings.ResolvedAddressString << " (" << Listeners.GetSize() << " listeners).\n";
@@ -363,7 +279,7 @@ namespace Neko
             , Settings(server.Settings)
             , Controls(server.Controls)
             , ThreadsWorkingCount(server.ThreadsWorkingCount)
-            , TlsData(server.TlsData)
+            , Ssl(server.Ssl)
             , Allocator(allocator)
             {
             }
@@ -379,7 +295,7 @@ namespace Neko
                     void* session = socket.GetTlsSession();
                     
                     String protocolName(Allocator);
-                    bool result = NegotiateProtocol(session, protocolName);
+                    bool result = Ssl->NegotiateProtocol(session, protocolName);
                     
                     if (result)
                     {
@@ -478,12 +394,12 @@ namespace Neko
                             const uint16 port = address.Port;
                             
                             // it's a valid tls data, secured
-                            if (auto it = TlsData.Find(port); it.IsValid())
+                            if (auto it = Ssl->GetTlsData().Find(port); it.IsValid())
                             {
                                 auto* context = it.value();
                                 assert(context != nullptr);
 #   if USE_OPENSSL
-                                SocketSSL socketSsl(socket, (SSL_CTX* )context);
+                                SocketSSL socketSsl(socket, static_cast<SSL_CTX* >(context));
 #   endif
                                 if (socketSsl.Handshake())
                                 {
@@ -521,7 +437,7 @@ namespace Neko
             
             IAllocator& Allocator;
             
-            Server::TlsMap& TlsData;
+            ISsl* Ssl;
             
             ThreadSafeCounter& ThreadsWorkingCount;
         };
@@ -993,16 +909,10 @@ namespace Neko
             Controls.Clear();
             
             Settings.Clear();
-            
-            if (not TlsData.IsEmpty())
+          
+            if (Ssl != nullptr)
             {
-                for (auto& item : TlsData)
-                {
-# if USE_OPENSSL
-                    SSL_CTX_free((SSL_CTX* )item);
-# endif
-                }
-                TlsData.Clear();
+                Ssl->Clear();
             }
             
             if (not Modules.IsEmpty())

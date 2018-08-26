@@ -50,7 +50,7 @@ namespace Neko
     using namespace Neko::Net;
     namespace Skylar
     {
-        /// Interface capable for http, websockets, etc.
+        /** Interface capable for http, websockets, etc. */
         class IProtocol
         {
         public:

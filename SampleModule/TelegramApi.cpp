@@ -36,6 +36,7 @@
 
 #include "TelegramApi.h"
 
+#include "ISsl.h"
 #include "../Sockets/SocketSSL.h"
 #include "../Utils.h"
 

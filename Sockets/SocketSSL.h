@@ -31,6 +31,7 @@
 
 #pragma once
 
+#include "../Skylar/ISsl.h"
 #include "ISocket.h"
 
 #if USE_OPENSSL
@@ -43,7 +44,7 @@ namespace Neko
 {
     namespace Skylar
     {
-        /// OpenSSL socket wrapper
+        /** OpenSSL socket wrapper */
         class SocketSSL : public ISocket
         {
         public:
@@ -51,9 +52,9 @@ namespace Neko
             // @see ISocket for comments
             
             SocketSSL() = delete;
-            /** Created new SSL connection based on existing context (server/client). */
+            /** Created a new SSL connection based on an existing context (server/client). */
             SocketSSL(const Net::INetSocket& socket, SSL_CTX* context);
-            /** Initiates from existing SSL connection. */
+            /** Initiates from an existing SSL connection. */
 			SocketSSL(const Net::INetSocket& socket, SSL* connection);
 			
             virtual long GetPacketBlocking(void* buffer, const ulong length, const int32& timeout) const override;
@@ -65,15 +66,13 @@ namespace Neko
             
             virtual NEKO_FORCE_INLINE Net::SOCKET GetNativeHandle() const override { return Socket.GetNativeHandle(); };
             
-            virtual NEKO_FORCE_INLINE void* GetTlsSession() const override { return (void* )Connection; };
+            virtual NEKO_FORCE_INLINE void* GetTlsSession() const override { return static_cast<void* >(this->Connection); };
             
             /** Higher level SSL connect */
             int32 Connect();
             
 			bool Handshake();
 			
-            static bool Init();
-            
         private:
             
             Net::INetSocket Socket;

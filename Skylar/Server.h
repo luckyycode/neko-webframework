@@ -48,7 +48,7 @@ namespace Neko
 {
     namespace Skylar
     {
-        /// Server instance.
+        /** Server instance. */
         class Server
         {
         public:
@@ -150,9 +150,7 @@ namespace Neko
             //! List of active sockets which listen for incoming connections.
             TArray< Net::INetSocket > Listeners;
             
-            typedef THashMap<uint16, void*> TlsMap;
-            //! Ssl contexts map.
-            TlsMap TlsData;
+            class ISsl* Ssl;
             
         private:
             

@@ -58,11 +58,7 @@ namespace Neko
         {
         public:
        
-            /**
-             * Instance of a controller.
-             *
-             * @param path  Controller url (e.g. can be /files or /api/files).
-             */
+            /** Instance of a controller. */
             IController(Http::Request& request, Http::Response& response, IAllocator& allocator);
             
             virtual ~IController();

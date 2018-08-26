@@ -37,7 +37,7 @@ namespace Neko
 {
     namespace Skylar
     {
-        /// Application/json extension for content type.
+        /** Application/json extension for content type. */
         class ApplicationJson: public IContentType
         {
         public:

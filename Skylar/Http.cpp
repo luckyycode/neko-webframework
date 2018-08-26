@@ -57,26 +57,26 @@ namespace Neko
 
         void ProtocolHttp::WriteRequest(char* buffer, const Http::Request& request, const ApplicationSettings& applicationSettings) const
         {
-            OutputData blob(reinterpret_cast<void* >(buffer), INT_MAX);
+            OutputData datastream(reinterpret_cast<void* >(buffer), INT_MAX);
             
             // version
-            blob.Write(uint8(Http::Version::Http_1));
+            datastream.Write(uint8(Http::Version::Http_1));
             
             // request data
-            blob << request.Host << request.Path << request.Method;
+            datastream << request.Host << request.Path << request.Method;
             
             // app
-            blob.WriteString(applicationSettings.RootDirectory);
+            datastream.WriteString(applicationSettings.RootDirectory);
             
             // containers
-            blob << request.IncomingHeaders << request.IncomingData << request.IncomingFiles /* files */;
+            datastream << request.IncomingHeaders << request.IncomingData << request.IncomingFiles /* files */;
         }
         
         void ProtocolHttp::ReadResponse(Http::Request& request, const Http::ResponseData& responseData) const
         {
-            InputData blob(responseData.Data, INT_MAX);
+            InputData datastream(responseData.Data, INT_MAX);
             // write response headers to request
-            blob >> request.OutgoingHeaders;
+            datastream >> request.OutgoingHeaders;
         }
         
         IProtocol* ProtocolHttp::Process()
@@ -151,7 +151,8 @@ namespace Neko
             const ApplicationSettings* applicationSettings = Settings->List.Find(request.Host) ;
             
             // app is found
-            if (applicationSettings != nullptr and (applicationSettings->Port == port or applicationSettings->TlsPort == port))
+            if (applicationSettings != nullptr
+                and (applicationSettings->Port == port or applicationSettings->TlsPort == port))
             {
                 return applicationSettings;
             }
@@ -201,9 +202,9 @@ namespace Neko
         
         static inline bool ParseRequestContentType(Http::Request& request, String& stringBuffer, const IContentType* contentTypeData, const String& contentTypeName, const ulong contentLength, const THashMap<String, String>& contentParams, ISocket& socket, IAllocator& allocator)
         {
-            auto& requestData = (Http::RequestDataInternal& )request;
+            auto requestData = static_cast<Http::RequestDataInternal& >(request);
             
-            void* contentTypeState = contentTypeData->CreateState(requestData, contentParams);
+            auto contentTypeState = contentTypeData->CreateState(requestData, contentParams);
             
             ContentDesc contentDesc
             {
@@ -233,7 +234,7 @@ namespace Neko
             // Parse content
             bool result = contentTypeData->Parse(contentBuffer, requestData, &contentDesc);
             
-            while (result and contentDesc.FullSize > contentDesc.BytesReceived)
+            while (result != false and contentDesc.FullSize > contentDesc.BytesReceived)
             {
                 TArray<char> buffer(allocator);
                 
@@ -265,9 +266,9 @@ namespace Neko
             
             contentTypeData->DestroyState(contentDesc.State);
 
-            if (result)
+            if (result != false)
             {
-                if (contentDesc.LeftBytes)
+                if (contentDesc.LeftBytes > 0)
                 {
                     stringBuffer.Assign(contentBuffer, contentBuffer.Length() - contentDesc.LeftBytes, contentBuffer.Length());
                 }

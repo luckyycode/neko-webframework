@@ -309,7 +309,7 @@ namespace Neko
             };
             
             success = settings.OnApplicationInit(items);
-            if (!success)
+            if (not success)
             {
                 LogWarning.log("Skylar") << "Application initialization returned unsuccessful result!";
                 
@@ -377,7 +377,7 @@ namespace Neko
         
         void ServerSettings::ApplicationsList::GetAllApplicationSettings(TArray< struct ApplicationSettings* >& applications) const
         {
-            for (auto node : List)
+            for (auto node : this->List)
             {
                 const auto* subList = node;
                 

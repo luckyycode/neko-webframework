@@ -59,7 +59,7 @@ namespace Neko
     namespace Nova
     {
         /**
-         * Creates socket object from native client socket.
+         * Creates socket object from a native client socket.
          */
         static inline ISocket* CreateSocket(Net::INetSocket& socket, Http::RequestData* request, void* stack, bool& secure)
         {
@@ -105,6 +105,8 @@ namespace Neko
                 session.MaxGcLifetime = 1000;
                 session.StorageType = "cookie";
             });
+            
+            LogInfo.log("Nova") << "Nova request context initialized";
         }
         
         RequestContext::~RequestContext()
@@ -132,14 +134,14 @@ namespace Neko
                 responseData.Data = data;
                 responseData.Size = size;
                 // write headers
-                OutputData blob(responseData.Data, INT_MAX);
-                blob << outHeaders;
+                OutputData datastream(responseData.Data, INT_MAX);
+                datastream << outHeaders;
             }
         }
         
         void RequestContext::ProcessRequest(Skylar::IProtocol& protocol, Http::Request& request, Http::Response& response, const char* documentRoot, const bool secure)
         {
-            PROFILE_SECTION("mvc process request")
+            PROFILE_SECTION("nova process request")
             
             String clearUri;
             
@@ -182,12 +184,10 @@ namespace Neko
                     {
                         PROFILE_SECTION("file send")
                         
-                        // or send file
+                        // or send a file
                         if (Platform::FileExists(path))
                         {
-                            auto connectionIt = request.IncomingHeaders.Find("connection");
-                            
-                            if (connectionIt.IsValid())
+                            if (auto connectionIt = request.IncomingHeaders.Find("connection"); connectionIt.IsValid())
                             {
                                 response.AddHeader("connection", connectionIt.value());
                             }
@@ -199,7 +199,7 @@ namespace Neko
                 }
                 else
                 {
-                    LogInfo.log("Skylar") << "Request to unmapped url - " << *request.Path;
+                    LogInfo.log("Nova") << "Request to unmapped url - " << *request.Path;
                     // @todo something
                     
                     response.SetStatusCode(Http::StatusCode::NotFound);
@@ -224,14 +224,13 @@ namespace Neko
             
             // Initialize socket from existing native socket descriptor
             ISocket* socket = CreateSocket(netSocket, &requestData, &stack, secure);
-            
             // incoming protocol type by request
             IProtocol* protocol = nullptr;
             
             // Read incoming header info
-            InputData blob(const_cast<void* >(requestData.Data), INT_MAX);
+            InputData datastream(const_cast<void* >(requestData.Data), INT_MAX);
             
-            blob << protocolVersion;
+            datastream << protocolVersion;
             
             const auto version = static_cast<Http::Version>(protocolVersion);
             
@@ -242,9 +241,9 @@ namespace Neko
             {
                 case Http::Version::Http_1:
                 {
-                    blob >> request.Host >> request.Path >> request.Method;
-                    blob.ReadString(documentRoot, sizeof(documentRoot));
-                    blob >> request.IncomingHeaders >> request.IncomingData >> request.IncomingFiles;
+                    datastream >> request.Host >> request.Path >> request.Method;
+                    datastream.ReadString(documentRoot, sizeof(documentRoot));
+                    datastream >> request.IncomingHeaders >> request.IncomingData >> request.IncomingFiles;
                     
                     // instantiate protocol
                     protocol = NEKO_NEW(Allocator, ProtocolHttp)(*socket, nullptr, Allocator);
@@ -263,7 +262,6 @@ namespace Neko
             LogInfo.log("Skylar") << "Request ## Http " << static_cast<uint32>(protocolVersion) << " " << request.Path << " /" << request.Method;
             
             ProcessRequest(*protocol, request, response, documentRoot, secure);
-            
             DestroySocket(socket);
             
             // Post process

@@ -41,7 +41,7 @@ namespace Neko
     using namespace Neko::Net;
     namespace Skylar
     {
-        /// Content type interface. Used for types, e.g. text/plain, application/json, multipart/form-data and so on.
+        /** Content type interface. Used for types, e.g. text/plain, application/json, multipart/form-data and so on. */
         class IContentType
         {
         public:

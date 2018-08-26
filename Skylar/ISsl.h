@@ -23,39 +23,43 @@
 // | |\  |  __/   < (_) | |  _|| | | (_| | | | | | |  __/\ V  V / (_) | |  |   <
 // |_| \_|\___|_|\_\___/  |_|  |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
 //
-//  ContentDesc.h
+//  Http.h
 //  Neko Framework
 //
 //  Copyright © 2018 Neko Vision. All rights reserved.
 //
 
+#pragma once
+
+#include "Engine/Containers/HashMap.h"
+
+#define USE_OPENSSL 1
+
 namespace Neko
 {
     namespace Skylar
     {
-        struct ContentDesc
-        {
-            // uint32 should fit..
-            
-            //! Size of all content.
-            uint32 FullSize;
-            //! Parsed content size.
-            uint32 BytesReceived;
-            //! Leftover
-            uint32 LeftBytes;
-            
-            //! State object, can be used to store transient content data.
-            void* State;
-            
-            void* Data;
-            
-            const class IContentType* ContentType;
-        };
+        struct ApplicationSettings;
         
-        static inline bool EnsureContentLength(ContentDesc& contentDesc)
+        class ISsl
         {
-            return contentDesc.FullSize == 0
-                or contentDesc.FullSize != contentDesc.BytesReceived;;
-        }
+        public:
+            
+            typedef THashMap<uint16, void*> TlsMap;
+            
+            virtual bool Init() = 0;
+            
+            virtual void* InitSsl(const ApplicationSettings& application) = 0;
+            virtual bool NegotiateProtocol(void* session, String& protocol) = 0;
+            
+            virtual void AddSession(uint16 port, void* context) = 0;
+            virtual const TlsMap& GetTlsData() const = 0;
+            
+            virtual void Clear() = 0;
+            
+            static ISsl* Create(IAllocator& allocator);
+            static void Destroy(ISsl& ssl);
+        };
     }
 }
+

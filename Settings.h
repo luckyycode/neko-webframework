@@ -45,10 +45,10 @@ namespace Neko
     
     namespace Skylar
     {
-        /// Common server settings.
+        /** Common server settings. */
         class ServerSettings
         {
-            /// Server application list.
+            /** Server application list. */
             class ApplicationsList
             {
             public:

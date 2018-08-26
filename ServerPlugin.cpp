@@ -72,7 +72,7 @@ namespace Neko
                     }
                     else if (parser.CurrentEquals("--name"))
                     {
-                        if (!parser.Next())
+                        if (not parser.Next())
                         {
                             break;
                         }
@@ -81,7 +81,7 @@ namespace Neko
                     }
                     else if (parser.CurrentEquals("--maxmemory"))
                     {
-                        if (!parser.Next())
+                        if (not parser.Next())
                         {
                             break;
                         }
@@ -90,7 +90,7 @@ namespace Neko
                         parser.GetCurrent(memory, Neko::lengthOf(memory));
                         maxMemory = StringToUnsignedLong(memory);
                     }
-                    if (!parser.Next())
+                    if (not parser.Next())
                     {
                         break;
                     }

@@ -39,7 +39,7 @@ namespace Neko
 {
     namespace Skylar
     {
-        /// Default network socket. Wrapper around Net::INetSocket.
+        /**  Default network socket. Wrapper around Net::INetSocket. */
         class SocketDefault : public ISocket
         {
         public:

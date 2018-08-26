@@ -157,15 +157,6 @@ namespace Neko
             return true;
         }
         
-        bool SocketSSL::Init()
-        {
-            // initialize OpenSSL
-            ::SSL_load_error_strings ();
-            ::SSL_library_init (); // @note SSL_library_init() always returns "1", so it is safe to discard the return value.
-            
-            return true;
-        }
-        
         void SocketSSL::Close()
         {
             // Wait for send all data to client
