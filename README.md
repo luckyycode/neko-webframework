@@ -50,6 +50,7 @@ There are still a lot of things to do, this framework is not yet ready for produ
 
 See Issues for more info, but the most important and global now are the following features:
 
+* Setup Travis CI (currently failing due to empty settings)
 * HTTP/2 support - *wip* 
 * GnuTLS support instead of OpenSSL (I will keep these together)
 * More samples
