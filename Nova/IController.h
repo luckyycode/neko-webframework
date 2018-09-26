@@ -75,22 +75,22 @@ namespace Neko
         public:
             // csrf/authentication
             
-            virtual bool IsCsrfProtectionEnabled() const { return true; }
+            virtual bool CsrfProtectionEnabled() const { return true; }
             
             String GetAuthToken();
             
-            bool VerifyRequest();
+            bool CheckRequest();
             
         public:
             // session
             
-            virtual bool IsSessionEnabled() const { return true; }
+            virtual bool IsSessionSupported() const { return true; }
             
             /** Sets the request session data. */
             void SetSession(const Session& session);
             
             /** Adds cookie to this controller's cookie jar. */
-            bool AddCookie(const Cookie& cookie);
+            bool AddCookie(const class Cookie& cookie);
             
         public:
             

@@ -55,7 +55,7 @@ namespace Neko
         
         bool UserManager::UserLogin(const IUser& user, Session& session)
         {
-            if (user.GetIdentityKey().IsEmpty())
+            if (user.GetPrimaryKey().IsEmpty())
             {
                 LogWarning.log("Nova") << "User identity key is empty!";
                 return false;
@@ -67,7 +67,7 @@ namespace Neko
                 return true;
             }
             
-            session.Insert(SESSION_USER_NAME, user.GetIdentityKey());
+            session.Insert(SESSION_USER_NAME, user.GetPrimaryKey());
             
             LogInfo.log("Nova") << "User logged in!";
             

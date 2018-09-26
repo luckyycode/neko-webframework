@@ -23,7 +23,7 @@
 // | |\  |  __/   < (_) | |  _|| | | (_| | | | | | |  __/\ V  V / (_) | |  |   <
 // |_| \_|\___|_|\_\___/  |_|  |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
 //
-//  ApplicationSettings.h
+//  PoolApplicationSettings.h
 //  Neko Framework
 //
 //  Copyright © 2018 Neko Vision. All rights reserved.
@@ -41,7 +41,7 @@
 
 namespace Neko
 {
-    namespace FS
+    namespace FileSystem
     {
         class IFileSystem;
     }
@@ -52,11 +52,11 @@ namespace Neko
         {
             const char* RootDirectory = nullptr;
             IAllocator* AppAllocator = nullptr;
-            FS::IFileSystem* FileSystem = nullptr;
+            FileSystem::IFileSystem* FileSystem = nullptr;
         };
         
-        /** Server settings for each application. */
-        struct ApplicationSettings
+        /** Server settings for each application/pool. */
+        struct PoolApplicationSettings
         {
             // Request settings
             

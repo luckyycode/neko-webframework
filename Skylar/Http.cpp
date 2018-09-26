@@ -49,13 +49,13 @@ namespace Neko
 {
     namespace Skylar
     {
-        ProtocolHttp::ProtocolHttp(ISocket& socket, const ServerSettings* settings, IAllocator& allocator)
+        ProtocolHttp::ProtocolHttp(ISocket& socket, const ServerSharedSettings* settings, IAllocator& allocator)
         : IProtocol(socket, settings, allocator)
         {
             
         }
 
-        void ProtocolHttp::WriteRequest(char* buffer, const Http::Request& request, const ApplicationSettings& applicationSettings) const
+        void ProtocolHttp::WriteRequest(char* buffer, const Http::Request& request, const PoolApplicationSettings& applicationSettings) const
         {
             OutputData datastream(reinterpret_cast<void* >(buffer), INT_MAX);
             
@@ -101,7 +101,7 @@ namespace Neko
                 // clearup after processing request
                 request.Clear();
             }
-            while (IsConnectionReuse(request));
+            while (IsConnectionInReuse(request));
             
             end = Timer.GetAsyncTime();
             
@@ -118,7 +118,7 @@ namespace Neko
             return this;
         }
       
-        const ApplicationSettings* ProtocolHttp::GetApplicationSettingsForRequest(Http::Request& request, const bool secure) const
+        const PoolApplicationSettings* ProtocolHttp::GetApplicationSettingsForRequest(Http::Request& request, const bool secure) const
         {
             // Get domain or address from incoming request
             auto hostIt = request.IncomingHeaders.Find("host");
@@ -135,7 +135,7 @@ namespace Neko
             // use default port if not set
             const uint16 defaultPort = secure ? DEFAULT_HTTPS_PORT : DEFAULT_HTTP_PORT;
             
-            const String& hostHeader = hostIt.value();
+            const auto& hostHeader = hostIt.value();
             const int32 delimiter = hostHeader.Find(":"); // port
             
             // @todo perhaps if using default ports hostHeader may contain no port
@@ -148,7 +148,7 @@ namespace Neko
                 : defaultPort;
             
             // get application settings by name
-            const ApplicationSettings* applicationSettings = Settings->List.Find(request.Host) ;
+            const auto* applicationSettings = SharedSettings->List.Find(request.Host) ;
             
             // app is found
             if (applicationSettings != nullptr
@@ -177,18 +177,18 @@ namespace Neko
                     
                     if (delimiter >= paramEnd)
                     {
-                        String paramName = headerValue.Mid(paramCur, (paramEnd != INDEX_NONE) ? paramEnd - paramCur : INT_MAX).Trim();
+                        auto paramName = headerValue.Mid(paramCur, (paramEnd != INDEX_NONE) ? paramEnd - paramCur : INT_MAX).Trim();
                         
                         contentParameters.Insert(Neko::Move(paramName), Neko::String()
                                              );
                     }
                     else
                     {
-                        String paramName = headerValue.Mid(paramCur, delimiter - paramCur).Trim();
+                        auto paramName = headerValue.Mid(paramCur, delimiter - paramCur).Trim();
                         
                         ++delimiter;
                         
-                        String paramValue = headerValue.Mid(delimiter, (paramEnd != INDEX_NONE) ? paramEnd - delimiter : INT_MAX).Trim();
+                        auto paramValue = headerValue.Mid(delimiter, (paramEnd != INDEX_NONE) ? paramEnd - delimiter : INT_MAX).Trim();
                         
                         contentParameters.Insert(Neko::Move(paramName), Neko::Move(paramValue));
                     }
@@ -209,8 +209,7 @@ namespace Neko
             ContentDesc contentDesc
             {
                 contentLength,
-                0,
-                0,
+                0, 0,
                 contentTypeState,
                 nullptr,
                 contentTypeData,
@@ -232,7 +231,7 @@ namespace Neko
             }
             
             // Parse content
-            bool result = contentTypeData->Parse(contentBuffer, requestData, &contentDesc);
+            bool result = contentTypeData->ParseFromBuffer(contentBuffer, requestData, &contentDesc);
             
             while (result != false and contentDesc.FullSize > contentDesc.BytesReceived)
             {
@@ -261,7 +260,7 @@ namespace Neko
                 // reset
                 contentDesc.LeftBytes = 0;
                 
-                result = contentTypeData->Parse(contentBuffer, requestData, &contentDesc);
+                result = contentTypeData->ParseFromBuffer(contentBuffer, requestData, &contentDesc);
             }
             
             contentTypeData->DestroyState(contentDesc.State);
@@ -277,7 +276,7 @@ namespace Neko
         }
         
         Http::StatusCode ProtocolHttp::GetRequestData(Http::Request& request, String& stringBuffer,
-                                                        const ApplicationSettings& applicationSettings) const
+                                                        const PoolApplicationSettings& applicationSettings) const
         {
             // Get content type and check if we have any data
             auto it = request.IncomingHeaders.Find("content-type");
@@ -292,14 +291,14 @@ namespace Neko
                 return Http::StatusCode::Empty;
             }
             
-            const String& headerValue = it.value();
+            const auto& headerValue = it.value();
             
             String contentTypeName(Allocator);
             THashMap<String, String> contentParams(Allocator);
             ParseContentParameters(headerValue, contentParams, contentTypeName);
             
             // Get variant-data by name
-            const auto contentTypeIt = Settings->ContentTypes.Find(contentTypeName);
+            const auto contentTypeIt = SharedSettings->ContentTypes.Find(contentTypeName);
             // Check if we support that one
             if (not contentTypeIt.IsValid())
             {
@@ -358,6 +357,10 @@ namespace Neko
                 string += " ";
                 string += it.value();
             }
+            else
+            {
+                assert(false);
+            }
             
             string += "\r\n";
             // write headers
@@ -376,7 +379,7 @@ namespace Neko
         
         long ProtocolHttp::SendData(const void* source, ulong size, const int32& timeout, Http::DataCounter* dataCounter/* = nullptr*/) const
         {
-            long sendSize = Socket.SendAllPacketsWait(source, size, timeout);
+            auto sendSize = Socket.SendAllPacketsWait(source, size, timeout);
             // check if no error returned
             if (sendSize > 0)
             {
@@ -406,7 +409,6 @@ namespace Neko
             {
                 return Http::StatusCode::BadRequest;
             }
-            headersEnd += 2;
             
             int32 strCur = 0;
             // Search for end of first header
@@ -430,12 +432,7 @@ namespace Neko
             
             // suffix of uri
             int32 uriEnd = stringBuffer.Find(" ", delimiter);
-            if (uriEnd == INDEX_NONE)
-            {
-                uriEnd = strEnd;
-                // probably protocol version is lower
-            }
-            else
+            if (uriEnd != INDEX_NONE)
             {
                 stringBuffer[uriEnd] = '\0';
                 int32 version = uriEnd + 6; // skip "HTTP/"
@@ -446,6 +443,11 @@ namespace Neko
                     //    @todo ?
                     // this is not supported anyways but capatible
                 }
+            }
+            else
+            {
+                uriEnd = strEnd;
+                // probably protocol version is lower
             }
             
             // Save full url
@@ -458,6 +460,7 @@ namespace Neko
             // end of line
             stringBuffer[strEnd] = '\0';
             
+            headersEnd += 2;
             // Get request headers
             for ( ; strCur != headersEnd;
                  strEnd = stringBuffer.Find("\r\n", strCur), stringBuffer[strEnd] = '\0')
@@ -467,10 +470,10 @@ namespace Neko
                 // if delimiter is not found (or somehow is not at the right place)
                 if (delimiter < strEnd)
                 {
-                    String headerName = stringBuffer.Mid(strCur, delimiter - strCur);
+                    auto headerName = stringBuffer.Mid(strCur, delimiter - strCur);
                     headerName.ToLowerInline();
                     
-                    String headerValue = stringBuffer.Mid(delimiter + 1, strEnd - delimiter - 1).Trim();
+                    auto headerValue = stringBuffer.Mid(delimiter + 1, strEnd - delimiter - 1).Trim();
                     
                     // save
                     request.IncomingHeaders.Insert(Neko::Move(headerName), Neko::Move(headerValue));
@@ -488,8 +491,7 @@ namespace Neko
         static bool GetRequest(const ISocket& socket, Http::Request& request, char* buffer, String& stringBuffer)
         {
             // Get request data from client
-            long size = 0;
-            size = socket.GetPacketBlocking((void* )buffer, REQUEST_BUFFER_SIZE, request.Timeout);
+            auto size = socket.GetPacketBlocking(reinterpret_cast<void* >(buffer), REQUEST_BUFFER_SIZE, request.Timeout);
             
             // no content or error
             if (size < 0 and stringBuffer.IsEmpty())
@@ -508,16 +510,19 @@ namespace Neko
         {
             const auto it = GetStatusList().Find((int)statusCode);
             
-            if (it.IsValid())
+            if (not it.IsValid())
             {
-                String headers("HTTP/1.1 ", allocator);
-                headers += (int)statusCode; // the code itself
-                headers += " ";
-                headers += it.value();  // status name
-                headers += "\r\n\r\n";  // skip
-                
-                socket.SendAllPacketsWait(*headers, headers.Length(), request.Timeout);
+                assert(false);
+                return;
             }
+            
+            String headers("HTTP/1.1 ", allocator);
+            headers += (int)statusCode; // the code itself
+            headers += " ";
+            headers += it.value();  // status name
+            headers += "\r\n\r\n";  // skip
+            
+            socket.SendAllPacketsWait(*headers, headers.Length(), request.Timeout);
         }
         
         static inline void CheckRequestUpgrade(Http::Request& request, bool secure)
@@ -529,12 +534,12 @@ namespace Neko
                 return;
             }
             
-            const String& upgrade = outUpgradeIt.value();
-            upgrade.ToLowerInline();
+            const auto& upgradeValue = outUpgradeIt.value();
+            upgradeValue.ToLowerInline();
             
-            LogInfo.log("Skylar") << "Upgrade request to " << *upgrade;
+            LogInfo.log("Skylar") << "Upgrade request to " << *upgradeValue;
             
-            if (upgrade == "h2")
+            if (upgradeValue == "h2")
             {
                 if (secure)
                 {
@@ -543,7 +548,7 @@ namespace Neko
                     request.ConnectionParams |= Http::ConnectionParams::Connection_Reuse;
                 }
             }
-            else if (upgrade == "h2c")
+            else if (upgradeValue == "h2c")
             {
                 if (not secure)
                 {
@@ -552,7 +557,7 @@ namespace Neko
                     request.ConnectionParams |= Http::ConnectionParams::Connection_Reuse;
                 }
             }
-            else if (upgrade == "websocket")
+            else if (upgradeValue == "websocket")
             {
                 request.ConnectionParams |= Http::ConnectionParams::Connection_LeaveOpen;
             }
@@ -577,14 +582,14 @@ namespace Neko
         
         static void GetConnectionParams(Http::Request& request, const bool secure, IAllocator& allocator)
         {
-            auto InConnectionIt = request.IncomingHeaders.Find("connection");
+            auto inConnectionIt = request.IncomingHeaders.Find("connection");
             auto outConnectionIt = request.OutgoingHeaders.Find("connection");
             
             // check if incoming/outgoing connection parameters are set
-            if (InConnectionIt.IsValid() and outConnectionIt.IsValid())
+            if (inConnectionIt.IsValid() and outConnectionIt.IsValid())
             {
-                const String& connectionIn = InConnectionIt.value();
-                const String& connectionOut = outConnectionIt.value();
+                const auto& connectionIn = inConnectionIt.value();
+                const auto& connectionOut = outConnectionIt.value();
                 
                 connectionIn.ToLowerInline();
                 connectionOut.ToLowerInline();
@@ -600,7 +605,7 @@ namespace Neko
                 
                 if (index != INDEX_NONE)
                 {
-                    const String& param = incomingParams[index];
+                    const auto& param = incomingParams[index];
                     
                     if (param == "upgrade")
                     {
@@ -618,7 +623,7 @@ namespace Neko
         void ProtocolHttp::RunProtocol(Http::Request& request, char* buffer, String& stringBuffer) const
         {
             // these can be null
-            assert(this->Settings != nullptr);
+            assert(this->SharedSettings != nullptr);
             
             if (not GetRequest(Socket, request, buffer, stringBuffer))
             {
@@ -635,7 +640,7 @@ namespace Neko
             }
             
             const bool secureSession = Socket.GetTlsSession() != nullptr;
-            const ApplicationSettings* applicationSettings = GetApplicationSettingsForRequest(request, secureSession);
+            const auto* applicationSettings = GetApplicationSettingsForRequest(request, secureSession);
             
             // If application is not found
             if (applicationSettings == nullptr)

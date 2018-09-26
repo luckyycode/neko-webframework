@@ -39,8 +39,9 @@ namespace Neko
 {
     namespace Skylar
     {
-        struct ApplicationSettings;
+        struct PoolApplicationSettings;
         
+        /** Interface for ssl contexts. */
         class ISsl
         {
         public:
@@ -49,7 +50,7 @@ namespace Neko
             
             virtual bool Init() = 0;
             
-            virtual void* InitSsl(const ApplicationSettings& application) = 0;
+            virtual void* InitSsl(const PoolApplicationSettings& application) = 0;
             virtual bool NegotiateProtocol(void* session, String& protocol) = 0;
             
             virtual void AddSession(uint16 port, void* context) = 0;

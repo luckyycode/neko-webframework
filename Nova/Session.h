@@ -102,7 +102,7 @@ namespace Neko
         inline Session::iterator Session::Insert(const String& key, const String& value)
         {
             auto it = SessionMap::Find(key);
-            if (!it.IsValid())
+            if (not it.IsValid())
             {
                 return SessionMap::InsertEx(key, value);
             }
@@ -121,11 +121,7 @@ namespace Neko
         inline const String Session::GetValue(const String& key, const String& defaultValue)
         {
             auto it = SessionMap::Find(key);
-            if (!it.IsValid())
-            {
-                return defaultValue;
-            }
-            return it.value();
+            return not it.IsValid() ? defaultValue : it.value();
         }
         
         inline String Session::GetSessionName()

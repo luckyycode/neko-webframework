@@ -33,7 +33,7 @@
 #include <openssl/ssl.h>
 
 #include "Engine/Core/Log.h"
-#include "../ApplicationSettings.h"
+#include "../PoolApplicationSettings.h"
 
 namespace Neko
 {
@@ -81,7 +81,7 @@ namespace Neko
                 return SSL_TLSEXT_ERR_NOACK;
             }
             
-            void* InitSsl(const ApplicationSettings& application) override
+            void* InitSsl(const PoolApplicationSettings& application) override
             {
                 SSL_CTX* context = nullptr;
                 
@@ -177,7 +177,14 @@ namespace Neko
         ISsl* ISsl::Create(IAllocator& allocator)
         {
             static OpenSslImpl impl(allocator);
-            return static_cast<ISsl* >(&impl);
+            if (impl.Init())
+            {
+                return static_cast<ISsl* >(&impl);
+            }
+            else
+            {
+                return nullptr;
+            }
         }
         
         void ISsl::Destroy(ISsl& ssl)

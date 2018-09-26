@@ -23,7 +23,7 @@
 // | |\  |  __/   < (_) | |  _|| | | (_| | | | | | |  __/\ V  V / (_) | |  |   <
 // |_| \_|\___|_|\_\___/  |_|  |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
 //
-//  Controls.h
+//  CycleManager.h
 //  Neko Framework
 //
 //  Copyright © 2018 Neko Vision. All rights reserved.
@@ -40,17 +40,17 @@ namespace Neko
     namespace Skylar
     {
         /// Server threadsafe controls.
-        class ServerSharedControls
+        class CycleManager
         {
         public:
             
-            ServerSharedControls()
+            CycleManager()
             : ProcessQueueEvent(false)
             , UpdateModulesEvent(true)
             {
             }
             
-            ~ServerSharedControls()
+            ~CycleManager()
             {
                 Clear();
             }
@@ -71,14 +71,14 @@ namespace Neko
                 ProcessQueueEvent.Trigger();
             }
             
-            void SetActiveFlag(const bool set = true)
+            void SetActiveFlag(const bool active = true)
             {
-                Active = set;
+                Active = active;
             }
             
-            void SetRestartFlag(const bool set = true)
+            void SetRestartFlag(const bool restart = true)
             {
-                Restart = set;
+                Restart = restart;
             }
             
             void StopProcess()

@@ -48,7 +48,7 @@ namespace Neko
     {
     public:
         
-        ServerTask(IAllocator& allocator, FS::IFileSystem& fileSystem)
+        ServerTask(IAllocator& allocator, FileSystem::IFileSystem& fileSystem)
         : Task(allocator)
         , FileSystem(fileSystem)
         {
@@ -105,7 +105,7 @@ namespace Neko
         
     private:
         
-        FS::IFileSystem& FileSystem;
+        FileSystem::IFileSystem& FileSystem;
     };
     
     class Network : public IPlugin
@@ -116,8 +116,8 @@ namespace Neko
         : Engine(engine)
         , Allocator(engine.GetAllocator())
         {
-            this->Task = NEKO_NEW(Allocator, ServerTask)(Allocator, engine.GetFileSystem());
-            if (!this->Task->Create("Skylar task"))
+            if (this->Task = NEKO_NEW(Allocator, ServerTask)(Allocator, engine.GetFileSystem());
+                not this->Task->Create("Skylar task"))
             {
                 assert(false);
             }

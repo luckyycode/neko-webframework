@@ -44,10 +44,10 @@ namespace Neko
     {
         bool SessionManager::Store(Session& session)
         {
-            assert(!session.GetId().IsEmpty());
+            assert(not session.GetId().IsEmpty());
             
             bool result = false;
-            ISessionStorage* storage = SessionStorageFactory::Get(GetStoreType());
+            auto* storage = SessionStorageFactory::Get(GetStoreType());
             
             if (storage != nullptr)
             {
@@ -56,7 +56,7 @@ namespace Neko
             }
             else
             {
-                LogError.log("Nova") << "Session storage " << GetStoreType() << " not found";
+                LogError.log("Nova") << "Session storage " << (int)GetStoreType() << " not found";
             }
             
             return result;
@@ -66,7 +66,7 @@ namespace Neko
         {
             if (not sessionId.IsEmpty())
             {
-                ISessionStorage* storage = SessionStorageFactory::Get(GetStoreType());
+                auto* storage = SessionStorageFactory::Get(GetStoreType());
                 
                 if (storage != nullptr)
                 {
@@ -77,7 +77,7 @@ namespace Neko
                 }
                 else
                 {
-                    LogError.log("Nova") << "Session storage \"" << GetStoreType() << "\" not found";
+                    LogError.log("Nova") << "Session storage \"" << (int)GetStoreType() << "\" not found";
                 }
             }
             
@@ -90,7 +90,7 @@ namespace Neko
             
             if (not sessionId.IsEmpty())
             {
-                ISessionStorage* storage = SessionStorageFactory::Get(GetStoreType());
+                auto* storage = SessionStorageFactory::Get(GetStoreType());
                 
                 if (storage != nullptr)
                 {
@@ -99,7 +99,7 @@ namespace Neko
                 }
                 else
                 {
-                    LogError.log("Nova") << "Session storage \"" << GetStoreType() << "\" not found";
+                    LogError.log("Nova") << "Session storage \"" << (int)GetStoreType() << "\" not found";
                 }
             }
             
@@ -108,47 +108,39 @@ namespace Neko
         
         void SessionManager::ClearSessionsCache()
         {
-            static int16 probability = -1;
+            static int16 probability = 5;
             
-            if (probability == -1)
-            {
-                probability = Options::SessionOptions().GcProbability;
-            }
+            int32 result = Math::rand(0, probability - 1);
             
-            if (probability > 0)
+            if (result == 0)
             {
-                int32 result = Math::rand(0, probability - 1);
+                LogInfo.log("Nova") << "Clearing session cache...";
                 
-                if (result == 0)
+                auto* storage = SessionStorageFactory::Get(GetStoreType());
+                if (storage != nullptr)
                 {
-                    LogInfo.log("Nova") << "Clearing session cache...";
+                    uint32 cacheLifetime = 1000;
                     
-                    ISessionStorage* storage = SessionStorageFactory::Get(GetStoreType());
-                    if (storage != nullptr)
-                    {
-                        uint32 cacheLifetime = Options::SessionOptions().MaxGcLifetime;
-                        
-                        DateTime expiryDate = DateTime::UtcNow();
-                        TimeValue lifeTimeValue((int64)cacheLifetime);
-                        
-                        auto expireDate = expiryDate - lifeTimeValue;
-                        
-                        storage->ClearCache(expireDate);
-                        
-                        SessionStorageFactory::Cleanup(GetStoreType(), *storage);
-                    }
+                    auto expiryDate = DateTime::UtcNow();
+                    TimeValue lifeTimeValue((int64)cacheLifetime);
+                    
+                    auto expireDate = expiryDate - lifeTimeValue;
+                    
+                    storage->ClearCache(expireDate);
+                    
+                    SessionStorageFactory::Cleanup(GetStoreType(), *storage);
                 }
             }
         }
         
         void SessionManager::SetCsrfProtectionData(Session& session)
         {
-            const String& type = Options::SessionOptions().StorageType;
+            const auto& type = Options::SessionOptions().StorageType;
             
-            if (type == "cookie")
+            if (type == SessionStorageType::Cookie)
             {
-                const String& key = Options::SessionOptions().CsrfKey;
-                session.Insert(key, GenerateSessionId());
+                const auto& key = Options::SessionOptions().CsrfKey;
+                session.Insert(key, NewSessionId());
             }
         }
         
@@ -168,7 +160,7 @@ namespace Neko
             return result;
         }
         
-        String SessionManager::GenerateSessionId()
+        String SessionManager::NewSessionId()
         {
             String sessionId;
             
@@ -191,7 +183,7 @@ namespace Neko
             return sessionId;
         }
         
-        const String& SessionManager::GetStoreType() const
+        const SessionStorageType SessionManager::GetStoreType() const
         {
             const auto& type = Options::SessionOptions().StorageType;
             return type;

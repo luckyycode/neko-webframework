@@ -57,14 +57,14 @@ namespace Neko
             
             
             /** Returns shared session storage type. */
-            const String& GetStoreType() const;
+            const SessionStorageType GetStoreType() const;
             
             /** Clears session cache. */
             void ClearSessionsCache();
             
             
             /** Generates random & unique session id. */
-            String GenerateSessionId();
+            String NewSessionId();
             
             void SetCsrfProtectionData(Session& session);
             

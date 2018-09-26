@@ -23,7 +23,7 @@
 // | |\  |  __/   < (_) | |  _|| | | (_| | | | | | |  __/\ V  V / (_) | |  |   <
 // |_| \_|\___|_|\_\___/  |_|  |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
 //
-//  Routing.h
+//  SessionCookieType.h
 //  Neko Framework
 //
 //  Copyright © 2018 Neko Vision. All rights reserved.
@@ -31,48 +31,16 @@
 
 #pragma once
 
-#include "Engine/Utilities/NekoString.h"
-
 namespace Neko
 {
     namespace Nova
     {
-        /// Transient routing info.
-        class Routing
+        /** Available storage types. */
+        enum class SessionStorageType : uint8
         {
-        public:
+            None = 0,
             
-            inline Routing(class IAllocator& allocator)
-            : Parameters(allocator)
-            , Controller(allocator)
-            , Action(allocator)
-            , IsValid(false)
-            {
-            }
-            
-            inline Routing(const String& controller, const String& action, const TArray<String>& parameters, bool valid = false)
-            : Controller(controller)
-            , Action(action)
-            , Parameters(parameters)
-            , IsValid(valid)
-            {
-            };
-            
-            inline void SetRouting(const String& controller, const String& action, const TArray<String>& parameters)
-            {
-                Controller = controller;
-                Action = action;
-                Parameters = parameters;
-            };
-            
-            //! Says whether routing has valid values.
-            bool IsValid;
-            
-            String Controller;
-            String Action;
-            
-            // Incoming custom uri params.
-            TArray<String> Parameters;
+            Cookie,
         };
     }
 }

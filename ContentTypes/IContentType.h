@@ -59,13 +59,13 @@ namespace Neko
             virtual void DestroyState(void* state) const;
             
             /**
-             * Parses content type.
+             * Parses content type from a data buffer.
              *
              * @param buffer        String data buffer.
              * @param requestData   Parsed data will be saved in request.
              * @param contentDesc   Used to keep data on track.
              */
-            virtual bool Parse(const Neko::String& buffer, Net::Http::RequestDataInternal& requestData, class ContentDesc* contentDesc) const = 0;
+            virtual bool ParseFromBuffer(const Neko::String& buffer, Net::Http::RequestDataInternal& requestData, class ContentDesc* contentDesc) const = 0;
           
         public:
             

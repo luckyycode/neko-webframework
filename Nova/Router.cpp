@@ -45,12 +45,12 @@ namespace Neko
     using namespace Neko::Skylar;
     namespace Nova
     {
-        bool Router::AddRoute(const Http::Method method, const String& path, const String& controllerAction)
+        bool Router::AddRoute(const Http::Method method, const String& path, const String& controller, const String& action)
         {
-            assert(method >= Http::Method::Get && method <= Http::Method::Patch);
+            assert(method >= Http::Method::Get and method <= Http::Method::Patch);
             
             // assert
-            if (path.Find(ROUTE_PARAMS_TAG) != INDEX_NONE and !EndsWith(*path, ROUTE_PARAMS_TAG))
+            if (path.Find(ROUTE_PARAMS_TAG) != INDEX_NONE and not EndsWith(*path, ROUTE_PARAMS_TAG))
             {
                 LogError.log("Nova") << "[params] tag must be set as last parameter.";
                 return false;
@@ -61,25 +61,25 @@ namespace Neko
             route.Method = method;
             
             // parse path
-            SplitPath(route.ComponentList, path);
+            ParsePathForRoute(route.Components, path);
             
-            for (int32 i = 0; i < route.ComponentList.GetSize(); ++i)
+            for (int32 i = 0; i < route.Components.GetSize(); ++i)
             {
-                const auto& item = route.ComponentList[i];
+                const auto& item = route.Components[i];
                 
                 // count amount of param tags in url
                 if (item == ROUTE_PARAM_TAG)
                 {
-                    route.ParameterNum++;
+                    route.ParamCount++;
                 }
             }
             
             // multiple variable params tag
-            route.HasVariableParams = route.ComponentList.Contains(ROUTE_PARAMS_TAG);
+            route.HasCustomParams = route.Components.Contains(ROUTE_PARAMS_TAG);
             
-            for (int32 i = 0; i < route.ComponentList.GetSize(); ++i)
+            for (int32 i = 0; i < route.Components.GetSize(); ++i)
             {
-                const String& item = route.ComponentList[i];
+                const auto& item = route.Components[i];
                 
                 // assert param tags
                 if (item[0] == '[')
@@ -93,33 +93,27 @@ namespace Neko
                 }
                 else
                 {
-                    route.KeywordIndexes.Push((int16)i);
+                    route.ParamIndexes.Push((int16)i);
                 }
             }
             
-            if (controllerAction[0] != '/')
+            if (controller[0] != '/')
             {
-                // parse controller and action
-                TArray<String> list(Allocator);
-                controllerAction.ParseIntoArray(list, "#", false);
+                // full controller name
+                route.Controller = controller.ToLower();
+                route.Controller += "controller";
                 
-                if (list.GetSize() == 2)
+                if (action.IsEmpty())
                 {
-                    // full controller name
-                    route.Controller = list[0].ToLower();
-                    route.Controller += "controller";
-                    
-                    route.Action = list[1];
-                }
-                else
-                {
-                    LogError.log("Nova") << "Invalid controller action - " << *controllerAction;
+                    LogError.log("Nova") << "Invalid controller action supplied.";
                     return false;
                 }
+                
+                route.Action = action;
             }
             else
             {
-                route.Controller = controllerAction;
+                route.Controller = controller;
             }
             
             // @todo perhaps check for dupes?
@@ -127,18 +121,18 @@ namespace Neko
             // save
             Routes.Push(route);
             
-            LogInfo.log("Nova") << "Added Url route: " << *path << ", method /" << route.Method << ", controller \"" << route.Controller.c_str() << "\", action \"" << route.Action.c_str() << "\", params: " << route.HasVariableParams;
+            LogInfo.log("Nova") << "Added Url route: " << *path << ", method /" << route.Method << ", controller \"" << route.Controller.c_str() << "\", action \"" << route.Action.c_str() << "\", params: " << route.HasCustomParams;
             
             return true;
         }
         
-        Routing Router::FindRouting(Http::Method method, TArray<String>& components) const
+        Routing Router::FindRoute(Http::Method method, TArray<String>& components) const
         {
             PROFILE_FUNCTION()
             
             if (this->Routes.IsEmpty())
             {
-                LogWarning.log("Nova") << "FindRouting: No routes";
+                LogWarning.log("Nova") << "FindRoute: No routes";
                 
                 return Routing(Allocator);
             }
@@ -146,26 +140,26 @@ namespace Neko
             for (auto& route : this->Routes)
             {
                 // check lengths
-                if (route.HasVariableParams)
+                if (route.HasCustomParams)
                 {
                     // ignore last token
-                    if (route.ComponentList.GetSize() - 1 > components.GetSize())
+                    if (route.Components.GetSize() - 1 > components.GetSize())
                     {
                         continue;
                     }
                 }
                 else
                 {
-                    if (route.ComponentList.GetSize() != components.GetSize())
+                    if (route.Components.GetSize() != components.GetSize())
                     {
                         continue;
                     }
                 }
                 
                 // compare nodes
-                for (int32 index : route.KeywordIndexes)
+                for (int32 index : route.ParamIndexes)
                 {
-                    if (route.ComponentList[index] != components[index])
+                    if (route.Components[index] != components[index])
                     {
                         // continue outside
                         goto continueNext;
@@ -186,7 +180,7 @@ namespace Neko
                     else
                     {
                         // Remove everything but parameters
-                        TArray<int16> it(route.KeywordIndexes);
+                        TArray<int16> it(route.ParamIndexes);
                         
                         for (int32 i = it.GetSize() - 1; i >= 0; --i)
                         {
@@ -235,23 +229,23 @@ namespace Neko
             return hash;
         }
         
-        Routing Router::FindRouting(const String& method, const String& uri) const
+        Routing Router::FindRoute(const String& method, const String& uri) const
         {
             TArray< String > components(Allocator);
             
-            Router::SplitPath(components, uri); // for parsing
+            Router::ParsePathForRoute(components, uri); // for parsing
             
             Http::Method methodType = RouteMethodCache().Get(method);
-            return FindRouting(methodType, components);
+            return FindRoute(methodType, components);
         }
         
-        Routing Router::FindRouting(const String& method, TArray<String>& components) const
+        Routing Router::FindRoute(const String& method, TArray<String>& components) const
         {
             Http::Method methodType = RouteMethodCache().Get(method);
-            return FindRouting(methodType, components);
+            return FindRoute(methodType, components);
         }
         
-        void Router::SplitPath(TArray<String>& outArray, const String& path)
+        void Router::ParsePathForRoute(TArray<String>& outArray, const String& path)
         {
             const char* slash = "/";
             
@@ -280,17 +274,17 @@ namespace Neko
                 LogInfo.log("Nova") << "Route: \n"
                     << "\tController: " << route.Controller << "\n"
                     << "\tAction: " << route.Action << "\n"
-                    << "\t# of parameters: " << route.ParameterNum << " (variable params: " << route.HasVariableParams << ")";
+                    << "\t# of parameters: " << route.ParamCount << " (variable params: " << route.HasCustomParams << ")";
             }
         }
         
-        String Router::FindUrl(const String& controller, const String& action, const TArray<String>& params) const
+        String Router::FindUrlByController(const String& controller, const String& action, const TArray<String>& params) const
         {
             PROFILE_FUNCTION()
             
             if (Routes.IsEmpty())
             {
-                LogWarning.log("Nova") << "FindUrl: No routes";
+                LogWarning.log("Nova") << "FindUrlByController: No routes";
                 
                 return String::Empty;
             }
@@ -298,17 +292,17 @@ namespace Neko
             for (const auto& route : Routes)
             {
                 if (route.Controller == controller and route.Action == action
-                    and ((route.ParameterNum == params.GetSize() and !route.HasVariableParams)
-                        or (route.ParameterNum <= params.GetSize() and route.HasVariableParams)))
+                    and ((route.ParamCount == params.GetSize() and !route.HasCustomParams)
+                        or (route.ParamCount <= params.GetSize() and route.HasCustomParams)))
                 {
-                    return GeneratePath(route.ComponentList, params);
+                    return GeneratePathFromComponents(route.Components, params);
                 }
             }
             
             return String::Empty;
         }
         
-        String Router::GeneratePath(const TArray<String>& components, const TArray<String>& params) const
+        String Router::GeneratePathFromComponents(const TArray<String>& components, const TArray<String>& params) const
         {
             String result("/", Allocator);
             int count = 0;

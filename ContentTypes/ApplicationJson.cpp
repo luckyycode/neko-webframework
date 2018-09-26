@@ -42,7 +42,7 @@ namespace Neko
             Name = "application/json";
         }
         
-        bool ApplicationJson::Parse(const Neko::String& buffer, Http::RequestDataInternal& requestData, ContentDesc* contentDesc) const
+        bool ApplicationJson::ParseFromBuffer(const Neko::String& buffer, Http::RequestDataInternal& requestData, ContentDesc* contentDesc) const
         {
             if (buffer.IsEmpty())
             {

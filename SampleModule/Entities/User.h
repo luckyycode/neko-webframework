@@ -13,7 +13,7 @@ namespace Neko
             
         }
         
-        virtual const String& GetIdentityKey() const override { return this->UserName; }
+        virtual const String& GetPrimaryKey() const override { return this->UserName; }
         
     public:
         

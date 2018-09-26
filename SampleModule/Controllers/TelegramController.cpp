@@ -4,7 +4,7 @@
 #include "../../../Engine/Platform/Platform.h"
 #include "../../../Engine/Data/JsonSerializer.h"
 #include "../../../Engine/Data/MemoryStream.h"
-#include "../../../Engine/FS/PlatformFile.h"
+#include "../../../Engine/FileSystem/PlatformFile.h"
 #include "../SampleModule.h"
 
 #include "../Models/UpdateModel.h"

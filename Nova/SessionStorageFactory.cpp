@@ -40,13 +40,13 @@ namespace Neko
 {
     namespace Nova
     {
-        ISessionStorage* SessionStorageFactory::Get(const String& name)
+        ISessionStorage* SessionStorageFactory::Get(const SessionStorageType type)
         {
-            static const String cookieName = SessionCookieStorage().GetName();
+            static const auto cookieType = SessionCookieStorage().GetType();
             
             ISessionStorage* result = nullptr;
             
-            if (name == cookieName)
+            if (type == cookieType)
             {
                 static SessionCookieStorage cookieStorage;
                 result = &cookieStorage;
@@ -58,16 +58,8 @@ namespace Neko
             return result;
         }
         
-        void SessionStorageFactory::Cleanup(const String& name, ISessionStorage& storage)
+        void SessionStorageFactory::Cleanup(const SessionStorageType type, ISessionStorage& storage)
         {
-        }
-    
-        TArray<String> SessionStorageFactory::GetAvailableStorageTypes()
-        {
-            TArray<String> result;
-            result.Push(SessionCookieStorage().GetName().ToLower());
-            
-            return result;
         }
     }
 }

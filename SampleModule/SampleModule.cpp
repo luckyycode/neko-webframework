@@ -8,13 +8,13 @@
 #include "SampleModule.h"
 
 #include "../../Engine/Core/Log.h"
-#include "../../Engine/FS/FileSystem.h"
+#include "../../Engine/FileSystem/FileSystem.h"
 #include "../../Engine/Data/JsonSerializer.h"
 
 #include "../Nova/Options.h"
 #include "../Nova/RequestContext.h"
 #include "../Nova/IWebApplication.h"
-#include "../ApplicationSettings.h"
+#include "../PoolApplicationSettings.h"
 
 #include "Controllers/TelegramController.h"
 #include "Controllers/HomeController.h"

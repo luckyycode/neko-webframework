@@ -43,7 +43,7 @@ namespace Neko
             Name = "text/plain";
         }
         
-        bool TextPlain::Parse(const Neko::String& buffer, Http::RequestDataInternal& requestData, ContentDesc* contentDesc) const
+        bool TextPlain::ParseFromBuffer(const Neko::String& buffer, Http::RequestDataInternal& requestData, ContentDesc* contentDesc) const
         {
             if (buffer.IsEmpty())
             {
@@ -72,7 +72,7 @@ namespace Neko
                 if (delimiter >= last)
                 {
                     // param name
-                    Neko::String name = buffer.Mid(pos, (last != INT_MAX) ? end - pos : INT_MAX);
+                    auto name = buffer.Mid(pos, (last != INT_MAX) ? end - pos : INT_MAX);
                     
                     // save param
                     requestData.IncomingData.Insert(Neko::Move(name), Neko::String());
@@ -80,12 +80,12 @@ namespace Neko
                 else
                 {
                     // param name
-                    Neko::String name = buffer.Mid(pos, (last != INT_MAX) ? delimiter - pos : INT_MAX);
+                    auto name = buffer.Mid(pos, (last != INT_MAX) ? delimiter - pos : INT_MAX);
                     
                     ++delimiter;
                     
                     // param value
-                    Neko::String value = buffer.Mid(delimiter, (end != INDEX_NONE) ? end - delimiter : INT_MAX);
+                    auto value = buffer.Mid(delimiter, (end != INDEX_NONE) ? end - delimiter : INT_MAX);
                     
                     // save both
                     requestData.IncomingData.Insert(Neko::Move(name), Neko::Move(value));

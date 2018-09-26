@@ -31,7 +31,7 @@
 
 #pragma once
 
-#include "../Settings.h"
+#include "../SharedSettings.h"
 
 #include "Engine/Network/Http/Request.h"
 #include "Engine/Network/Http/Response.h"
@@ -64,7 +64,7 @@ namespace Neko
              * @param settings  Shared server settings.
              * @param controls  Shared server controls.
              */
-            IProtocol(class ISocket& socket, const ServerSettings* settings, class IAllocator& allocator);
+            IProtocol(class ISocket& socket, const ServerSharedSettings* settings, class IAllocator& allocator);
             
             IProtocol(const IProtocol& protocol);
             
@@ -92,7 +92,7 @@ namespace Neko
             
             /** Writes request data to buffer. */
             virtual void WriteRequest(char* buffer, const Http::Request& request,
-                                               const ApplicationSettings& applicationSettings) const = 0;
+                                               const PoolApplicationSettings& applicationSettings) const = 0;
             
             /** Reads request buffer data. */
             virtual void ReadResponse(Http::Request& request, const Http::ResponseData& responseData) const = 0;
@@ -132,7 +132,7 @@ namespace Neko
              * @param request   Incoming request.
              * @param applicationSettings   Application.
              */
-            void RunApplication(Http::Request& request, const ApplicationSettings& applicationSettings) const;
+            void RunApplication(Http::Request& request, const PoolApplicationSettings& applicationSettings) const;
             
         protected:
             
@@ -140,7 +140,7 @@ namespace Neko
             ISocket& Socket;
             
             //! This server settings.
-            const ServerSettings* Settings;
+            const ServerSharedSettings* SharedSettings;
             
             IAllocator& Allocator;
             

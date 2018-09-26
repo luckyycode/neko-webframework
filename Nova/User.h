@@ -45,10 +45,10 @@ namespace Neko
             virtual ~IUser() { }
             
             /** Returns the identity key (i.e. user name) */
-            virtual const String& GetIdentityKey() const = 0;
+            virtual const String& GetPrimaryKey() const = 0;
             
-            /** Returns the group key. */
-            virtual const String& GetGroupKey() const { return String::Empty; }
+            /** Returns the secondary key. */
+            virtual const String& GetSecondaryKey() const { return String::Empty; }
         };
     }
 }

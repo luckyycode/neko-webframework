@@ -38,7 +38,7 @@ namespace Neko
     {
         // empty
         
-        ProtocolWebSocket::ProtocolWebSocket(ISocket& socket, const ServerSettings* settings, IAllocator& allocator)
+        ProtocolWebSocket::ProtocolWebSocket(ISocket& socket, const ServerSharedSettings* settings, IAllocator& allocator)
         : IProtocol(socket, settings, allocator)
         { }
         
@@ -61,7 +61,7 @@ namespace Neko
             return false;
         }
         
-        void ProtocolWebSocket::WriteRequest(char* buffer, const Http::Request& repuest, const ApplicationSettings& applicationSettings) const
+        void ProtocolWebSocket::WriteRequest(char* buffer, const Http::Request& repuest, const PoolApplicationSettings& applicationSettings) const
         {
         }
         

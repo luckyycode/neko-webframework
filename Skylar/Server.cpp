@@ -37,7 +37,7 @@
 #include "Engine/Platform/Platform.h"
 #include "Engine/Platform/SocketList.h"
 #include "Engine/Network/SocketQueue.h"
-#include "Engine/FS/PlatformFile.h"
+#include "Engine/FileSystem/PlatformFile.h"
 
 #include "Server.h"
 #include "Http.h"
@@ -51,6 +51,8 @@
 
 namespace Neko
 {
+    using namespace Neko::FileSystem;
+    
     namespace Skylar
     {
         // transient data
@@ -60,7 +62,7 @@ namespace Neko
             Net::SocketsQueue* queue = nullptr;
         };
  
-        Server::Server(IAllocator& allocator, FS::IFileSystem& fileSystem)
+        Server::Server(IAllocator& allocator, IFileSystem& fileSystem)
         : Mutex(false)
         , QueueNotFullEvent(true)
         , Allocator(allocator)
@@ -107,8 +109,9 @@ namespace Neko
             }
         }
 
-        void* Server::InitSsl(const ApplicationSettings& application)
+        void* Server::InitSsl(const PoolApplicationSettings& application)
         {
+            assert(this->Ssl != nullptr);
             return this->Ssl->InitSsl(application);
         }
         
@@ -117,7 +120,7 @@ namespace Neko
             LogInfo.log("Skylar") << "Preparing server applications..";
             
             // Applications settings list
-            TArray< ApplicationSettings* > applications(Allocator);
+            TArray< PoolApplicationSettings* > applications(Allocator);
             
             // Get full applications settings list
             Settings.GetAllApplicationSettings(applications);
@@ -292,12 +295,12 @@ namespace Neko
   
                 if (socket.GetTlsSession() != nullptr)
                 {
-                    void* session = socket.GetTlsSession();
+                    auto session = socket.GetTlsSession();
                     
                     String protocolName(Allocator);
                     bool result = Ssl->NegotiateProtocol(session, protocolName);
                     
-                    if (result)
+                    if (result != false)
                     {
                         LogInfo.log("Skylar") << "Protocol negotiated as " << *protocolName;
                         
@@ -326,7 +329,7 @@ namespace Neko
             {
                 auto* protocol = CreateProto(socket, stream, Allocator);
                 
-                if (protocol)
+                if (protocol != nullptr)
                 {
                     // Check if switching protocol
                     for (IProtocol* result = nullptr; ;)
@@ -427,8 +430,8 @@ namespace Neko
             
         private:
             
-            ServerSharedControls& Controls;
-            ServerSettings& Settings;
+            CycleManager& Controls;
+            ServerSharedSettings& Settings;
             
             Net::SocketsQueue& Sockets;
             
@@ -528,7 +531,7 @@ namespace Neko
             PROFILE_FUNCTION()
             
             // Applications settings list
-            TArray< ApplicationSettings* > applications(Allocator);
+            TArray< PoolApplicationSettings* > applications(Allocator);
             // Get full applications settings list
             Settings.GetAllApplicationSettings(applications);
             
@@ -557,7 +560,7 @@ namespace Neko
                             auto moduleSize = updateModuleStat.FileSize;
                             auto moduleDate = updateModuleStat.ModificationTime;
                             
-                            Module& module = Modules[moduleIndex];
+                            auto& module = Modules[moduleIndex];
                             
                             if (updateModuleStat.bIsValid)
                             {
@@ -623,9 +626,9 @@ namespace Neko
             return true;
         }
         
-        bool Server::UpdateApplication(Module& module, TArray<ApplicationSettings* >& applications, const uint32 index)
+        bool Server::UpdateApplication(Module& module, TArray<PoolApplicationSettings* >& applications, const uint32 index)
         {
-            TArray<ApplicationSettings* > existing(Allocator);
+            TArray<PoolApplicationSettings* > existing(Allocator);
             
             for (auto& application : applications)
             {
@@ -670,15 +673,15 @@ namespace Neko
                 moduleNameNew += Math::RandGUID();
             }
             
-            FS::PlatformFile source;
-            if (not source.Open(*application->ServerModuleUpdatePath, FS::Mode::Read))
+            FileSystem::PlatformFile source;
+            if (not source.Open(*application->ServerModuleUpdatePath, FileSystem::Mode::Read))
             {
                 LogError.log("Skylar") << "File '" << *application->ServerModuleUpdatePath << "' cannot be open";
                 return false;
             }
             
-            FS::PlatformFile destination;
-            if (not destination.Open(*moduleNameNew, FS::Mode::CreateAndWrite))
+            FileSystem::PlatformFile destination;
+            if (not destination.Open(*moduleNameNew, FileSystem::Mode::CreateAndWrite))
             {
                 LogError.log("Skylar") << "File '" << *moduleName << "' cannot be open";
                 return false;

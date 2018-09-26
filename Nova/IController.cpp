@@ -57,15 +57,15 @@ namespace Neko
             
         }
 
-        bool IController::VerifyRequest()
+        bool IController::CheckRequest()
         {
-            if (!IsCsrfProtectionEnabled())
+            if (not CsrfProtectionEnabled())
             {
                 return true;
             }
             
-            const String& sessionStorageType = Options::SessionOptions().StorageType;
-            if (sessionStorageType != "cookie")
+            const auto& sessionStorageType = Options::SessionOptions().StorageType;
+            if (sessionStorageType != SessionStorageType::Cookie)
             {
                 if (Session.GetId().IsEmpty())
                 {
@@ -86,6 +86,7 @@ namespace Neko
                 return false;
             }
             
+            // taken from asp.net core code
             if (not Options::SessionOptions().SuppressXFrameOptionsHeader)
             {
                 if (auto frameIt = HttpResponse.Headers.Find("x-frame-options"); !frameIt.IsValid())
@@ -100,10 +101,10 @@ namespace Neko
 
         String IController::GetAuthToken()
         {
-            if (Options::SessionOptions().StorageType == "cookie")
+            if (Options::SessionOptions().StorageType == SessionStorageType::Cookie)
             {
-                const String& key = Options::SessionOptions().CsrfKey;
-                const String& csrfId = Session.GetValue(key);
+                const auto& key = Options::SessionOptions().CsrfKey;
+                const auto& csrfId = Session.GetValue(key);
                 
                 if (csrfId.IsEmpty())
                 {
@@ -114,7 +115,7 @@ namespace Neko
             }
             else
             {
-                String value = Session.GetId();
+                auto value = Session.GetId();
                 value += Options::SessionOptions().Secret;
                 
                 String result;
@@ -131,7 +132,7 @@ namespace Neko
         
         bool IController::AddCookie(const Cookie& cookie)
         {
-            if (const String& name = cookie.Name; name.IsEmpty() or FindFirstOf(*name, ";, \"") != INDEX_NONE)
+            if (const auto& name = cookie.Name; name.IsEmpty() or FindFirstOf(*name, ";, \"") != INDEX_NONE)
             {
                 LogError.log("Nova") << "Couldn't add cookie with incorrect name: \"" << *name << "\"";
                 

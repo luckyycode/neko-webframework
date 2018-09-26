@@ -47,7 +47,7 @@ namespace Neko
         }
         
         
-        bool FormUrlencoded::Parse(const Neko::String& buffer, Http::RequestDataInternal& requestData, ContentDesc* contentDesc) const
+        bool FormUrlencoded::ParseFromBuffer(const Neko::String& buffer, Http::RequestDataInternal& requestData, ContentDesc* contentDesc) const
         {
             if (buffer.IsEmpty())
             {

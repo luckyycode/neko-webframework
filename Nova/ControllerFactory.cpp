@@ -55,18 +55,18 @@ namespace Neko
         /** Creates a new cookie session. */
         static void StoreSessionCookie(IController& controller)
         {
-            const int32& cookieLifetime = Options::SessionOptions().Lifetime;
-            const auto& cookiePath = Options::SessionOptions().CookiePath;
+            const int32& lifetime = Options::SessionOptions().Lifetime;
+            const auto& path = Options::SessionOptions().CookiePath;
             
             TimeValue value;
             
-            value.SetSeconds(static_cast<int64>(cookieLifetime));
+            value.SetSeconds(static_cast<int64>(lifetime));
             const DateTime expire = DateTime::UtcNow() + value;
             
             Cookie cookie(Session::GetSessionName(), controller.Session.GetId());
             
             cookie.ExpirationDate = expire;
-            cookie.Path = cookiePath;
+            cookie.Path = path;
             cookie.Secure = false;
             cookie.HttpOnly = true;
             
@@ -77,7 +77,7 @@ namespace Neko
         void ControllerFactory::SetSession(Http::Request& request, IController& controller)
         {
             // session
-            if (not controller.IsSessionEnabled())
+            if (not controller.IsSessionSupported())
             {
                 return;
             }
@@ -88,7 +88,7 @@ namespace Neko
             {
                 TArray<Cookie> cookies;
                 
-                const String& cookieString = cookieIt.value();
+                const auto& cookieString = cookieIt.value();
                 Cookie::ParseCookieString(cookieString, cookies);
                 
                 const int32 index = cookies.Find([](const Cookie& other) {
@@ -98,7 +98,7 @@ namespace Neko
                 
                 if (index != INDEX_NONE)
                 {
-                    const String& sessionId = cookies[index].Value;
+                    const auto& sessionId = cookies[index].Value;
                     // find a session
                     session = SessionManager.FindSession(sessionId);
                 }
@@ -118,10 +118,10 @@ namespace Neko
                 auto* const context = contextIt.value();
                 
                 // create a brand new controller
-                IController* controller = context->CreateController(request, response);
+                auto* controller = context->CreateController(request, response);
                 
                 // set query params
-                controller->SetUrlParameters(routing.Params);
+                controller->SetUrlParameters(routing.Parameters);
                 controller->SetUserManager(&UserManager);
                 
                 // session
@@ -130,14 +130,14 @@ namespace Neko
                 bool verified = true;
                 
                 // verify authentication token
-                if (Options::SessionOptions().IsCsrfProtectionEnabled && controller->IsCsrfProtectionEnabled())
+                if (Options::SessionOptions().CsrfProtectionEnabled && controller->CsrfProtectionEnabled())
                 {
                     // only for specified methods
                     
                     if (const auto& method = request.Method;
                         method != "get" && method != "head" && method != "options" && method != "trace")
                     {
-                        verified = controller->VerifyRequest();
+                        verified = controller->CheckRequest();
                         if (!verified)
                         {
                             LogWarning.log("Nova") << "Incorrect authenticity token!";
@@ -147,7 +147,7 @@ namespace Neko
                 
                 if (verified)
                 {
-                    if (controller->IsSessionEnabled())
+                    if (controller->IsSessionSupported())
                     {
                         if (Options::SessionOptions().AutoIdRenewal || !controller->Session.IsValid())
                         {
@@ -155,7 +155,7 @@ namespace Neko
                             SessionManager.Remove(controller->Session.Id);
 
                             // make new session id
-                            controller->Session.Id = SessionManager.GenerateSessionId();
+                            controller->Session.Id = SessionManager.NewSessionId();
                         }
 
                         // update csrf data
@@ -171,7 +171,7 @@ namespace Neko
                         controller->PostFilter();
                         
                         // session store
-                        if (controller->IsSessionEnabled())
+                        if (controller->IsSessionSupported())
                         {
                             bool stored = SessionManager.Store(controller->Session);
                             if (stored)
@@ -204,7 +204,7 @@ namespace Neko
                 
                 context->ReleaseController(controller);
                 
-                // Session GC
+                // Session cache cleanup
                 SessionManager.ClearSessionsCache();
                 
                 return;
@@ -216,7 +216,7 @@ namespace Neko
 
         void ControllerFactory::Clear()
         {
-            if (!this->ControllerDispatcher.IsEmpty())
+            if (not this->ControllerDispatcher.IsEmpty())
             {
                 for (auto* context : this->ControllerDispatcher)
                 {

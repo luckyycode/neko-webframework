@@ -36,13 +36,13 @@ namespace Neko
     namespace Nova
     {
         Route::Route(IAllocator& allocator)
-        : ComponentList(allocator)
-        , KeywordIndexes(allocator)
+        : Components(allocator)
+        , ParamIndexes(allocator)
         , Controller(allocator)
         , Action(allocator)
         , Method(Http::None)
-        , ParameterNum(0)
-        , HasVariableParams(false)
+        , ParamCount(0)
+        , HasCustomParams(false)
         {
         }
     }

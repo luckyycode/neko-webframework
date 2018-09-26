@@ -37,7 +37,7 @@
 #include "Engine/Core/Profiler.h"
 #include "Engine/Network/Http/Response.h"
 #include "Engine/Platform/Platform.h"
-#include "Engine/FS/PlatformFile.h"
+#include "Engine/FileSystem/PlatformFile.h"
 
 #include "Engine/Core/Log.h"
 
@@ -45,16 +45,16 @@ namespace Neko
 {
     namespace Skylar
     {
-        IProtocol::IProtocol(ISocket& socket, const ServerSettings* settings, IAllocator& allocator)
+        IProtocol::IProtocol(ISocket& socket, const ServerSharedSettings* settings, IAllocator& allocator)
         : Socket(socket)
-        , Settings(settings)
+        , SharedSettings(settings)
         , Allocator(allocator)
         , Timer()
         { }
         
         IProtocol::IProtocol(const IProtocol& protocol)
         : Socket(protocol.Socket)
-        , Settings(protocol.Settings)
+        , SharedSettings(protocol.SharedSettings)
         , Allocator(protocol.Allocator)
         , Timer()
         { }
@@ -101,7 +101,7 @@ namespace Neko
             return this->SendHeaders(response.Status, headers, timeout, end);
         }
         
-        void IProtocol::RunApplication(Http::Request& request, const ApplicationSettings& applicationSettings) const
+        void IProtocol::RunApplication(Http::Request& request, const PoolApplicationSettings& applicationSettings) const
         {
             PROFILE_FUNCTION()
             
@@ -154,7 +154,7 @@ namespace Neko
                 return nullptr;
             }
             
-            const String& header = it.value();
+            const auto& header = it.value();
             
             String contentTypeName(allocator);
             THashMap<String, String> contentParams(allocator);
@@ -174,17 +174,17 @@ namespace Neko
                     
                     if (delimiter >= paramEnd)
                     {
-                        String paramName = header.Mid(paramCur, (paramEnd != INDEX_NONE) ? paramEnd - paramCur : INT_MAX).Trim();
+                        auto paramName = header.Mid(paramCur, (paramEnd != INDEX_NONE) ? paramEnd - paramCur : INT_MAX).Trim();
                         
                         contentParams.Insert(Neko::Move(paramName), Neko::String::Empty);
                     }
                     else
                     {
-                        String paramName = header.Mid(paramCur, delimiter - paramCur).Trim();
+                        auto paramName = header.Mid(paramCur, delimiter - paramCur).Trim();
                         
                         ++delimiter;
                         
-                        String paramValue = header.Mid(delimiter, (paramEnd != INDEX_NONE) ? paramEnd - delimiter : INT_MAX).Trim();
+                        auto paramValue = header.Mid(delimiter, (paramEnd != INDEX_NONE) ? paramEnd - delimiter : INT_MAX).Trim();
                     
                         contentParams.Insert(Neko::Move(paramName), Neko::Move(paramValue)
                                              );
@@ -205,7 +205,7 @@ namespace Neko
             
             ulong dataLength = 0;
             
-            const IContentType* contentType = contentTypeIt.value();
+            const auto* contentType = contentTypeIt.value();
             const auto contentLengthIt = requestData.IncomingHeaders.Find("content-length");
             
             if (contentLengthIt.IsValid())
@@ -214,9 +214,9 @@ namespace Neko
             }
             
             // transient content data
-            void* state = contentType->CreateState(requestData, contentParams);
+            auto* state = contentType->CreateState(requestData, contentParams);
             
-            ContentDesc* contentDesc = NEKO_NEW(allocator, ContentDesc)
+            auto* contentDesc = NEKO_NEW(allocator, ContentDesc)
             {
                 dataLength,
                 0, 0,
@@ -230,7 +230,7 @@ namespace Neko
         
         void IProtocol::DestroyContentDescriptor(void* source, IAllocator& allocator)
         {
-            ContentDesc* content = static_cast<ContentDesc* >(source);
+            auto* content = static_cast<ContentDesc* >(source);
             
             if (content != nullptr)
             {
@@ -392,7 +392,7 @@ namespace Neko
             // ulong should be enough
             ulong contentLength = 0;
             
-            const TArray<Tuple<ulong, ulong> > ranges = GetRanges(rangeHeader, valueOffset, fileSize, &contentRangeHeader, &contentLength , allocator);
+            const auto ranges = GetRanges(rangeHeader, valueOffset, fileSize, &contentRangeHeader, &contentLength , allocator);
             
             if (contentLength == 0)
             {
@@ -402,9 +402,9 @@ namespace Neko
             }
             
             // Range(s) transfer
-            FS::PlatformFile file;
+            FileSystem::PlatformFile file;
             
-            if (not file.Open(*fileName, FS::Mode::Read))
+            if (not file.Open(*fileName, FileSystem::Mode::Read))
             {
                 file.Close();
                 LogError.log("Skylar") << "SendPartial: Couldn't open file for transfer.";
@@ -414,7 +414,7 @@ namespace Neko
                 return false;
             }
             
-            const String mimeType = GetMimeByFileName(fileName, mimeTypes);
+            const auto mimeType = GetMimeByFileName(fileName, mimeTypes);
             
             String contentLengthString(allocator);
             contentLengthString += (uint64)contentLength;
@@ -481,7 +481,7 @@ namespace Neko
         }
         
         static bool Sendfile(const IProtocol& protocol, const Http::Request &request, TArray<std::pair<String, String> >& extraHeaders,
-                             const String& fileName, const THashMap<String, String>& mimeTypes, const bool headersOnly, IAllocator& allocator)
+                             const String& fileName, const ServerSharedSettings& settings, const bool headersOnly, IAllocator& allocator)
         {
             // Current time in Gmt
             const auto now = DateTime::GmtNow().ToRfc882();
@@ -517,7 +517,7 @@ namespace Neko
             
             // If-Modified header
             
-            // if its valid, check file moditification time
+            // if its valid, check file modification time
             if (
                 const auto modifiedIt = request.IncomingHeaders.Find("if-modified-since"); modifiedIt.IsValid())
             {
@@ -531,6 +531,8 @@ namespace Neko
                 }
             }
             
+            const auto& mimeTypes = settings.SupportedMimeTypes;
+            
             // Range transfer
             const auto rangeIt = request.IncomingHeaders.Find("range");
             
@@ -542,9 +544,9 @@ namespace Neko
             }
             
             // File transfer
-            FS::PlatformFile file;
+            FileSystem::PlatformFile file;
             
-            if (not file.Open(*fileName, FS::Mode::Read))
+            if (not file.Open(*fileName, FileSystem::Mode::Read))
             {
                 file.Close();
                 LogError.log("Skylar") << "Couldn't open requested file!";
@@ -554,7 +556,7 @@ namespace Neko
                 return false;
             }
             
-            const String mimeType = GetMimeByFileName(fileName, mimeTypes);
+            const auto mimeType = GetMimeByFileName(fileName, mimeTypes);
             // format datetime
             const auto lastModifiedGmt = DateTime::GmtNow().ToRfc882();
             
@@ -606,43 +608,42 @@ namespace Neko
         
         bool IProtocol::Sendfile(Http::Request& request) const
         {
-            assert(this->Settings != nullptr);
+            assert(this->SharedSettings != nullptr);
             
             auto sendfileIt = request.OutgoingHeaders.Find("x-sendfile");
             
-            if (sendfileIt.IsValid())
+            if (not sendfileIt.IsValid())
             {
-                TArray< std::pair<String, String> > headers(Allocator);
-                
-                if (request.ProtocolVersion == Http::Version::Http_1)
-                {
-                    if (IsConnectionReuse(request))
-                    {
-                        headers.Emplace("connection", "keep-alive");
-                        
-                        String value("timeout=5; max=", Allocator);
-                        value += request.KeepAliveTimeout;
-                        
-                        headers.Emplace("keep-alive", value);
-                    }
-                    else
-                    {
-                        headers.Emplace("connection", "close");
-                    }
-                }
-                
-                // maybe we only need the info
-                const bool headersOnly = (request.Method == "head");
-                
-                const auto& mimeTypes = Settings->SupportedMimeTypes;
-                // doesnt assume that file is sent successfully
-                bool success = Skylar::Sendfile(*this, request, headers, sendfileIt.value(), mimeTypes, headersOnly, Allocator);
-                NEKO_UNUSED(success)
-                
-                return true;
+                return false;
             }
             
-            return false;
+            TArray< std::pair<String, String> > headers(Allocator);
+            
+            if (request.ProtocolVersion == Http::Version::Http_1)
+            {
+                if (IsConnectionInReuse(request))
+                {
+                    headers.Emplace("connection", "keep-alive");
+                    
+                    String value("timeout=5; max=", Allocator);
+                    value += request.KeepAliveTimeout;
+                    
+                    headers.Emplace("keep-alive", value);
+                }
+                else
+                {
+                    headers.Emplace("connection", "close");
+                }
+            }
+            
+            // maybe we only need the info
+            const bool headersOnly = (request.Method == "head");
+            
+            // doesnt assume that file is sent successfully
+            bool success = Skylar::Sendfile(*this, request, headers, sendfileIt.value(), *SharedSettings, headersOnly, Allocator);
+            NEKO_UNUSED(success)
+            
+            return true;
         }
     }
 }

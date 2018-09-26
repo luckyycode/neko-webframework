@@ -23,7 +23,7 @@
 // | |\  |  __/   < (_) | |  _|| | | (_| | | | | | |  __/\ V  V / (_) | |  |   <
 // |_| \_|\___|_|\_\___/  |_|  |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
 //
-//  Settings.h
+//  SharedSettings.h
 //  Neko Framework
 //
 //  Copyright © 2018 Neko Vision. All rights reserved.
@@ -34,11 +34,11 @@
 #include "Engine/Core/Module.h"
 
 #include "ContentTypes/IContentType.h"
-#include "ApplicationSettings.h"
+#include "PoolApplicationSettings.h"
 
 namespace Neko
 {
-    namespace FS
+    namespace FileSystem
     {
         class IFileSystem;
     }
@@ -46,7 +46,7 @@ namespace Neko
     namespace Skylar
     {
         /** Common server settings. */
-        class ServerSettings
+        class ServerSharedSettings
         {
             /** Server application list. */
             class ApplicationsList
@@ -56,13 +56,13 @@ namespace Neko
                 ApplicationsList(IAllocator& allocator);
                 
                 /** Adds application in the list */
-                void AddApplication(const String& name, ApplicationSettings* settings);
+                void AddApplication(const String& name, PoolApplicationSettings* settings);
                 
                 /** Recursively looks up for appsettings. */
-                ApplicationSettings* Find(const String& name) const;
+                PoolApplicationSettings* Find(const String& name) const;
                 
                 /** Collects all settings from every node. */
-                void GetAllApplicationSettings(TArray< ApplicationSettings* >& applications) const;
+                void GetAllApplicationSettings(TArray< PoolApplicationSettings* >& applications) const;
                 
                 void Clear();
                 
@@ -70,7 +70,7 @@ namespace Neko
                 
             public:
                 
-                struct ApplicationSettings* ApplicationSettings;
+                struct PoolApplicationSettings* PoolApplicationSettings;
                 
                 THashMap< String, ApplicationsList* > List;
                 
@@ -79,9 +79,9 @@ namespace Neko
             
         public:
             
-            ServerSettings(FS::IFileSystem& fileSystem, IAllocator& allocator);
+            ServerSharedSettings(FileSystem::IFileSystem& fileSystem, IAllocator& allocator);
             
-            ~ServerSettings();
+            ~ServerSharedSettings();
             
             /** Adds content type to supported content types list. */
             void AddContentType(IContentType& contentType);
@@ -91,26 +91,28 @@ namespace Neko
         private:
             
             /** Adds application which will be used by server to lookup. */
-            bool AddApplication(const String& application, ApplicationSettings* settings);
+            bool AddApplication(const String& application, PoolApplicationSettings* settings);
             
         public:
             
             /** Returns all applications. */
-            void GetAllApplicationSettings(TArray< ServerSettings::ApplicationsList* >& applications);
+            void GetAllApplicationSettings(TArray< ServerSharedSettings::ApplicationsList* >& applications);
             
             /**
              * Configuration parsing for each app.
              */
             bool LoadAppSettings(const String& file, TArray< Module >& modules);
             
-            bool SetApplicationModuleMethods(ApplicationSettings& settings, Module& module);
+            bool SetApplicationModuleMethods(PoolApplicationSettings& settings, Module& module);
             
             int16 LoadModule(const String& name, const char* rootDirectory, TArray< Module >& modules,
-                             ApplicationSettings& settings);
+                             PoolApplicationSettings& settings);
             
-            void GetAllApplicationSettings(TArray< ApplicationSettings* >& applications);
+            void GetAllApplicationSettings(TArray< PoolApplicationSettings* >& applications);
             
         public:
+            
+            // @todo extend this
             
             //! Maximum amount of threads that server can use. If 0, we'll machine available cores.
             int32 ThreadsMaxCount;
@@ -132,7 +134,7 @@ namespace Neko
         private:
             
             IAllocator& Allocator;
-            FS::IFileSystem& FileSystem;
+            FileSystem::IFileSystem& FileSystem;
         };
     }
 }

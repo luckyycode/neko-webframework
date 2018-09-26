@@ -41,7 +41,7 @@ namespace Neko
 {
     namespace Nova
     {
-        // Url router for controllers.
+        // Url router for controllers and actions.
         class Router
         {
         public:
@@ -57,11 +57,10 @@ namespace Neko
              *
              * @param method    Http method (e.g. get, post, etc...)
              * @param path      Controller path.
-             * @param controllerAction  Controller and action (format - controller#action).
              *
              * @return TRUE if route has been processed and successfully created.
              */
-            bool AddRoute(const Http::Method method, const String& path, const String& controllerAction);
+            bool AddRoute(const Http::Method method, const String& path, const String& controller, const String& action);
             
             /**
              * Looks up for a routing.
@@ -71,22 +70,22 @@ namespace Neko
              *
              * @return Routing object (check Valid field to check if routing is found).
              */
-            Routing FindRouting(const String& method, TArray<String>& components) const;
+            Routing FindRoute(const String& method, TArray<String>& components) const;
             
-            /** @copydoc Router::FindRouting */
-            Routing FindRouting(Http::Method method, TArray<String>& components) const;
+            /** @copydoc Router::FindRoute */
+            Routing FindRoute(Http::Method method, TArray<String>& components) const;
             
-            Routing FindRouting(const String& method, const String& uri) const;
+            Routing FindRoute(const String& method, const String& uri) const;
             
             /** Builds url with action and controller with parameters. */
-            String FindUrl(const String& controller, const String& action, const TArray<String>& params) const;
+            String FindUrlByController(const String& controller, const String& action, const TArray<String>& params) const;
             
             /** Splits the given path to array (differs from ParseIntoArray). */
-            static void SplitPath(TArray<String>& outArray, const String& path);
+            static void ParsePathForRoute(TArray<String>& outArray, const String& path);
             
         private:
             
-            String GeneratePath(const TArray<String>& components, const TArray<String>& params) const;
+            String GeneratePathFromComponents(const TArray<String>& components, const TArray<String>& params) const;
             
             void PrintAllRoutes();
             

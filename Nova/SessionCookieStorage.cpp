@@ -76,6 +76,7 @@ namespace Neko
             Session session(sessionId);
             if (sessionId.IsEmpty())
             {
+                LogWarning.log("Nova") << "SessionCookieStorage: Empty session id.";
                 return session;
             }
             
@@ -84,24 +85,25 @@ namespace Neko
             
             if (rawData.GetSize() == 2)
             {
-                String unhexSessionData(rawData[0].Length());
+                String sessionDataRaw(rawData[0].Length());
                 
-                Util::HexToBytes(rawData[0], (uint8* )*unhexSessionData);
+                Util::HexToBytes(rawData[0], (uint8* )*sessionDataRaw);
                 
                 String sessionData;
-                sessionData.Append(*unhexSessionData, unhexSessionData.GetCapacity() / 2);
+                sessionData.Append(*sessionDataRaw, sessionDataRaw.GetCapacity() / 2);
                 sessionData += Options::SessionOptions().Secret;
                 
+                // @todo sha!
                 const uint32 dataHash = Crc32(*sessionData, sessionData.Length());
                 const uint32 digest = StringToUnsignedLong(*rawData[1]);
                 
                 if (dataHash != digest)
                 {
-//                    LogWarning.log("Nova") << "Probably a tampered cookie detected!";
+//                    LogWarning.log("Nova") << "Probably a strange cookie detected!";
                     return session;
                 }
                 
-                InputData data((void* )*unhexSessionData, INT_MAX);
+                InputData data((void* )*sessionDataRaw, INT_MAX);
                 data >> *static_cast<SessionMap* >(&session);
             }
             return session;

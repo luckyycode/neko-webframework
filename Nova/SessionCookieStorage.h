@@ -53,7 +53,7 @@ namespace Neko
             
             virtual bool Remove(const String& sessionId) override { return true; };
             
-            NEKO_FORCE_INLINE String GetName() const { return "cookie"; }
+            NEKO_FORCE_INLINE SessionStorageType GetType() const { return SessionStorageType::Cookie; }
         };
     }
 }

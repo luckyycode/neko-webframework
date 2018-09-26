@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Conventions/Enums/SessionCookieType.h"
+
 namespace Neko
 {
     namespace Nova
@@ -7,10 +9,10 @@ namespace Neko
         /// Identity session options.
         struct SessionOptions
         {
+            // Name of the cookie to use.
             String Name;
             
             String CookiePath;
-            String StorageType;
             
             String Secret;
             
@@ -18,12 +20,11 @@ namespace Neko
             
             uint32 Lifetime;
             
-            uint16 MaxGcLifetime;
+            SessionStorageType StorageType;
             
-            uint16 GcProbability;
+            bool CsrfProtectionEnabled : 1;
             
-            bool IsCsrfProtectionEnabled : 1;
-            
+            // Skip X-FRAME-OPTIONS header.
             bool SuppressXFrameOptionsHeader : 1;
             
             bool AutoIdRenewal : 1;
@@ -36,6 +37,7 @@ namespace Neko
             template<typename TFunc>
             inline Options& ConfigureSession(TFunc func)
             {
+                // imitate expressions lol
                 func(this->Session);
                 return *this;
             }

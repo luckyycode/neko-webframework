@@ -31,7 +31,7 @@
 
 #pragma once
 
-#include "../ApplicationSettings.h"
+#include "../PoolApplicationSettings.h"
 
 namespace Neko
 {

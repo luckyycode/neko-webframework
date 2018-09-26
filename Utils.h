@@ -87,7 +87,7 @@ namespace Neko
             == Net::Http::ConnectionParams::Connection_LeaveOpen;
         }
         
-        NEKO_FORCE_INLINE bool IsConnectionReuse(const Http::Request& request)
+        NEKO_FORCE_INLINE bool IsConnectionInReuse(const Http::Request& request)
         {
             return (request.ConnectionParams & Net::Http::ConnectionParams::Connection_Reuse)
             == Net::Http::ConnectionParams::Connection_Reuse;

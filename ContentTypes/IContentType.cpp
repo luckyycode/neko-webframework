@@ -42,7 +42,7 @@ namespace Neko
         
         const String& IContentType::GetName() const
         {
-            return Name;
+            return this->Name;
         }
         
         void* IContentType::CreateState(const Http::RequestDataInternal& requestData , const THashMap<String, String>& contentParams) const

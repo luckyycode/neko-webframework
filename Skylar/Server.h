@@ -37,8 +37,8 @@
 #include "Engine/Network/SocketQueue.h"
 #include "Engine/Platform/SocketList.h"
 
-#include "Controls.h"
-#include "../Settings.h"
+#include "CycleManager.h"
+#include "../SharedSettings.h"
 
 #include "../Tls.h"
 
@@ -53,7 +53,7 @@ namespace Neko
         {
         public:
             
-            Server(IAllocator& allocator, class FS::IFileSystem& fileSystem);
+            Server(IAllocator& allocator, class FileSystem::IFileSystem& fileSystem);
             
             ~Server() { }
             
@@ -99,10 +99,10 @@ namespace Neko
             void UpdateApplications();
             
             /** Updates the specified server module. */
-            bool UpdateApplication(Module& module, TArray< ApplicationSettings* >& applications, const uint32 moduleIndex);
+            bool UpdateApplication(Module& module, TArray< PoolApplicationSettings* >& applications, const uint32 moduleIndex);
             
             
-            void* InitSsl(const ApplicationSettings& application);
+            void* InitSsl(const PoolApplicationSettings& application);
             
             void CloseListeners();
             
@@ -110,7 +110,7 @@ namespace Neko
             
             IAllocator& Allocator;
             
-            FS::IFileSystem& FileSystem;
+            FileSystem::IFileSystem& FileSystem;
             
         public:
             
@@ -128,7 +128,7 @@ namespace Neko
         public:
             
             //! Shared external server controls.
-            mutable ServerSharedControls Controls;
+            mutable CycleManager Controls;
             
             void kek(void* kek);
             
@@ -137,7 +137,7 @@ namespace Neko
             SocketList SocketsList;
             
             //! Shared server settings
-            ServerSettings Settings;
+            ServerSharedSettings Settings;
             
             //! Global server mutex.
             mutable MT::SpinMutex Mutex;

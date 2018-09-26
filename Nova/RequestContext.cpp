@@ -33,7 +33,7 @@
 #include "Engine/Core/Profiler.h"
 
 
-#include "Engine/FS/FileSystem.h"
+#include "Engine/FileSystem/FileSystem.h"
 #include "Engine/Data/JsonSerializer.h"
 
 #include "Engine/Network/Http/Response.h"
@@ -83,7 +83,7 @@ namespace Neko
             }
         }
         
-        RequestContext::RequestContext(IAllocator& allocator, FS::IFileSystem& fileSystem)
+        RequestContext::RequestContext(IAllocator& allocator, FileSystem::IFileSystem& fileSystem)
         : Allocator(allocator)
         , FileSystem(fileSystem)
         , MainRouter(allocator)
@@ -96,14 +96,12 @@ namespace Neko
             {
                 session.Name = "Neko.CoolCookie";
                 session.AutoIdRenewal = false;
-                session.CookiePath = "cookiePath";
-                session.IsCsrfProtectionEnabled = true;
+                session.CookiePath = "path";
+                session.CsrfProtectionEnabled = true;
                 session.CsrfKey = "identitysecretkey1337";
                 session.Lifetime = 3600;
                 session.Secret = "qwerty1234567890";
-                session.GcProbability = 5;
-                session.MaxGcLifetime = 1000;
-                session.StorageType = "cookie";
+                session.StorageType = SessionStorageType::Cookie;
             });
             
             LogInfo.log("Nova") << "Nova request context initialized";
@@ -151,7 +149,7 @@ namespace Neko
             // Match route
             
             // route request to controllers
-            auto routing = MainRouter.FindRouting(request.Method, clearUri);
+            auto routing = MainRouter.FindRoute(request.Method, clearUri);
             
             if (routing.IsValid)
             {

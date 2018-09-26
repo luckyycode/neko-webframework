@@ -48,16 +48,16 @@ namespace Neko
             Route(IAllocator& allocator);
 
             // url parameters (not query parameters)
-            uint8 ParameterNum;
-            bool HasVariableParams;
+            uint8 ParamCount;
+            bool HasCustomParams;
             
             Http::Method Method;
             
-            TArray<String> ComponentList;
-            TArray<int16>  KeywordIndexes;
-            
             String Controller;
             String Action;
+            
+            TArray<String> Components;
+            TArray<int16>  ParamIndexes;
         };
     }
 }

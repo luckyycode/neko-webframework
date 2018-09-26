@@ -77,13 +77,11 @@ namespace Neko
                 
                 if (IsValid())
                 {
-                    // Build controller#action string
-                    StaticString<16> controllerActionName(this->Name, "#", action);
                     // Build controller action uri
                     StaticString<16> controllerActionPath(this->Path, "/", action, "/", params);
                     
                     // Save route
-                    bool success = Router.AddRoute(method, *controllerActionPath, *controllerActionName);
+                    bool success = Router.AddRoute(method, *controllerActionPath, *this->Name, action);
                     if (success)
                     {
                         ControllerAction controllerAction;

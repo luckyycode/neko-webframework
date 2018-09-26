@@ -70,20 +70,20 @@ namespace Neko
     
     void TelegramApi::SetWebHook(const char* domain, const char* certificate/* = nullptr*/)
     {
-        TArray<Http::HttpRequestParam> args(Allocator);
+        TArray<Http::HttpRequestParam> params(Allocator);
         
-        args.Reserve(2);
-        args.Emplace("url", domain);
+        params.Reserve(2);
+        params.Emplace("url", domain);
         
         if (certificate != nullptr)
         {
-            args.Emplace("certificate", certificate);
+            params.Emplace("certificate", certificate);
         }
         
         String response(Allocator);
         response.Reserve(1024);
         
-        SendBotRequest("setWebhook", args, response);
+        SendBotRequest("setWebhook", params, response);
     }
     
     bool TelegramApi::SendRequest(const Http::Url& url, const TArray<Http::HttpRequestParam>& parameters, String& response)
@@ -117,7 +117,7 @@ namespace Neko
             return false;
         }
         
-        const String requestText = Http::Client::GenerateRequest(url, parameters, false);
+        const auto requestText = Http::Client::GenerateRequest(url, parameters, false);
         
         long bytes = socketSsl.SendAllPacketsWait(*requestText, requestText.Length(), -1);
         if (bytes < 0)
@@ -141,31 +141,31 @@ namespace Neko
     
     void TelegramApi::SendMessage(long chatId, String message, const char* parseMode/* = ""*/)
     {
-        TArray<Http::HttpRequestParam> args(Allocator);
+        TArray<Http::HttpRequestParam> params(Allocator);
         
-        args.Reserve(3);
-        args.Emplace("chat_id", (int64)chatId);
-        args.Emplace("text", *message);
-		args.Emplace("parse_mode", parseMode);
+        params.Reserve(3);
+        params.Emplace("chat_id", (int64)chatId);
+        params.Emplace("text", *message);
+		params.Emplace("parse_mode", parseMode);
         
         String response(Allocator);
         response.Resize(1024);
         
-        SendBotRequest("sendMessage", args, response);
+        SendBotRequest("sendMessage", params, response);
     }
         
     void TelegramApi::SendSticker(long chatId, String id)
     {
-        TArray<Http::HttpRequestParam> args(Allocator);
+        TArray<Http::HttpRequestParam> params(Allocator);
         
-        args.Reserve(2);
-        args.Emplace("chat_id", (int64)chatId);
-        args.Emplace("sticker", *id);
+        params.Reserve(2);
+        params.Emplace("chat_id", (int64)chatId);
+        params.Emplace("sticker", *id);
         
         String response(Allocator);
         response.Resize(1024);
         
-        SendBotRequest("sendSticker", args, response);
+        SendBotRequest("sendSticker", params, response);
     }
 	
 	// temp, get these from shared settings?
@@ -185,22 +185,22 @@ namespace Neko
 	
 	void TelegramApi::SendPhoto(long chatId, const char* filename, uint8* data, ulong size)
 	{ 
-		TArray<Http::HttpRequestParam> args(Allocator);
+		TArray<Http::HttpRequestParam> params(Allocator);
         
-        args.Reserve(2);
-        args.Emplace("chat_id", (int64)chatId);
+        params.Reserve(2);
+        params.Emplace("chat_id", (int64)chatId);
 		
 		const auto mimeType = Skylar::GetMimeByFileName(filename, GetPhotoMimeTypes());
 		
         Http::HttpRequestParam photoItem("photo", "", true, mimeType, filename);
         photoItem.value.Append((const char* )data, size);
         
-        args.Emplace(photoItem);
+        params.Emplace(photoItem);
 		
         String response(Allocator);
         response.Resize(1024);
         
-        SendBotRequest("sendPhoto", args, response);
+        SendBotRequest("sendPhoto", params, response);
 	}
 	
     bool TelegramApi::SendBotRequest(String method, const TArray<Http::HttpRequestParam>& parameters, String& response)

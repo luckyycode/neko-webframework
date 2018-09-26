@@ -32,6 +32,7 @@
 #pragma once
 
 #include "Engine/Utilities/NekoString.h"
+#include "Conventions/Enums/SessionCookieType.h"
 
 namespace Neko
 {
@@ -42,25 +43,15 @@ namespace Neko
         /// Session storage factory. Creates the requested session storages.
         class SessionStorageFactory
         {
-        private:
-            
-            /** Available storage types. */
-            enum StorageType
-            {
-                Invalid = 0,
-                
-                Cookie,
-            };
-            
         public:
             
-            /** Returns the list of available storage key names. */
-            static TArray<String> GetAvailableStorageTypes();
+            /** Returns the list of available storage key type names. */
+            //static TArray<SessionStorageFactory> GetAvailableStorageTypes();
 
             /** Lookups a needed storage by the key. */
-            static ISessionStorage* Get(const String& name);
+            static ISessionStorage* Get(const SessionStorageType type);
             /** Removes data if session storage has created any. */
-            static void Cleanup(const String& name, ISessionStorage& storage);
+            static void Cleanup(const SessionStorageType type, ISessionStorage& storage);
         };
     }
 }

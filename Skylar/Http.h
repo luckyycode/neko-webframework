@@ -48,7 +48,7 @@ namespace Neko
             
             // See comments in IProtocol.
             
-            ProtocolHttp(class ISocket& socket, const ServerSettings* settings, IAllocator& allocator);
+            ProtocolHttp(class ISocket& socket, const ServerSharedSettings* settings, IAllocator& allocator);
             
             virtual IProtocol* Process() override;
             
@@ -56,7 +56,7 @@ namespace Neko
             
             virtual bool SendHeaders(const Http::StatusCode status, TArray<std::pair<String, String> >& headers, const int32& timeout, bool end/* = true*/) const override;
             
-            virtual void WriteRequest(char* data, const Http::Request& request, const ApplicationSettings& applicationSettings) const override;
+            virtual void WriteRequest(char* data, const Http::Request& request, const PoolApplicationSettings& applicationSettings) const override;
             
             virtual void ReadResponse(Http::Request& request, const Http::ResponseData& responseData) const override;
             
@@ -64,9 +64,9 @@ namespace Neko
             
         private:
             
-            const ApplicationSettings* GetApplicationSettingsForRequest(Http::Request& request, const bool secure) const;
+            const PoolApplicationSettings* GetApplicationSettingsForRequest(Http::Request& request, const bool secure) const;
             
-            Http::StatusCode GetRequestData(Http::Request& request, String& buffer, const ApplicationSettings& applicationSettings) const;
+            Http::StatusCode GetRequestData(Http::Request& request, String& buffer, const PoolApplicationSettings& applicationSettings) const;
             
         protected:
             

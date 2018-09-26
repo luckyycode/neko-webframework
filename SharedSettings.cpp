@@ -32,19 +32,19 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Path.h"
 #include "Engine/Data/JsonSerializer.h"
-#include "Engine/FS/PlatformFile.h"
-#include "Engine/FS/FileSystem.h"
+#include "Engine/FileSystem/PlatformFile.h"
+#include "Engine/FileSystem/FileSystem.h"
 #include "Engine/Platform/Platform.h"
 
 #include "ContentTypes/ContentTypes.h"
 
-#include "Settings.h"
+#include "SharedSettings.h"
 
 namespace Neko
 {
     namespace Skylar
     {
-        ServerSettings::ServerSettings(FS::IFileSystem& fileSystem, IAllocator& allocator)
+        ServerSharedSettings::ServerSharedSettings(FileSystem::IFileSystem& fileSystem, IAllocator& allocator)
         : Allocator(allocator)
         , FileSystem(fileSystem)
         , List(allocator)
@@ -55,21 +55,21 @@ namespace Neko
         {
         }
         
-        ServerSettings::~ServerSettings()
+        ServerSharedSettings::~ServerSharedSettings()
         {
             Clear();
         }
         
-        void ServerSettings::AddContentType(IContentType& contentType)
+        void ServerSharedSettings::AddContentType(IContentType& contentType)
         {
             LogInfo.log("Skylar") << "AddContentType: " << *contentType.GetName();
             ContentTypes.Insert(contentType.GetName(), &contentType);
         }
         
-        bool ServerSettings::LoadAppSettings(const String& fileName, TArray<Module>& modules)
+        bool ServerSharedSettings::LoadAppSettings(const String& fileName, TArray<Module>& modules)
         {
             Neko::Path path(*fileName);
-            IStream* file = FileSystem.Open(FileSystem.GetDiskDevice(), path, FS::Mode::Read);
+            IStream* file = FileSystem.Open(FileSystem.GetDiskDevice(), path, FileSystem::Mode::Read);
             
             if (file == nullptr)
             {
@@ -83,7 +83,7 @@ namespace Neko
             const uint64 maxDefaultSize = Megabyte(64);
             
             // Create appsettings
-            TArray< ApplicationSettings* > applicationSettingItems(Allocator);
+            TArray< PoolApplicationSettings* > applicationSettingItems(Allocator);
             TArray< String > applicationNames(Allocator);
             
             // Load from json
@@ -106,7 +106,7 @@ namespace Neko
             
             while (not json.IsArrayEnd())
             {
-                auto* const settings = NEKO_NEW(Allocator, ApplicationSettings) ();
+                auto* const settings = NEKO_NEW(Allocator, PoolApplicationSettings) ();
                 applicationSettingItems.Push(settings);
                 
                 json.DeserializeObjectBegin();
@@ -208,11 +208,11 @@ namespace Neko
             return true;
         }
         
-        void ServerSettings::Clear()
+        void ServerSharedSettings::Clear()
         {
             if (not List.IsEmpty())
             {
-                TArray< ApplicationSettings* > applications(Allocator);
+                TArray< PoolApplicationSettings* > applications(Allocator);
                 
                 for (auto app : applications)
                 {
@@ -237,36 +237,36 @@ namespace Neko
             }
         }
         
-        bool ServerSettings::SetApplicationModuleMethods(ApplicationSettings& settings, Module& module)
+        bool ServerSharedSettings::SetApplicationModuleMethods(PoolApplicationSettings& settings, Module& module)
         {
             assert(module.IsOpen());
             
-            // @todo get rid of std function
+            // @todo more methods
             
             std::function<int(Http::RequestData* , Http::ResponseData* )> appRequestMethod;
-            appRequestMethod = module.GetMethod<int16(*)(Http::RequestData* , Http::ResponseData* )>("OnApplicationRequest");
-            if (appRequestMethod == nullptr)
+            if (appRequestMethod = module.GetMethod<int16(*)(Http::RequestData* , Http::ResponseData* )>("OnApplicationRequest");
+                appRequestMethod == nullptr)
             {
                 return false;
             };
             
             std::function<void(Http::ResponseData* )> appPostRequestMethod;
-            appPostRequestMethod = module.GetMethod<void(*)(Http::ResponseData* )>("OnApplicationPostRequest");
-            if (appPostRequestMethod == nullptr)
+            if (appPostRequestMethod = module.GetMethod<void(*)(Http::ResponseData* )>("OnApplicationPostRequest");
+                appPostRequestMethod == nullptr)
             {
                 return false;
             };
             
             std::function<bool(ApplicationInitContext)> appInitMethod;
-            appInitMethod = module.GetMethod<bool(*)(ApplicationInitContext)>("OnApplicationInit");
-            if (appInitMethod == nullptr)
+            if (appInitMethod = module.GetMethod<bool(*)(ApplicationInitContext)>("OnApplicationInit");
+                appInitMethod == nullptr)
             {
                 return false;
             };
             
             std::function<void()> appExitMethod;
-            appExitMethod = module.GetMethod<void(*)()>("OnApplicationExit");
-            if (appExitMethod == nullptr)
+            if (appExitMethod = module.GetMethod<void(*)()>("OnApplicationExit");
+                appExitMethod == nullptr)
             {
                 return false;
             };
@@ -279,7 +279,7 @@ namespace Neko
             return true;
         }
         
-        int16 ServerSettings::LoadModule(const String& name, const char* rootDirectory, TArray<Module>& modules, ApplicationSettings& settings)
+        int16 ServerSharedSettings::LoadModule(const String& name, const char* rootDirectory, TArray<Module>& modules, PoolApplicationSettings& settings)
         {
             bool success = true;
             Module module(name);
@@ -338,12 +338,12 @@ namespace Neko
             return moduleIndex;
         }
         
-        void ServerSettings::GetAllApplicationSettings(TArray<ApplicationSettings* >& applications)
+        void ServerSharedSettings::GetAllApplicationSettings(TArray<PoolApplicationSettings* >& applications)
         {
             List.GetAllApplicationSettings(applications);
         }
         
-        bool ServerSettings::AddApplication(const String& application, ApplicationSettings* settings)
+        bool ServerSharedSettings::AddApplication(const String& application, PoolApplicationSettings* settings)
         {
             // Add application in server application list
             List.AddApplication(application, settings);
@@ -352,20 +352,20 @@ namespace Neko
         }
         
         
-        ServerSettings::ApplicationsList::ApplicationsList(IAllocator& allocator)
+        ServerSharedSettings::ApplicationsList::ApplicationsList(IAllocator& allocator)
         : Allocator(allocator)
         , List(allocator)
-        , ApplicationSettings(nullptr)
+        , PoolApplicationSettings(nullptr)
         {
             
         }
         
-        ApplicationSettings* ServerSettings::ApplicationsList::Find(const String& name) const
+        PoolApplicationSettings* ServerSharedSettings::ApplicationsList::Find(const String& name) const
         {
             auto it = List.Find(name);
             if (not it.IsValid())
             {
-                return ApplicationSettings;
+                return PoolApplicationSettings;
             }
             else
             {
@@ -375,24 +375,24 @@ namespace Neko
             return nullptr;
         }
         
-        void ServerSettings::ApplicationsList::GetAllApplicationSettings(TArray< struct ApplicationSettings* >& applications) const
+        void ServerSharedSettings::ApplicationsList::GetAllApplicationSettings(TArray< struct PoolApplicationSettings* >& applications) const
         {
             for (auto node : this->List)
             {
                 const auto* subList = node;
                 
-                if (subList->ApplicationSettings != nullptr)
+                if (subList->PoolApplicationSettings != nullptr)
                 {
-                    applications.Push(subList->ApplicationSettings);
+                    applications.Push(subList->PoolApplicationSettings);
                 }
                 
                 subList->GetAllApplicationSettings(applications);
             }
         }
         
-        void ServerSettings::ApplicationsList::AddApplication(const String& name, struct ApplicationSettings* settings)
+        void ServerSharedSettings::ApplicationsList::AddApplication(const String& name, struct PoolApplicationSettings* settings)
         {
-            ServerSettings::ApplicationsList* list = nullptr;
+            ServerSharedSettings::ApplicationsList* list = nullptr;
             
             if (auto it = List.Find(name); it.IsValid())
             {
@@ -402,8 +402,8 @@ namespace Neko
             }
             else
             {
-                list = NEKO_NEW(Allocator, ServerSettings::ApplicationsList)(Allocator);
-                list->ApplicationSettings = settings;
+                list = NEKO_NEW(Allocator, ServerSharedSettings::ApplicationsList)(Allocator);
+                list->PoolApplicationSettings = settings;
                 
                 List.Insert(Neko::Move(name), list);
             }
@@ -411,7 +411,7 @@ namespace Neko
             //  list->AddApplication(name, settings);
         }
         
-        void ServerSettings::ApplicationsList::Clear()
+        void ServerSharedSettings::ApplicationsList::Clear()
         {
             if (not List.IsEmpty())
             {
