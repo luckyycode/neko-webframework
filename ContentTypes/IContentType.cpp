@@ -31,29 +31,26 @@
 
 #include "IContentType.h"
 
-namespace Neko
+namespace Neko::Skylar
 {
-    namespace Skylar
-    {
-        IContentType::IContentType(IAllocator& allocator)
+    IContentType::IContentType(IAllocator& allocator)
         : Allocator(allocator)
-        {
-        }
+    {
+    }
+    
+    const String& IContentType::GetName() const
+    {
+        return this->Name;
+    }
+    
+    void* IContentType::CreateState(const Http::RequestDataInternal& requestData , const THashMap<String, String>& contentParams) const
+    {
+        return nullptr;
+    }
+    
+    void IContentType::DestroyState(void* state) const
+    {
         
-        const String& IContentType::GetName() const
-        {
-            return this->Name;
-        }
-        
-        void* IContentType::CreateState(const Http::RequestDataInternal& requestData , const THashMap<String, String>& contentParams) const
-        {
-            return nullptr;
-        }
-        
-        void IContentType::DestroyState(void* state) const
-        {
-            
-        }
     }
 }
 

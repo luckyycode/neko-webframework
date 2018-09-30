@@ -33,30 +33,27 @@
 
 #include "IProtocol.h"
 
-namespace Neko
+namespace Neko::Skylar
 {
-    namespace Skylar
+    /// Websockets
+    class ProtocolWebSocket final : public IProtocol
     {
-        /// Websockets
-        class ProtocolWebSocket final : public IProtocol
-        {
-        public:
-            
-            // @see comments in IProtocol
-            
-            ProtocolWebSocket(class ISocket& socket, const ServerSharedSettings* settings, class IAllocator& allocator);
-
-            ProtocolWebSocket(const IProtocol& protocol);
-            
-            virtual bool    SendHeaders(const Http::StatusCode status, TArray< std::pair<String, String> >& headers, const int32& timeout, bool end) const override;
-            virtual long    SendData(const void* source, ulong size, const int32& timeout, Http::DataCounter* dataCounter) const override;
-            
-            virtual void    WriteRequest(char* buffer, const Http::Request& repuest, const PoolApplicationSettings& applicationSettings) const override;
-            virtual void    ReadResponse(Http::Request& request, const Http::ResponseData& responseData) const override;
-            
-            virtual IProtocol* Process() override;
-            virtual void Close() override;
-        };
-    }
+    public:
+        
+        // @see comments in IProtocol
+        
+        ProtocolWebSocket(class ISocket& socket, const ServerSharedSettings* settings, class IAllocator& allocator);
+        
+        ProtocolWebSocket(const IProtocol& protocol);
+        
+        virtual bool    SendHeaders(const Http::StatusCode status, TArray< std::pair<String, String> >& headers, const int32& timeout, bool end) const override;
+        virtual long    SendData(const void* source, ulong size, const int32& timeout, Http::DataCounter* dataCounter) const override;
+        
+        virtual void    WriteRequest(char* buffer, const Http::Request& repuest, const PoolApplicationSettings& applicationSettings) const override;
+        virtual void    ReadResponse(Http::Request& request, const Http::ResponseData& responseData) const override;
+        
+        virtual IProtocol* Process() override;
+        virtual void Close() override;
+    };
 }
 

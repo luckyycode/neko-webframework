@@ -33,20 +33,17 @@
 
 #include "IContentType.h"
 
-namespace Neko
+namespace Neko::Skylar
 {
-    namespace Skylar
+    class FormUrlencoded : public IContentType
     {
-        class FormUrlencoded : public IContentType
-        {
-        public:
-            
-            FormUrlencoded(IAllocator& allocator);
-            
-        public:
-            
-            virtual bool ParseFromBuffer(const String& buffer, Net::Http::RequestDataInternal& requestData, ContentDesc* contentDesc) const override;
-        };
-    }
+    public:
+        
+        FormUrlencoded(IAllocator& allocator);
+        
+    public:
+        
+        virtual bool ParseFromBuffer(const String& buffer, Net::Http::RequestDataInternal& requestData, ContentDesc* contentDesc) const override;
+    };
 }
 

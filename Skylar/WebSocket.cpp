@@ -32,48 +32,46 @@
 #include "WebSocket.h"
 #include "../Sockets/ISocket.h"
 
-namespace Neko
+namespace Neko::Skylar
 {
-    namespace Skylar
+    // empty
+    
+    ProtocolWebSocket::ProtocolWebSocket(ISocket& socket, const ServerSharedSettings* settings, IAllocator& allocator)
+    : IProtocol(socket, settings, allocator)
+    { }
+    
+    ProtocolWebSocket::ProtocolWebSocket(const IProtocol& protocol)
+    : IProtocol(protocol)
+    { }
+    
+    IProtocol* ProtocolWebSocket::Process()
     {
-        // empty
+        return this;
+    }
+    
+    long ProtocolWebSocket::SendData(const void* src,ulong size, const int32& timeout, Http::DataCounter* dataCounter) const
+    {
+        return 0;
+    }
+    
+    bool ProtocolWebSocket::SendHeaders(const Http::StatusCode status, TArray< std::pair<String, String> >& headers, const int32& timeout, bool end) const
+    {
+        return false;
+    }
+    
+    void ProtocolWebSocket::WriteRequest(char* buffer, const Http::Request& repuest, const PoolApplicationSettings& applicationSettings) const
+    {
+    }
+    
+    void ProtocolWebSocket::ReadResponse(Http::Request& request, const Http::ResponseData& responseData) const
+    {
         
-        ProtocolWebSocket::ProtocolWebSocket(ISocket& socket, const ServerSharedSettings* settings, IAllocator& allocator)
-        : IProtocol(socket, settings, allocator)
-        { }
+    }
+    
+    void ProtocolWebSocket::Close()
+    {
         
-        ProtocolWebSocket::ProtocolWebSocket(const IProtocol& protocol)
-        : IProtocol(protocol)
-        { }
-        
-        IProtocol* ProtocolWebSocket::Process()
-        {
-            return this;
-        }
-        
-        long ProtocolWebSocket::SendData(const void* src,ulong size, const int32& timeout, Http::DataCounter* dataCounter) const
-        {
-            return 0;
-        }
-        
-        bool ProtocolWebSocket::SendHeaders(const Http::StatusCode status, TArray< std::pair<String, String> >& headers, const int32& timeout, bool end) const
-        {
-            return false;
-        }
-        
-        void ProtocolWebSocket::WriteRequest(char* buffer, const Http::Request& repuest, const PoolApplicationSettings& applicationSettings) const
-        {
-        }
-        
-        void ProtocolWebSocket::ReadResponse(Http::Request& request, const Http::ResponseData& responseData) const
-        {
-            
-        }
-        
-        void ProtocolWebSocket::Close()
-        {
-            
-        }
     }
 }
+
 

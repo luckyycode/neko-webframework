@@ -233,7 +233,9 @@ namespace Neko
         {
             TArray< String > components(Allocator);
             
-            Router::ParsePathForRoute(components, uri); // for parsing
+            const static char* slash = "/";
+            
+            uri.ParseIntoArray(components, slash, true); // for parsing
             
             Http::Method methodType = RouteMethodCache().Get(method);
             return FindRoute(methodType, components);

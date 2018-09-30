@@ -23,7 +23,7 @@
 // | |\  |  __/   < (_) | |  _|| | | (_| | | | | | |  __/\ V  V / (_) | |  |   <
 // |_| \_|\___|_|\_\___/  |_|  |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
 //
-//  SocketDefault.h
+//  PoolApplicationSettings.h
 //  Neko Framework
 //
 //  Copyright © 2018 Neko Vision. All rights reserved.
@@ -31,38 +31,21 @@
 
 #pragma once
 
-#include "ISocket.h"
+#include "Engine/Core/Path.h"
 
-#include "Engine/Network/NetSocket.h"
+namespace Neko::FileSystem
+{
+    class IFileSystem;
+}
 
 namespace Neko::Skylar
 {
-    /**  Default network socket. Wrapper around Net::INetSocket. */
-    class SocketDefault : public ISocket
+    /** Object used to pass parameters to the application module on init. */
+    struct ApplicationInitContext
     {
-    public:
-        
-        // see ISocket for comments
-        
-        SocketDefault() = delete;
-        SocketDefault(const Net::INetSocket& socket);
-        
-        virtual long GetPacketBlocking(void* buffer, const ulong length, const int32& timeout) const override;
-        
-        virtual long SendAllPacketsWait(const void* buffer, const ulong length, const int32& timeout) const override;
-        
-        virtual void Close() override;
-        
-        
-        virtual NEKO_FORCE_INLINE Net::SOCKET GetNativeHandle() const override { return Socket.GetNativeHandle(); };
-        
-        virtual NEKO_FORCE_INLINE void* GetTlsSession() const override { return nullptr; };
-        
-    private:
-        
-        Net::INetSocket Socket;
-        
+        const char* RootDirectory = nullptr;
+        IAllocator* AppAllocator = nullptr;
+        FileSystem::IFileSystem* FileSystem = nullptr;
     };
 }
-
 

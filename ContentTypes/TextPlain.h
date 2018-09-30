@@ -33,20 +33,17 @@
 
 #include "IContentType.h"
 
-namespace Neko
+namespace Neko::Skylar
 {
-    namespace Skylar
+    /// Text/plain extension for content type.
+    class TextPlain: public IContentType
     {
-        /// Text/plain extension for content type.
-        class TextPlain: public IContentType
-        {
-        public:
-            
-            TextPlain(IAllocator& allocator);
-            
-        public:
-            
-            virtual bool ParseFromBuffer(const String& buffer, Net::Http::RequestDataInternal& requestData, ContentDesc* contentDesc) const override;
-        };
-    }
+    public:
+        
+        TextPlain(IAllocator& allocator);
+        
+    public:
+        
+        virtual bool ParseFromBuffer(const String& buffer, Net::Http::RequestDataInternal& requestData, ContentDesc* contentDesc) const override;
+    };
 }

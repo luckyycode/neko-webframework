@@ -31,16 +31,13 @@
 
 #pragma once
 
-namespace Neko
+namespace Neko::Nova
 {
-    namespace Nova
+    /** Available storage types. */
+    enum class SessionStorageType : uint8
     {
-        /** Available storage types. */
-        enum class SessionStorageType : uint8
-        {
-            None = 0,
-            
-            Cookie,
-        };
-    }
+        None = 0,
+        
+        Cookie,
+    };
 }

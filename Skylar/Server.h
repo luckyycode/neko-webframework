@@ -44,121 +44,118 @@
 
 #define DEFAULT_SERVER_NAME     "Skylar"
 
-namespace Neko
+namespace Neko::Skylar
 {
-    namespace Skylar
+    /** Server instance. */
+    class Server
     {
-        /** Server instance. */
-        class Server
-        {
-        public:
-            
-            Server(IAllocator& allocator, class FileSystem::IFileSystem& fileSystem);
-            
-            ~Server() { }
-            
-            /**
-             * Binds socket port to the address.
-             *
-             * @param port  Port to bound address to.
-             * @param ports Empty array of ports.
-             * @return TRUE if succeeded, FALSE otherwise.
-             */
-            bool BindPort(const uint16 port, TArray<uint16>& ports);
-            
-            /** Prepares applications. Binds found application ports. */
-            void PrepareApplications();
-            
-            /**
-             * Manages worker threads.
-             */
-            uint16 ProcessWorkerThreads(void* kek);
-          
-            /**
-             * Processes incoming requests.
-             */
-            void ThreadRequestProc(class ISocket& socket, Net::SocketsQueue& sockets, void* stream) const;
-            
-            /** Initializes the server. */
-            bool Init();
-            
-            /** Shuts down the server. */
-            void Shutdown();
-            
-            uint16 Run();
-            
-            /** Clears cached data and settings. */
-            void Clear();
-            
-            /** Gets server process id (if multiple are running). */
-            uint32 GetServerProcessId(const String& serverName) const;
-            
-        private:
-            
-            /** Updates all server modules. */
-            void UpdateApplications();
-            
-            /** Updates the specified server module. */
-            bool UpdateApplication(Module& module, TArray< PoolApplicationSettings* >& applications, const uint32 moduleIndex);
-            
-            
-            void* InitSsl(const PoolApplicationSettings& application);
-            
-            void CloseListeners();
-            
-        private:
-            
-            IAllocator& Allocator;
-            
-            FileSystem::IFileSystem& FileSystem;
-            
-        public:
-            
-            // commands
-            
-            void Stop();
-            void Restart();
-            void Update();
-            
-            uint16 StartCommand(const String& name, bool force = false);
-            uint16 RestartCommand(const String& serverName) const;
-            uint16 ExitCommand(const String& serverName) const;
-            uint16 UpdateModulesCommand(const String& serverName) const;
-            
-        public:
-            
-            //! Shared external server controls.
-            mutable CycleManager Controls;
-            
-            void kek(void* kek);
-            
-        protected:
-            
-            SocketList SocketsList;
-            
-            //! Shared server settings
-            ServerSharedSettings Settings;
-            
-            //! Global server mutex.
-            mutable MT::SpinMutex Mutex;
-            
-            MT::Event QueueNotFullEvent;
-            
-            //! Loaded server modules.
-            TArray< Module > Modules;
-            
-            //! List of active sockets which listen for incoming connections.
-            TArray< Net::INetSocket > Listeners;
-            
-            class ISsl* Ssl;
-            
-        private:
-            
-            friend class RequestTask;
-            
-            //! Amount of active worker threads.
-            mutable ThreadSafeCounter ThreadsWorkingCount;
-        };
-    }
+    public:
+        
+        Server(IAllocator& allocator, class FileSystem::IFileSystem& fileSystem);
+        
+        ~Server() { }
+        
+        /**
+         * Binds socket port to the address.
+         *
+         * @param port  Port to bound address to.
+         * @param ports Empty array of ports.
+         * @return TRUE if succeeded, FALSE otherwise.
+         */
+        bool BindPort(const uint16 port, TArray<uint16>& ports);
+        
+        /** Prepares applications. Binds found application ports. */
+        void PrepareApplications();
+        
+        /**
+         * Manages worker threads.
+         */
+        uint16 ProcessWorkerThreads(Server* instance, Net::SocketsQueue& sockets);
+      
+        /**
+         * Processes incoming requests.
+         */
+        void ThreadRequestProc(class ISocket& socket, Net::SocketsQueue& sockets, void* stream) const;
+        
+        /** Initializes the server. */
+        bool Init();
+        
+        /** Shuts down the server. */
+        void Shutdown();
+        
+        uint16 Run();
+        
+        /** Clears cached data and settings. */
+        void Clear();
+        
+        /** Gets server process id (if multiple are running). */
+        uint32 GetServerProcessId(const String& serverName) const;
+        
+    private:
+        
+        /** Updates all server modules. */
+        void UpdateApplications();
+        
+        /** Updates the specified server module. */
+        bool UpdateApplication(Module& module, TArray< PoolApplicationSettings* >& applications, const uint32 moduleIndex);
+        
+        
+        void* InitSsl(const PoolApplicationSettings& application);
+        
+        void CloseListeners();
+        
+    private:
+        
+        IAllocator& Allocator;
+        
+        FileSystem::IFileSystem& FileSystem;
+        
+    public:
+        
+        // commands
+        
+        void Stop();
+        void Restart();
+        void Update();
+        
+        uint16 StartCommand(const String& name, bool force = false);
+        uint16 RestartCommand(const String& serverName) const;
+        uint16 ExitCommand(const String& serverName) const;
+        uint16 UpdateModulesCommand(const String& serverName) const;
+        
+    public:
+        
+        //! Shared external server controls.
+        mutable CycleManager Controls;
+        
+        void kek(void* kek);
+        
+    protected:
+        
+        SocketList SocketsList;
+        
+        //! Shared server settings
+        ServerSharedSettings Settings;
+        
+        //! Global server mutex.
+        mutable MT::SpinMutex Mutex;
+        
+        MT::Event QueueNotFullEvent;
+        
+        //! Loaded server modules.
+        TArray< Module > Modules;
+        
+        //! List of active sockets which listen for incoming connections.
+        TArray< Net::INetSocket > Listeners;
+        
+        class ISsl* Ssl;
+        
+    private:
+        
+        friend class RequestTask;
+        
+        //! Amount of active worker threads.
+        mutable ThreadSafeCounter ThreadsWorkingCount;
+    };
 }
 

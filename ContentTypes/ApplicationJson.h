@@ -33,20 +33,17 @@
 
 #include "IContentType.h"
 
-namespace Neko
+namespace Neko::Skylar
 {
-    namespace Skylar
+    /** Application/json extension for content type. */
+    class ApplicationJson: public IContentType
     {
-        /** Application/json extension for content type. */
-        class ApplicationJson: public IContentType
-        {
-        public:
-            
-            ApplicationJson(IAllocator& allocator);
-            
-        public:
-            
-            virtual bool ParseFromBuffer(const String& buffer, Http::RequestDataInternal& requestData, ContentDesc* contentDesc) const override;
-        };
-    }
+    public:
+        
+        ApplicationJson(IAllocator& allocator);
+        
+    public:
+        
+        virtual bool ParseFromBuffer(const String& buffer, Http::RequestDataInternal& requestData, ContentDesc* contentDesc) const override;
+    };
 }

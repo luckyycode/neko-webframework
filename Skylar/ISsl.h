@@ -35,32 +35,29 @@
 
 #define USE_OPENSSL 1
 
-namespace Neko
+namespace Neko::Skylar
 {
-    namespace Skylar
+    struct PoolApplicationSettings;
+    
+    /** Interface for ssl contexts. */
+    class ISsl
     {
-        struct PoolApplicationSettings;
+    public:
         
-        /** Interface for ssl contexts. */
-        class ISsl
-        {
-        public:
-            
-            typedef THashMap<uint16, void*> TlsMap;
-            
-            virtual bool Init() = 0;
-            
-            virtual void* InitSsl(const PoolApplicationSettings& application) = 0;
-            virtual bool NegotiateProtocol(void* session, String& protocol) = 0;
-            
-            virtual void AddSession(uint16 port, void* context) = 0;
-            virtual const TlsMap& GetTlsData() const = 0;
-            
-            virtual void Clear() = 0;
-            
-            static ISsl* Create(IAllocator& allocator);
-            static void Destroy(ISsl& ssl);
-        };
-    }
+        typedef THashMap<uint16, void*> TlsMap;
+        
+        virtual bool Init() = 0;
+        
+        virtual void* InitSsl(const PoolApplicationSettings& application) = 0;
+        virtual bool NegotiateProtocol(void* session, String& protocol) = 0;
+        
+        virtual void AddSession(uint16 port, void* context) = 0;
+        virtual const TlsMap& GetTlsData() const = 0;
+        
+        virtual void Clear() = 0;
+        
+        static ISsl* Create(IAllocator& allocator);
+        static void Destroy(ISsl& ssl);
+    };
 }
 

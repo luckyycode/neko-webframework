@@ -37,42 +37,40 @@
 #include "Engine/Network/Http/HttpStatusCodes.h"
 #include "Engine/Network/Http/Request.h"
 
-namespace Neko
+namespace Neko::Skylar
 {
-    namespace Skylar
+    /// Http 1.1 capable server protocol.
+    class ProtocolHttp final : public IProtocol
     {
-        /// Http 1.1 capable server protocol.
-        class ProtocolHttp final : public IProtocol
-        {
-        public:
-            
-            // See comments in IProtocol.
-            
-            ProtocolHttp(class ISocket& socket, const ServerSharedSettings* settings, IAllocator& allocator);
-            
-            virtual IProtocol* Process() override;
-            
-            virtual long SendData(const void* source, ulong size, const int32& timeout, Http::DataCounter* dataCounter) const override;
-            
-            virtual bool SendHeaders(const Http::StatusCode status, TArray<std::pair<String, String> >& headers, const int32& timeout, bool end/* = true*/) const override;
-            
-            virtual void WriteRequest(char* data, const Http::Request& request, const PoolApplicationSettings& applicationSettings) const override;
-            
-            virtual void ReadResponse(Http::Request& request, const Http::ResponseData& responseData) const override;
-            
-            virtual void Close() override;
-            
-        private:
-            
-            const PoolApplicationSettings* GetApplicationSettingsForRequest(Http::Request& request, const bool secure) const;
-            
-            Http::StatusCode GetRequestData(Http::Request& request, String& buffer, const PoolApplicationSettings& applicationSettings) const;
-            
-        protected:
-            
-            /** Process a request using this protocol. */
-            void RunProtocol(Http::Request& request, char* data, String& stringBuffer) const;
-        };
-    }
+    public:
+        
+        // See comments in IProtocol.
+        
+        ProtocolHttp(class ISocket& socket, const ServerSharedSettings* settings, IAllocator& allocator);
+        
+        virtual IProtocol* Process() override;
+        
+        virtual long SendData(const void* source, ulong size, const int32& timeout, Http::DataCounter* dataCounter) const override;
+        
+        virtual bool SendHeaders(const Http::StatusCode status, TArray<std::pair<String, String> >& headers, const int32& timeout, bool end/* = true*/) const override;
+        
+        virtual void WriteRequest(char* data, const Http::Request& request, const PoolApplicationSettings& applicationSettings) const override;
+        
+        virtual void ReadResponse(Http::Request& request, const Http::ResponseData& responseData) const override;
+        
+        virtual void Close() override;
+        
+    private:
+        
+        const PoolApplicationSettings* GetApplicationSettingsForRequest(Http::Request& request, const bool secure) const;
+        
+        Http::StatusCode GetRequestData(Http::Request& request, String& buffer, const PoolApplicationSettings& applicationSettings) const;
+        
+    protected:
+        
+        /** Process a request using this protocol. */
+        void RunProtocol(Http::Request& request, char* data, String& stringBuffer) const;
+    };
 }
+
 

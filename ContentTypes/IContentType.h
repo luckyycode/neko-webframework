@@ -36,49 +36,47 @@
 #include "Engine/Network/NetSocket.h"
 #include "Engine/Network/Http/Request.h"
 
-namespace Neko
+namespace Neko::Skylar
 {
     using namespace Neko::Net;
-    namespace Skylar
+    
+    /** Content type interface. Used for types, e.g. text/plain, application/json, multipart/form-data and so on. */
+    class IContentType
     {
-        /** Content type interface. Used for types, e.g. text/plain, application/json, multipart/form-data and so on. */
-        class IContentType
-        {
-        public:
-            
-            IContentType(IAllocator& allocator);
-            
-            /**
-             * Virtual destructor
-             */
-            virtual ~IContentType() = default;
-            
-            /** Creates transient content data state. */
-            virtual void* CreateState(const Net::Http::RequestDataInternal& requestData, const Neko::THashMap< Neko::String, Neko::String >& contentParams) const;
-            /** Destroys transient content data state. */
-            virtual void DestroyState(void* state) const;
-            
-            /**
-             * Parses content type from a data buffer.
-             *
-             * @param buffer        String data buffer.
-             * @param requestData   Parsed data will be saved in request.
-             * @param contentDesc   Used to keep data on track.
-             */
-            virtual bool ParseFromBuffer(const Neko::String& buffer, Net::Http::RequestDataInternal& requestData, class ContentDesc* contentDesc) const = 0;
-          
-        public:
-            
-            /** Content-Type */
-            const Neko::String& GetName() const;
-            
-        protected:
-            
-            //! Content-Type.
-            Neko::String Name;
-            //! Allocator to keep track on created objects.
-            IAllocator& Allocator;
-        };
-    }
+    public:
+        
+        IContentType(IAllocator& allocator);
+        
+        /**
+         * Virtual destructor
+         */
+        virtual ~IContentType() = default;
+        
+        /** Creates transient content data state. */
+        virtual void* CreateState(const Net::Http::RequestDataInternal& requestData, const Neko::THashMap< Neko::String, Neko::String >& contentParams) const;
+        /** Destroys transient content data state. */
+        virtual void DestroyState(void* state) const;
+        
+        /**
+         * Parses content type from a data buffer.
+         *
+         * @param buffer        String data buffer.
+         * @param requestData   Parsed data will be saved in request.
+         * @param contentDesc   Used to keep data on track.
+         */
+        virtual bool ParseFromBuffer(const Neko::String& buffer, Net::Http::RequestDataInternal& requestData, class ContentDesc* contentDesc) const = 0;
+      
+    public:
+        
+        /** Content-Type */
+        const Neko::String& GetName() const;
+        
+    protected:
+        
+        //! Content-Type.
+        Neko::String Name;
+        //! Allocator to keep track on created objects.
+        IAllocator& Allocator;
+    };
 }
 

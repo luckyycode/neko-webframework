@@ -40,46 +40,44 @@
 
 #   include <openssl/ssl.h>
 
-namespace Neko
+namespace Neko::Skylar
 {
-    namespace Skylar
+    /** OpenSSL socket wrapper */
+    class SocketSSL : public ISocket
     {
-        /** OpenSSL socket wrapper */
-        class SocketSSL : public ISocket
-        {
-        public:
-            
-            // @see ISocket for comments
-            
-            SocketSSL() = delete;
-            /** Created a new SSL connection based on an existing context (server/client). */
-            SocketSSL(const Net::INetSocket& socket, SSL_CTX* context);
-            /** Initiates from an existing SSL connection. */
-			SocketSSL(const Net::INetSocket& socket, SSL* connection);
-			
-            virtual long GetPacketBlocking(void* buffer, const ulong length, const int32& timeout) const override;
-            
-            virtual long SendAllPacketsWait(const void* buffer, const ulong length, const int32& timeout) const override;
-            
-            virtual void Close() override;
-            
-            
-            virtual NEKO_FORCE_INLINE Net::SOCKET GetNativeHandle() const override { return Socket.GetNativeHandle(); };
-            
-            virtual NEKO_FORCE_INLINE void* GetTlsSession() const override { return static_cast<void* >(this->Connection); };
-            
-            /** Higher level SSL connect */
-            int32 Connect();
-            
-			bool Handshake();
-			
-        private:
-            
-            Net::INetSocket Socket;
-            
-            SSL* Connection;
-        };
-    }
+    public:
+        
+        // @see ISocket for comments
+        
+        SocketSSL() = delete;
+        /** Created a new SSL connection based on an existing context (server/client). */
+        SocketSSL(const Net::INetSocket& socket, SSL_CTX* context);
+        /** Initiates from an existing SSL connection. */
+        SocketSSL(const Net::INetSocket& socket, SSL* connection);
+        
+        virtual long GetPacketBlocking(void* buffer, const ulong length, const int32& timeout) const override;
+        
+        virtual long SendAllPacketsWait(const void* buffer, const ulong length, const int32& timeout) const override;
+        
+        virtual void Close() override;
+        
+        
+        virtual NEKO_FORCE_INLINE Net::SOCKET GetNativeHandle() const override { return Socket.GetNativeHandle(); };
+        
+        virtual NEKO_FORCE_INLINE void* GetTlsSession() const override { return static_cast<void* >(this->Connection); };
+        
+        /** Higher level SSL connect */
+        int32 Connect();
+        
+        bool Handshake();
+        
+    private:
+        
+        Net::INetSocket Socket;
+        
+        SSL* Connection;
+    };
 }
 
 #endif
+

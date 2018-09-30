@@ -32,68 +32,66 @@
 #include "TextPlain.h"
 #include "ContentDesc.h"
 
-namespace Neko
+namespace Neko::Skylar
 {
     using namespace Neko::Net;
-    namespace Skylar
-    {
-        TextPlain::TextPlain(IAllocator& allocator)
+
+    TextPlain::TextPlain(IAllocator& allocator)
         : IContentType(allocator)
+    {
+        Name = "text/plain";
+    }
+    
+    bool TextPlain::ParseFromBuffer(const Neko::String& buffer, Http::RequestDataInternal& requestData, ContentDesc* contentDesc) const
+    {
+        if (buffer.IsEmpty())
         {
-            Name = "text/plain";
+            return EnsureContentLength(*contentDesc);
         }
         
-        bool TextPlain::ParseFromBuffer(const Neko::String& buffer, Http::RequestDataInternal& requestData, ContentDesc* contentDesc) const
+        for (int32 pos = 0, end = 0; end != INDEX_NONE; pos = end + 1)
         {
-            if (buffer.IsEmpty())
+            // find the next param
+            end = buffer.Find("&", pos);
+            
+            if (end == INDEX_NONE and contentDesc->FullSize != contentDesc->BytesReceived)
             {
-                return EnsureContentLength(*contentDesc);
+                // end of params but we still have something to read
+                
+                // save leftover
+                contentDesc->LeftBytes = buffer.Length() - pos;
+                return true;
             }
             
-            for (int32 pos = 0, end = 0; end != INDEX_NONE; pos = end + 1)
-            {
-                // find the next param
-                end = buffer.Find("&", pos);
-                
-                if (end == INDEX_NONE and contentDesc->FullSize != contentDesc->BytesReceived)
-                {
-                    // end of params but we still have something to read
-                    
-                    // save leftover
-                    contentDesc->LeftBytes = buffer.Length() - pos;
-                    return true;
-                }
-                
-                // get param value
-                int32 delimiter = buffer.Find("=", pos);
-                
-                const int32 last = (end == INDEX_NONE) ? INT_MAX : end; // hmmm
-                
-                if (delimiter >= last)
-                {
-                    // param name
-                    auto name = buffer.Mid(pos, (last != INT_MAX) ? end - pos : INT_MAX);
-                    
-                    // save param
-                    requestData.IncomingData.Insert(Neko::Move(name), Neko::String());
-                }
-                else
-                {
-                    // param name
-                    auto name = buffer.Mid(pos, (last != INT_MAX) ? delimiter - pos : INT_MAX);
-                    
-                    ++delimiter;
-                    
-                    // param value
-                    auto value = buffer.Mid(delimiter, (end != INDEX_NONE) ? end - delimiter : INT_MAX);
-                    
-                    // save both
-                    requestData.IncomingData.Insert(Neko::Move(name), Neko::Move(value));
-                }
-            }
+            // get param value
+            int32 delimiter = buffer.Find("=", pos);
             
-            return true;
+            const int32 last = (end == INDEX_NONE) ? INT_MAX : end; // hmmm
+            
+            if (delimiter >= last)
+            {
+                // param name
+                auto name = buffer.Mid(pos, (last != INT_MAX) ? end - pos : INT_MAX);
+                
+                // save param
+                requestData.IncomingData.Insert(Neko::Move(name), Neko::String());
+            }
+            else
+            {
+                // param name
+                auto name = buffer.Mid(pos, (last != INT_MAX) ? delimiter - pos : INT_MAX);
+                
+                ++delimiter;
+                
+                // param value
+                auto value = buffer.Mid(delimiter, (end != INDEX_NONE) ? end - delimiter : INT_MAX);
+                
+                // save both
+                requestData.IncomingData.Insert(Neko::Move(name), Neko::Move(value));
+            }
         }
+        
+        return true;
     }
 }
 

@@ -35,69 +35,67 @@
 #include "Engine/Mt/Sync.h"
 #include "Engine/Mt/ThreadSafe.h"
 
-namespace Neko
+namespace Neko::Skylar
 {
-    namespace Skylar
+    /// Server threadsafe controls.
+    class CycleManager
     {
-        /// Server threadsafe controls.
-        class CycleManager
+    public:
+        
+        CycleManager()
+        : ProcessQueueEvent(false)
+        , UpdateModulesEvent(true)
         {
-        public:
+        }
+        
+        ~CycleManager()
+        {
+            Clear();
+        }
+        
+        void Clear()
+        {
+            ProcessQueueEvent.Reset();
+            UpdateModulesEvent.Reset();
+        }
+        
+        void UpdateApplication()
+        {
+            UpdateModulesEvent.Trigger();
+        }
+        
+        void ProcessQueue()
+        {
+            ProcessQueueEvent.Trigger();
+        }
+        
+        void SetActiveFlag(const bool active = true)
+        {
+            Active = active;
+        }
+        
+        void SetRestartFlag(const bool restart = true)
+        {
+            Restart = restart;
+        }
+        
+        void StopProcess()
+        {
+            Active = false;
             
-            CycleManager()
-            : ProcessQueueEvent(false)
-            , UpdateModulesEvent(true)
-            {
-            }
-            
-            ~CycleManager()
-            {
-                Clear();
-            }
-            
-            void Clear()
-            {
-                ProcessQueueEvent.Reset();
-                UpdateModulesEvent.Reset();
-            }
-            
-            void UpdateApplication()
-            {
-                UpdateModulesEvent.Trigger();
-            }
-            
-            void ProcessQueue()
-            {
-                ProcessQueueEvent.Trigger();
-            }
-            
-            void SetActiveFlag(const bool active = true)
-            {
-                Active = active;
-            }
-            
-            void SetRestartFlag(const bool restart = true)
-            {
-                Restart = restart;
-            }
-            
-            void StopProcess()
-            {
-                Active = false;
-                
-                ProcessQueue();
-            }
-            
-        public:
-            
-            MT::Event ProcessQueueEvent;
-            MT::Event UpdateModulesEvent;
-            
-            //! Says whether the server is active and has active threads.
-            ThreadSafeBool Active;
-            
-            ThreadSafeBool Restart;
-        };
-    }
+            ProcessQueue();
+        }
+        
+    public:
+        
+        MT::Event ProcessQueueEvent;
+        MT::Event UpdateModulesEvent;
+        
+        //! Says whether the server is active and has active threads.
+        ThreadSafeBool Active;
+        
+        ThreadSafeBool Restart;
+    };
 }
+
 

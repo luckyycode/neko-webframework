@@ -31,7 +31,7 @@
 
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Debug.h"
-#include "Engine/Core/JobSystem.h"
+#include "Engine/Core/Asynchrony.h"
 #include "Engine/Core/Profiler.h"
 #include "Engine/Mt/Task.h"
 #include "Engine/Platform/Platform.h"
@@ -49,885 +49,865 @@
 
 #include <signal.h> // commands
 
-namespace Neko
+namespace Neko::Skylar
 {
     using namespace Neko::FileSystem;
     
-    namespace Skylar
+    Server::Server(IAllocator& allocator, IFileSystem& fileSystem)
+    : Mutex(false)
+    , QueueNotFullEvent(true)
+    , Allocator(allocator)
+    , Modules(allocator)
+    , Listeners(allocator)
+    , SocketsList(allocator)
+    , FileSystem(fileSystem)
+    , Settings(fileSystem, allocator)
     {
-        // transient data
-        struct SocketServerData
+        SetThreadDefaultAllocator(allocator);
+    };
+    
+    bool Server::Init()
+    {
+        LogInfo.log("Skylar") << "Server initializing..";
+        
+        LogInfo.log("Skylar") << "Loading server settings";
+        
+        // load every application & settings
+        bool settingsLoaded = Settings.LoadAppSettings("serversettings.json", Modules);
+        
+        if (not settingsLoaded)
         {
-            Server* server = nullptr;
-            Net::SocketsQueue* queue = nullptr;
-        };
- 
-        Server::Server(IAllocator& allocator, IFileSystem& fileSystem)
-        : Mutex(false)
-        , QueueNotFullEvent(true)
+            return false;
+        }
+        
+        this->Ssl = ISsl::Create(Allocator);
+        
+        LogInfo.log("Skylar") << "Server initialization complete.";
+        
+        return true;
+    }
+    
+    void Server::Shutdown()
+    {
+        LogInfo.log("Skylar") << "Server shutting down...";
+        
+        Stop();
+        Clear();
+        
+        if (this->Ssl != nullptr)
+        {
+            ISsl::Destroy(*this->Ssl);
+        }
+    }
+    
+    void* Server::InitSsl(const PoolApplicationSettings& application)
+    {
+        assert(this->Ssl != nullptr);
+        return this->Ssl->InitSsl(application);
+    }
+    
+    void Server::PrepareApplications()
+    {
+        LogInfo.log("Skylar") << "Preparing server applications..";
+        
+        // Applications settings list
+        TArray< PoolApplicationSettings* > applications(Allocator);
+        
+        // Get full applications settings list
+        Settings.GetAllApplicationSettings(applications);
+        
+        // Bound port list
+        TArray<uint16> ports(Allocator);
+        
+        // Open applications sockets
+        for (auto& application : applications)
+        {
+            const uint16& tlsPort = application->TlsPort;
+            // init ssl data for this port
+            if (tlsPort != 0)
+            {
+                // initialize it first
+                auto* context = InitSsl(*application);
+                
+                if (context != nullptr && BindPort(tlsPort, ports))
+                {
+                    // save context
+                    this->Ssl->AddSession(tlsPort, context);
+                }
+            }
+            
+            BindPort(application->Port, ports);
+            
+            LogInfo.log("Skylar") << "Content directory: " << *application->RootDirectory;
+        }
+    }
+    
+    uint16 Server::Run()
+    {
+        bool initialized = Init();
+        if (not initialized)
+        {
+            return EXIT_FAILURE;
+        }
+        
+        PrepareApplications();
+        
+        if (Listeners.IsEmpty())
+        {
+            // aesthetics
+            LogError.log("Skylar") << "## (⌒_⌒;) Couldn't run Skylar, no sockets were opened.";
+            
+            Clear();
+            
+            return EXIT_FAILURE;
+        }
+        
+        // Init sockets
+        SocketsList.Create(Listeners.GetSize());
+        
+        // Init list with created sockets
+        for (const auto& socket : Listeners)
+        {
+            SocketsList.AddSocket(socket);
+        }
+        
+        // start processing immediately
+        Controls.SetActiveFlag();
+        
+        LogInfo.log("Skylar") << "Creating the main request task..";
+        
+        Net::SocketsQueue sockets(Allocator);
+        
+        // Create a task which will process all worker threads
+        Asynchrony::TaskData task;
+        Asynchrony::LambdaTask storage;
+        Asynchrony::FromLambda([&]() { ProcessWorkerThreads(this, sockets); },
+                               &storage, &task, nullptr);
+        Asynchrony::Run(&task);
+        
+        Debug::PrintColor(Debug::EStdoutColor::Green);
+        {
+            LogInfo.log("Skylar") << "## [^._.^] Skylar is now listening on "
+            << Settings.ResolvedAddressString << " (" << Listeners.GetSize() << " listeners).\n";
+        }
+        
+        // list of new connections
+        TArray<Net::INetSocket> socketsToAccept(Allocator);
+        
+        // Process receiving new connections
+        do
+        {
+            PROFILE_FUNCTION()
+            
+            if (SocketsList.Accept(socketsToAccept)) // blocking
+            {{
+                MT::SpinLock lock(sockets.Mutex);
+                
+                for (uint32 index = 0; index < socketsToAccept.GetSize(); ++index)
+                {
+                    const Net::INetSocket& socket = socketsToAccept[index];
+                    
+                    if (not socket.IsOpen())
+                    {
+                        continue;
+                    }
+                    
+                    socket.MakeNonBlocking();
+                    socket.SetSocketStreamNoDelay(true);
+                    
+                    sockets.Push(Tuple<Net::INetSocket, void* >
+                    {
+                        socket,
+                        nullptr
+                    });
+                }}
+                
+                Controls.ProcessQueueEvent.Trigger();
+                
+                if (sockets.GetSize() >= Net::QueueMaxLength)
+                {
+                    LogInfo.log("Skylar") << "Queue length " << Net::QueueMaxLength << " exceeded.";
+                    QueueNotFullEvent.Reset();
+                }
+                
+                socketsToAccept.Clear();
+                
+                QueueNotFullEvent.Wait();
+            }
+        }
+        while (Controls.Active or Controls.UpdateModulesEvent.Poll());
+        
+        LogInfo.log("Skylar") << "Server main cycle quit";
+        
+        // cleanup
+        
+        Controls.ProcessQueueEvent.Trigger();
+        
+        if (not Listeners.IsEmpty())
+        {
+            CloseListeners();
+            Listeners.Clear();
+        }
+        
+        Clear();
+        
+        return EXIT_SUCCESS;
+    }
+    
+    
+    // Task for processing incoming requests. @see Server::ProcessWorkerThreads
+    class RequestTask : public MT::Task
+    {
+    public:
+        
+        RequestTask(Server& server, IAllocator& allocator, Net::SocketsQueue& sockets, int volatile* threadRequestCounter)
+        : MT::Task(allocator)
+        , Sockets(sockets)
+        , ThreadRequestCounter(threadRequestCounter)
+        , QueueNotFullEvent(server.QueueNotFullEvent)
+        , Settings(server.Settings)
+        , Controls(server.Controls)
+        , ThreadsWorkingCount(server.ThreadsWorkingCount)
+        , Ssl(server.Ssl)
         , Allocator(allocator)
-        , Modules(allocator)
-        , Listeners(allocator)
-        , SocketsList(allocator)
-        , FileSystem(fileSystem)
-        , Settings(fileSystem, allocator)
         {
-            SetThreadDefaultAllocator(allocator);
-        };
-
-        bool Server::Init()
-        {
-            LogInfo.log("Skylar") << "Server initializing..";
-            
-            LogInfo.log("Skylar") << "Loading server settings";
-            
-            // load every application & settings
-            bool settingsLoaded = Settings.LoadAppSettings("serversettings.json", Modules);
-            
-            if (not settingsLoaded)
-            {
-                return false;
-            }
-        
-            this->Ssl = ISsl::Create(Allocator);
-            
-            LogInfo.log("Skylar") << "Server initialization complete.";
-            
-            return true;
         }
         
-        void Server::Shutdown()
+        IProtocol* CreateProto(ISocket& socket, void* stream, IAllocator& allocator) const
         {
-            LogInfo.log("Skylar") << "Server shutting down...";
+            PROFILE_FUNCTION()
             
-            Stop();
-            Clear();
+            IProtocol* protocol = nullptr;
             
-            if (this->Ssl != nullptr)
+            if (socket.GetTlsSession() != nullptr)
             {
-                ISsl::Destroy(*this->Ssl);
+                auto session = socket.GetTlsSession();
+                
+                String protocolName(Allocator);
+                bool result = Ssl->NegotiateProtocol(session, protocolName);
+                
+                if (result != false)
+                {
+                    LogInfo.log("Skylar") << "Protocol negotiated as " << *protocolName;
+                    
+                    if (protocolName == "h2")
+                    {
+                        // @todo
+                        protocol = nullptr;
+                    }
+                    else if (protocolName == "http/1.1")
+                    {
+                        protocol = NEKO_NEW(allocator, ProtocolHttp)(socket, &Settings, allocator);
+                    }
+                    
+                    return protocol;
+                }
+                
+                //LogWarning.log("Skylar") << "Tls session data found, but couldn't negotiate the needed protocol";
             }
-        }
-
-        void* Server::InitSsl(const PoolApplicationSettings& application)
-        {
-            assert(this->Ssl != nullptr);
-            return this->Ssl->InitSsl(application);
+            
+            protocol = NEKO_NEW(allocator, ProtocolHttp)(socket, &Settings, allocator);
+            
+            return protocol;
         }
         
-        void Server::PrepareApplications()
+        void ThreadRequestProc(ISocket& socket, Net::SocketsQueue& sockets, void* stream) const
         {
-            LogInfo.log("Skylar") << "Preparing server applications..";
+            auto* protocol = CreateProto(socket, stream, Allocator);
             
-            // Applications settings list
-            TArray< PoolApplicationSettings* > applications(Allocator);
-            
-            // Get full applications settings list
-            Settings.GetAllApplicationSettings(applications);
-            
-            // Bound port list
-            TArray<uint16> ports(Allocator);
-         
-            // Open applications sockets
-            for (auto& application : applications)
+            if (protocol != nullptr)
             {
-                const uint16& tlsPort = application->TlsPort;
-                // init ssl data for this port
-                if (tlsPort != 0)
+                // Check if switching protocol
+                for (IProtocol* result = nullptr; ;)
                 {
-                    // initialize it first
-                    auto* context = InitSsl(*application);
-                    
-                    if (context != nullptr)
-                    {
-                        if (BindPort(tlsPort, ports))
-                        {
-                            // save context
-                            this->Ssl->AddSession(tlsPort, context);
-                        }
-                    }
-                }
-                
-                BindPort(application->Port, ports);
-                
-                LogInfo.log("Skylar") << "Content directory: " << *application->RootDirectory;
-            }
-        }
-
-        uint16 Server::Run()
-        {
-            bool initialized = Init();
-            if (not initialized)
-            {
-                return EXIT_FAILURE;
-            }
-            
-            PrepareApplications();
-            
-            if (Listeners.IsEmpty())
-            {
-                // aesthetics
-                LogError.log("Skylar") << "## (⌒_⌒;) Couldn't run Skylar, no sockets were opened.";
-                
-                Clear();
-                
-                return EXIT_FAILURE;
-            }
-            
-            // Init sockets
-            SocketsList.Create(Listeners.GetSize());
-            
-            // Init list with created sockets
-            for (const auto& socket : Listeners)
-            {
-                SocketsList.AddSocket(socket);
-            }
-            
-            // start processing immediately
-            Controls.SetActiveFlag();
-            
-            LogInfo.log("Skylar") << "Creating the main request task..";
-            
-            Net::SocketsQueue sockets(Allocator);
-            
-            // Create a job which will process all worker threads
-            SocketServerData  data { this, &sockets };
-            
-            JobSystem::JobData job;
-            job.data = (void* )&data;
-            job.task = [](void* data)
-            {
-                auto* thisData = static_cast<SocketServerData* >(data);
-                thisData->server->ProcessWorkerThreads(thisData);
-            };
-            JobSystem::RunJobs(&job, 1, nullptr);
-            
-            Debug::PrintColor(Debug::EStdoutColor::Green);
-            {
-                LogInfo.log("Skylar") << "## [^._.^] Skylar is now listening on "
-                    << Settings.ResolvedAddressString << " (" << Listeners.GetSize() << " listeners).\n";
-            }
-            
-            // list of new connections
-            TArray<Net::INetSocket> socketsToAccept(Allocator);
-            
-            // Process receiving new connections
-            do
-            {
-                PROFILE_FUNCTION()
-                
-                if (SocketsList.Accept(socketsToAccept))
-                {
-                    sockets.Mutex.Lock();
-                    
-                    for (uint32 i = 0; i < socketsToAccept.GetSize(); ++i)
-                    {
-                        const Net::INetSocket& socket = socketsToAccept[i];
-                        
-                        if (socket.IsOpen())
-                        {
-                            socket.MakeNonBlocking();
-                            socket.SetSocketStreamNoDelay(true);
-                            
-                            sockets.Push(
-                                         Tuple<Net::INetSocket, void* > { socket, nullptr });
-                        }
-                    }
-                    
-                    sockets.Mutex.Unlock();
-                    
-                    Controls.ProcessQueueEvent.Trigger();
-                    
-                    if (sockets.GetSize() >= Net::QueueMaxLength)
-                    {
-                        LogInfo.log("Skylar") << "Queue length " << Net::QueueMaxLength << " exceeded.";
-                        QueueNotFullEvent.Reset();
-                    }
-                    
-                    socketsToAccept.Clear();
-                    
-                    QueueNotFullEvent.Wait();
-                }
-            }
-            while (Controls.Active or Controls.UpdateModulesEvent.Poll());
-            
-            LogInfo.log("Skylar") << "Server main cycle quit";
-            
-            // cleanup
-            
-            Controls.ProcessQueueEvent.Trigger();
-            
-            if (not Listeners.IsEmpty())
-            {
-                CloseListeners();
-                Listeners.Clear();
-            }
-            
-            Clear();
-            
-            return EXIT_SUCCESS;
-        }
-
-        
-        // Task for processing incoming requests. @see Server::ProcessWorkerThreads
-        class RequestTask : public MT::Task
-        {
-        public:
-            
-            RequestTask(Server& server, IAllocator& allocator, Net::SocketsQueue& sockets, MT::Event& threadRequestEvent)
-            : MT::Task(allocator)
-            , Sockets(sockets)
-            , ThreadRequestEvent(threadRequestEvent)
-            , QueueNotFullEvent(server.QueueNotFullEvent)
-            , Settings(server.Settings)
-            , Controls(server.Controls)
-            , ThreadsWorkingCount(server.ThreadsWorkingCount)
-            , Ssl(server.Ssl)
-            , Allocator(allocator)
-            {
-            }
-            
-            IProtocol* CreateProto(ISocket& socket, void* stream, IAllocator& allocator) const
-            {
-                PROFILE_FUNCTION()
-                
-                IProtocol* protocol = nullptr;
-  
-                if (socket.GetTlsSession() != nullptr)
-                {
-                    auto session = socket.GetTlsSession();
-                    
-                    String protocolName(Allocator);
-                    bool result = Ssl->NegotiateProtocol(session, protocolName);
-                    
-                    if (result != false)
-                    {
-                        LogInfo.log("Skylar") << "Protocol negotiated as " << *protocolName;
-                        
-                        if (protocolName == "h2")
-                        {
-                            // @todo
-                            protocol = nullptr;
-                        }
-                        else if (protocolName == "http/1.1")
-                        {
-                            protocol = NEKO_NEW(allocator, ProtocolHttp)(socket, &Settings, allocator);
-                        }
-                        
-                        return protocol;
-                    }
-                    
-//                    LogWarning.log("Skylar") << "Tls session data found, but couldn't negotiate needed protocol";
-                }
-                
-                protocol = NEKO_NEW(allocator, ProtocolHttp)(socket, &Settings, allocator);
-                
-                return protocol;
-            }
-            
-            void ThreadRequestProc(ISocket& socket, Net::SocketsQueue& sockets, void* stream) const
-            {
-                auto* protocol = CreateProto(socket, stream, Allocator);
-                
-                if (protocol != nullptr)
-                {
-                    // Check if switching protocol
-                    for (IProtocol* result = nullptr; ;)
-                    {
-                        // This may return a new instance if switching protocols
-                        result = protocol->Process();
-                        // ..so check
-                        if (protocol == result)
-                        {
-                            break;
-                        }
-                        
-                        NEKO_DELETE(Allocator, protocol);
-                        protocol = result;
-                    }
-                    
-                    protocol->Close();
-                }
-                
-                NEKO_DELETE(Allocator, protocol);
-            }
-            
-            virtual int32 DoTask() override
-            {
-                SetThreadDefaultAllocator(Allocator);
-                
-                while (true)
-                {
-                    PROFILE_SECTION("Server request process");
-                    
-                    Net::INetSocket socket;
-                    void* streamData = nullptr; // @todo http/2
-                    
-                    ThreadRequestEvent.Wait();
-                    
-                    if (not Controls.Active)
+                    // This may return a new instance if switching protocols
+                    result = protocol->Process();
+                    // ..so check
+                    if (protocol == result)
                     {
                         break;
                     }
                     
-                    Sockets.Mutex.Lock();
-                    
+                    NEKO_DELETE(Allocator, protocol);
+                    protocol = result;
+                }
+                
+                protocol->Close();
+            }
+            
+            NEKO_DELETE(Allocator, protocol);
+        }
+        
+        virtual int32 DoTask() override
+        {
+            SetThreadDefaultAllocator(Allocator);
+            
+            while (true)
+            {
+                PROFILE_SECTION("Server request process");
+                
+                Net::INetSocket socket;
+                void* streamData = nullptr; // @todo http/2
+                
+                Asynchrony::Await(ThreadRequestCounter);
+                
+                if (not Controls.Active)
+                {
+                    break;
+                }
+                
+                Asynchrony::TaskData task;
+                Asynchrony::LambdaTask storage;
+                
+                Asynchrony::FromLambda([&]()
+                {
                     // get socket and stream data
                     if (not Sockets.IsEmpty())
                     {
                         Tie(socket, streamData) = Sockets.front();
+                        
                         Sockets.Pop();
                     }
                     
                     if (Sockets.IsEmpty())
                     {
-                        ThreadRequestEvent.Reset();
+                        *ThreadRequestCounter = 0; // Reset
                         QueueNotFullEvent.Trigger();
                     }
+                }, &storage, &task, nullptr);
+                
+                volatile int counter = 0;
+                Asynchrony::Run(&task, 1, &counter);
+                Asynchrony::Await(&counter);
+
+                if (not socket.IsOpen())
+                {
+                    continue;
+                }
+                
+                ++ThreadsWorkingCount;
+                
+                // resolve
+                if (Net::NetAddress address; socket.GetAddress(address))
+                {
+                    const uint16 port = address.Port;
                     
-                    Sockets.Mutex.Unlock();
-                    
-                    if (socket.IsOpen())
+                    // it's a valid tls data, secured
+                    if (auto it = Ssl->GetTlsData().Find(port); it.IsValid())
                     {
-                        ++ThreadsWorkingCount;
-                        
-                        // resolve
-                        if (Net::NetAddress address; socket.GetAddress(address))
-                        {
-                            const uint16 port = address.Port;
-                            
-                            // it's a valid tls data, secured
-                            if (auto it = Ssl->GetTlsData().Find(port); it.IsValid())
-                            {
-                                auto* context = it.value();
-                                assert(context != nullptr);
+                        auto* context = it.value();
+                        assert(context != nullptr);
 #   if USE_OPENSSL
-                                SocketSSL socketSsl(socket, static_cast<SSL_CTX* >(context));
+                        SocketSSL socketSsl(socket, static_cast<SSL_CTX* >(context));
 #   endif
-                                if (socketSsl.Handshake())
-                                {
-                                    ThreadRequestProc(socketSsl, Sockets, nullptr);
-                                }
-                            }
-                            else
-                            {
-                                // use default socket
-                                SocketDefault socketDefault(socket);
-                                
-                                ThreadRequestProc(socketDefault, Sockets, streamData);
-                            }
+                        if (socketSsl.Handshake())
+                        {
+                            ThreadRequestProc(socketSsl, Sockets, nullptr);
                         }
-                        --ThreadsWorkingCount;
                     }
                     else
                     {
-                        // shouldn't happen
+                        // use default socket
+                        SocketDefault socketDefault(socket);
+                        
+                        ThreadRequestProc(socketDefault, Sockets, streamData);
                     }
                 }
                 
-                return EXIT_SUCCESS;
+                --ThreadsWorkingCount;
             }
             
-        private:
-            
-            CycleManager& Controls;
-            ServerSharedSettings& Settings;
-            
-            Net::SocketsQueue& Sockets;
-            
-            MT::Event& ThreadRequestEvent;
-            MT::Event& QueueNotFullEvent;
-            
-            IAllocator& Allocator;
-            
-            ISsl* Ssl;
-            
-            ThreadSafeCounter& ThreadsWorkingCount;
-        };
+            return EXIT_SUCCESS;
+        }
         
-        uint16 Server::ProcessWorkerThreads(void* kek)
+    private:
+        
+        CycleManager& Controls;
+        ServerSharedSettings& Settings;
+        
+        Net::SocketsQueue& Sockets;
+        
+        int volatile* ThreadRequestCounter;
+        MT::Event& QueueNotFullEvent;
+        
+        IAllocator& Allocator;
+        
+        ISsl* Ssl;
+        
+        ThreadSafeCounter& ThreadsWorkingCount;
+    };
+    
+    uint16 Server::ProcessWorkerThreads(Server* instance, Net::SocketsQueue& sockets)
+    {
+        ThreadsWorkingCount.Set(0);
+        
+        volatile int threadsProcessCounter = 1; // event
+        
+        const uint32& threadMaxCount = Settings.ThreadsMaxCount;
+        
+        // check thread count
+        assert (threadMaxCount != 0);
+        LogInfo.log("Skylar") << "Using " << threadMaxCount << " threads.";
+        
+        TArray<MT::Task*> activeTasks(Allocator);
+        activeTasks.Reserve(threadMaxCount);
+        
+        // Update applications
+        do
         {
-            auto* data = static_cast<SocketServerData* >(kek);
-            auto& sockets = static_cast<Net::SocketsQueue&>(*data->queue);
+            if (Controls.UpdateModulesEvent.Poll())
+            {
+                UpdateApplications();
+            }
             
-            ThreadsWorkingCount.Set(0);
-            
-            MT::Event threadsProcessEvent(true);
-            
-            const uint32& threadMaxCount = Settings.ThreadsMaxCount;
-            
-            // check thread count
-            assert (threadMaxCount != 0);
-            LogInfo.log("Skylar") << "Using " << threadMaxCount << " threads.";
-            
-            TArray<MT::Task*> activeTasks(Allocator);
-            activeTasks.Reserve(threadMaxCount);
-            
-            // Update applications
+            // process each application requests and threads
             do
             {
-                if (Controls.UpdateModulesEvent.Poll())
-                {
-                    UpdateApplications();
-                }
-                
-                // process each application requests and threads
-                do
-                {
-                    // create initial threads
-                    while (activeTasks.GetSize() == ThreadsWorkingCount.GetValue()
+                // create initial threads
+                while (activeTasks.GetSize() == ThreadsWorkingCount.GetValue()
                        and activeTasks.GetSize() < threadMaxCount and !sockets.IsEmpty())
-                    {
-                        auto* task = NEKO_NEW(Allocator, RequestTask)(*this, Allocator, sockets, threadsProcessEvent);
-                        
-                        StaticString<32> taskName("Skylar requests task #", ThreadsWorkingCount.GetValue() + 1);
-                        
-                        if (task->Create(taskName))
-                        {
-                            activeTasks.Push(task);
-                        }
-                    }
-                    
-                    uint32 notifyCount = activeTasks.GetSize() - ThreadsWorkingCount.GetValue();
-                    
-                    if (notifyCount > sockets.GetSize())
-                    {
-                        notifyCount = sockets.GetSize();
-                    }
-                    
-                    threadsProcessEvent.Trigger(); // @todo notify only specified amount of threads?
-                    
-                    Controls.ProcessQueueEvent.Wait();
-                }
-                while (Controls.Active);
-                
-                // Cleanup
-                
-                threadsProcessEvent.Trigger();
-                
-                if (not activeTasks.IsEmpty())
                 {
-                    // cleanup threads
-                    for (auto thread : activeTasks)
-                    {
-                        thread->Destroy();
-                        NEKO_DELETE(Allocator, thread);
-                    }
+                    auto* task = NEKO_NEW(Allocator, RequestTask)(*this, Allocator, sockets, &threadsProcessCounter);
                     
-                    activeTasks.Clear();
+                    StaticString<32> taskName("Skylar requests task #", ThreadsWorkingCount.GetValue() + 1);
+                    
+                    if (task->Create(taskName))
+                    {
+                        activeTasks.Push(task);
+                    }
                 }
                 
-                QueueNotFullEvent.Trigger();
+                uint32 notifyCount = activeTasks.GetSize() - ThreadsWorkingCount.GetValue();
+                
+                if (notifyCount > sockets.GetSize())
+                {
+                    notifyCount = sockets.GetSize();
+                }
+                
+                threadsProcessCounter = 0; // @todo notify only specified amount of threads?
+                
+                Controls.ProcessQueueEvent.Wait();
             }
-            while (Controls.UpdateModulesEvent.Poll(false));
+            while (Controls.Active);
             
-            SocketsList.Destroy();
+            // Cleanup
             
-            return 0;
-        }
-
-        void Server::UpdateApplications()
-        {
-            PROFILE_FUNCTION()
             
-            // Applications settings list
-            TArray< PoolApplicationSettings* > applications(Allocator);
-            // Get full applications settings list
-            Settings.GetAllApplicationSettings(applications);
+            threadsProcessCounter = 0;
             
-            TArray<uint32> updatedModules(Allocator);
-            
-            LogInfo.log("Skylar") << "Updating server applications..";
-            
-            for (const auto& application : applications)
+            if (not activeTasks.IsEmpty())
             {
-                const uint32 moduleIndex = application->ModuleIndex;
-                
-                // If module is not updated (not checked)
-                if (not updatedModules.Contains(moduleIndex))
+                // cleanup threads
+                for (auto thread : activeTasks)
                 {
-                    // Check if update module is valid and loaded one isn't the same
-                    if (not application->ServerModuleUpdatePath.IsEmpty()
-                        and application->ServerModuleUpdatePath != application->ServerModulePath)
+                    thread->Destroy();
+                    NEKO_DELETE(Allocator, thread);
+                }
+                
+                activeTasks.Clear();
+            }
+            
+            QueueNotFullEvent.Trigger();
+        }
+        while (Controls.UpdateModulesEvent.Poll(false));
+        
+        SocketsList.Destroy();
+        
+        return 0;
+    }
+    
+    void Server::UpdateApplications()
+    {
+        PROFILE_FUNCTION()
+        
+        // Applications settings list
+        TArray< PoolApplicationSettings* > applications(Allocator);
+        // Get full applications settings list
+        Settings.GetAllApplicationSettings(applications);
+        
+        TArray<uint32> updatedModules(Allocator);
+        
+        LogInfo.log("Skylar") << "Updating server applications..";
+        
+        for (const auto& application : applications)
+        {
+            const uint32 moduleIndex = application->ModuleIndex;
+            
+            // If module is not updated (not checked)
+            if (not updatedModules.Contains(moduleIndex))
+            {
+                // Check if update module is valid and loaded one isn't the same
+                if (not application->ServerModuleUpdatePath.IsEmpty()
+                    and application->ServerModuleUpdatePath != application->ServerModulePath)
+                {
+                    auto updateModuleStat = Neko::Platform::GetFileData(*application->ServerModuleUpdatePath);
+                    auto updateModuleSize = updateModuleStat.FileSize;
+                    auto updateModuleDate = updateModuleStat.ModificationTime;
+                    
+                    if (updateModuleStat.bIsValid)
                     {
-                        auto updateModuleStat = Neko::Platform::GetFileData(*application->ServerModuleUpdatePath);
-                        auto updateModuleSize = updateModuleStat.FileSize;
-                        auto updateModuleDate = updateModuleStat.ModificationTime;
+                        updateModuleStat = Neko::Platform::GetFileData(*application->ServerModulePath);
+                        auto moduleSize = updateModuleStat.FileSize;
+                        auto moduleDate = updateModuleStat.ModificationTime;
+                        
+                        auto& module = Modules[moduleIndex];
                         
                         if (updateModuleStat.bIsValid)
                         {
-                            updateModuleStat = Neko::Platform::GetFileData(*application->ServerModulePath);
-                            auto moduleSize = updateModuleStat.FileSize;
-                            auto moduleDate = updateModuleStat.ModificationTime;
-                            
-                            auto& module = Modules[moduleIndex];
-                            
-                            if (updateModuleStat.bIsValid)
+                            if (moduleSize != updateModuleSize or moduleDate < updateModuleDate)
                             {
-                                if (moduleSize != updateModuleSize or moduleDate < updateModuleDate)
-                                {
-                                    UpdateApplication(module, applications, moduleIndex);
-                                }
+                                UpdateApplication(module, applications, moduleIndex);
                             }
                         }
                     }
-                    
-                    updatedModules.Push(moduleIndex);
                 }
+                
+                updatedModules.Push(moduleIndex);
             }
-            
-            LogInfo.log("Skylar") << "Application modules have been updated..";
-            
-            Controls.SetActiveFlag();
-            Controls.UpdateModulesEvent.Reset();
         }
         
-        bool Server::BindPort(const uint16 port, TArray<uint16>& ports)
+        LogInfo.log("Skylar") << "Application modules have been updated..";
+        
+        Controls.SetActiveFlag();
+        Controls.UpdateModulesEvent.Reset();
+    }
+    
+    bool Server::BindPort(const uint16 port, TArray<uint16>& ports)
+    {
+        if (ports.Contains(port))
         {
-            if (ports.Contains(port))
-            {
-                LogError.log("Skylar") << "Attempt to bind socket with used port " << port << ".";
-                return false;
-            }
-            
-            // setup socket
-            Net::INetSocket socket;
-            Net::NetAddress address;
-            
-            address = socket.Init(*Settings.ResolvedAddressString, port, Net::ESocketType::TCP);
-            
-            if (address.AddressType == NA_BAD)
-            {
-                LogError.log("Skylar") << "Server couldn't start at " << Settings.ResolvedAddressString << ":" << port << ". " << strerror(errno);
-                return false;
-            }
-            
-            if (not socket.Bind(address))
-            {
-                LogError.log("Skylar") << "Server couldn't bind to address. " << strerror(errno);
-                return false;
-            }
-            
-            const int32 maxBacklog = SOMAXCONN;
-            if (not socket.Listen(maxBacklog))
-            {
-                LogError.log("Skylar") << "Server couldn't be listen. " << strerror(errno);
-                return false;
-            }
-            
-            socket.MakeNonBlocking(true);
-            socket.SetReuseAddress();
-            socket.SetReusePort();
-            
-            Listeners.Emplace(Neko::Move(socket));
-            
-            ports.Push(port);
-            
-            return true;
+            LogError.log("Skylar") << "Attempt to bind socket with used port " << port << ".";
+            return false;
         }
         
-        bool Server::UpdateApplication(Module& module, TArray<PoolApplicationSettings* >& applications, const uint32 index)
+        // setup socket
+        Net::INetSocket socket;
+        Net::NetAddress address;
+        
+        address = socket.Init(*Settings.ResolvedAddressString, port, Net::ESocketType::TCP);
+        
+        const int32 maxBacklog = SOMAXCONN;
+        if (address.AddressType == NA_BAD
+            or not socket.Bind(address)
+            or not socket.Listen(maxBacklog))
         {
-            TArray<PoolApplicationSettings* > existing(Allocator);
-            
-            for (auto& application : applications)
+            LogError.log("Skylar") << "Server couldn't start at " << Settings.ResolvedAddressString << ":" << port << ". " << strerror(errno);
+            return false;
+        }
+        
+        socket.MakeNonBlocking(true);
+        socket.SetReuseAddress();
+        socket.SetReusePort();
+        
+        Listeners.Emplace(Neko::Move(socket));
+        
+        ports.Push(port);
+        
+        return true;
+    }
+    
+    bool Server::UpdateApplication(Module& module, TArray<PoolApplicationSettings* >& applications, const uint32 index)
+    {
+        TArray<PoolApplicationSettings* > existing(Allocator);
+        
+        for (auto& application : applications)
+        {
+            // all apps with the same module
+            if (application->ModuleIndex == index)
             {
-                // all apps with the same module
-                if (application->ModuleIndex == index)
+                existing.Push(application);
+                
+                assert (application->OnApplicationExit);
                 {
-                    existing.Push(application);
-                    
-                    assert (application->OnApplicationExit);
-                    {
-                        application->OnApplicationExit();
-                    }
-                    
-                    // @todo get rid of std function
-                    application->OnApplicationInit = std::function<bool(ApplicationInitContext)>();
-                    application->OnApplicationRequest = std::function<int16(Http::RequestData* , Http::ResponseData* )>();
-                    application->OnApplicationPostRequest = std::function<void(Http::ResponseData* )>();
-                    application->OnApplicationExit = std::function<void()>();
+                    application->OnApplicationExit();
                 }
-            }
-            
-            module.Close();
-            
-            const auto application = *(existing.begin());
-            
-            const auto& moduleName = application->ServerModulePath;
-            
-            const int32 directoryPos = moduleName.Find("/");
-            const int32 extensionPos = moduleName.Find(".");
-            
-            String moduleNameNew(Allocator);
-            
-            if (extensionPos != INDEX_NONE and (directoryPos == INDEX_NONE or directoryPos < extensionPos))
-            {
-                moduleNameNew = moduleName.Mid(0, extensionPos);
-                moduleNameNew += Math::RandGUID();
-                moduleNameNew += moduleName.Mid(extensionPos);
-            }
-            else
-            {
-                moduleNameNew = moduleName;
-                moduleNameNew += Math::RandGUID();
-            }
-            
-            FileSystem::PlatformFile source;
-            if (not source.Open(*application->ServerModuleUpdatePath, FileSystem::Mode::Read))
-            {
-                LogError.log("Skylar") << "File '" << *application->ServerModuleUpdatePath << "' cannot be open";
-                return false;
-            }
-            
-            FileSystem::PlatformFile destination;
-            if (not destination.Open(*moduleNameNew, FileSystem::Mode::CreateAndWrite))
-            {
-                LogError.log("Skylar") << "File '" << *moduleName << "' cannot be open";
-                return false;
-            }
-            
-            // Rewrite module file
-            TArray<uint8> data(Allocator);
-            data.Resize(source.GetSize());
-            source.Read(&data[0], source.GetSize());
-            destination.Write(&data[0], data.GetSize());
-            
-            source.Close();
-            destination.Close();
-            
-            // Open updated module
-            module.Open(moduleNameNew);
-            
-            if (not Neko::Platform::DeleteFile(*moduleName))
-            {
-                LogError.log("Skylar") << "File '" << *moduleName << "' could not be removed";
-                return false;
-            }
-            
-            if (not Neko::Platform::MoveFile(*moduleNameNew, *moduleName))
-            {
-                LogError.log("Skylar") << "Module '" << *moduleNameNew << "' could not be renamed";
-                return false;
-            }
-            
-            if (not module.IsOpen())
-            {
-                LogError.log("Skylar") << "Application module '" << *moduleName << "' can not be opened";
-                return false;
-            }
-            
-            // Set application module methods
-            bool success = Settings.SetApplicationModuleMethods(*application, module);
-            if (not success)
-            {
-                return false;
-            }
-            
-            for (auto& app : existing)
-            {
-                app->OnApplicationInit = application->OnApplicationInit;
-                app->OnApplicationRequest = application->OnApplicationRequest;
-                app->OnApplicationPostRequest = application->OnApplicationPostRequest;
-                app->OnApplicationExit = application->OnApplicationExit;
                 
-                assert (app->OnApplicationInit);
-                
-                ApplicationInitContext items
-                {
-                    *app->RootDirectory,
-                    
-                    &Allocator,
-                    &FileSystem
-                };
-                
-                app->OnApplicationInit(items);
+                // @todo get rid of std function
+                application->OnApplicationInit = std::function<bool(ApplicationInitContext)>();
+                application->OnApplicationRequest = std::function<int16(Http::RequestData* , Http::ResponseData* )>();
+                application->OnApplicationPostRequest = std::function<void(Http::ResponseData* )>();
+                application->OnApplicationExit = std::function<void()>();
             }
-            
-            return true;
         }
-
-        void Server::CloseListeners()
+        
+        module.Close();
+        
+        const auto application = *(existing.begin());
+        
+        const auto& moduleName = application->ServerModulePath;
+        
+        const int32 directoryPos = moduleName.Find("/");
+        const int32 extensionPos = moduleName.Find(".");
+        
+        String moduleNameNew(Allocator);
+        
+        if (extensionPos != INDEX_NONE and (directoryPos == INDEX_NONE or directoryPos < extensionPos))
         {
-            for (auto& socket : Listeners)
+            moduleNameNew = moduleName.Mid(0, extensionPos);
+            moduleNameNew += Math::RandGUID();
+            moduleNameNew += moduleName.Mid(extensionPos);
+        }
+        else
+        {
+            moduleNameNew = moduleName;
+            moduleNameNew += Math::RandGUID();
+        }
+        
+        FileSystem::PlatformFile source;
+        if (not source.Open(*application->ServerModuleUpdatePath, FileSystem::Mode::Read))
+        {
+            LogError.log("Skylar") << "File '" << *application->ServerModuleUpdatePath << "' cannot be open";
+            return false;
+        }
+        
+        FileSystem::PlatformFile destination;
+        if (not destination.Open(*moduleNameNew, FileSystem::Mode::CreateAndWrite))
+        {
+            LogError.log("Skylar") << "File '" << *moduleName << "' cannot be open";
+            return false;
+        }
+        
+        // Rewrite module file
+        TArray<uint8> data(Allocator);
+        data.Resize(source.GetSize());
+        source.Read(&data[0], source.GetSize());
+        destination.Write(&data[0], data.GetSize());
+        
+        source.Close();
+        destination.Close();
+        
+        // Open updated module
+        module.Open(moduleNameNew);
+        
+        if (not Neko::Platform::DeleteFile(*moduleName))
+        {
+            LogError.log("Skylar") << "File '" << *moduleName << "' could not be removed";
+            return false;
+        }
+        
+        if (not Neko::Platform::MoveFile(*moduleNameNew, *moduleName))
+        {
+            LogError.log("Skylar") << "Module '" << *moduleNameNew << "' could not be renamed";
+            return false;
+        }
+        
+        if (not module.IsOpen())
+        {
+            LogError.log("Skylar") << "Application module '" << *moduleName << "' can not be opened";
+            return false;
+        }
+        
+        // Set application module methods
+        bool success = Settings.SetApplicationModuleMethods(*application, module);
+        if (not success)
+        {
+            return false;
+        }
+        
+        for (auto& app : existing)
+        {
+            app->OnApplicationInit = application->OnApplicationInit;
+            app->OnApplicationRequest = application->OnApplicationRequest;
+            app->OnApplicationPostRequest = application->OnApplicationPostRequest;
+            app->OnApplicationExit = application->OnApplicationExit;
+            
+            assert (app->OnApplicationInit);
+            
+            ApplicationInitContext items
             {
-                socket.Close();
-            }
-        }
-        
-        void Server::Stop()
-        {
-            LogInfo.log("Skylar") << "Server is stopping..";
-            
-            QueueNotFullEvent.Trigger();
-            
-            Controls.StopProcess();
-            CloseListeners();
-        }
-        
-        void Server::Restart()
-        {
-            LogInfo.log("Skylar") << "Server is restarting..";
-            
-            Controls.SetRestartFlag();
-            
-            QueueNotFullEvent.Trigger();
-            Controls.StopProcess();
-            
-            CloseListeners();
-        }
-        
-        void Server::Update()
-        {
-            LogInfo.log("Skylar") << "Server is updating..";
-            
-            Controls.UpdateApplication();
-            Controls.SetActiveFlag(false);
-            Controls.ProcessQueue();
-        }
-        
-        uint32 Server::GetServerProcessId(const String& serverName) const
-        {
-            uint32 processId = 0;
-            {
-                int memoryId;
-                MT::SpinLock lick(Mutex);
+                *app->RootDirectory,
                 
-                if ((memoryId = Neko::Platform::OpenSharedMemory(serverName)) != -1)
-                {
-                    Neko::Platform::ReadSharedMemory(memoryId, &processId, sizeof(processId));
-                }
-            }
+                &Allocator,
+                &FileSystem
+            };
             
-            return processId;
+            app->OnApplicationInit(items);
         }
         
-        // Commands
-        
-        uint16 Server::StartCommand(const String& name, bool force/* = false*/)
+        return true;
+    }
+    
+    void Server::CloseListeners()
+    {
+        for (auto& socket : Listeners)
         {
-            Neko::Platform::CheckSharedMemoryName((String&)name);
-            
-            if (force)
-            {
-                LogInfo.log("Skylar") << "Force server startup: " << *name;
-                
-                Neko::Platform::DestroySharedMemory(*name);
-            }
-            
+            socket.Close();
+        }
+    }
+    
+    void Server::Stop()
+    {
+        LogInfo.log("Skylar") << "Server is stopping..";
+        
+        QueueNotFullEvent.Trigger();
+        
+        Controls.StopProcess();
+        CloseListeners();
+    }
+    
+    void Server::Restart()
+    {
+        LogInfo.log("Skylar") << "Server is restarting..";
+        
+        Controls.SetRestartFlag();
+        
+        QueueNotFullEvent.Trigger();
+        Controls.StopProcess();
+        
+        CloseListeners();
+    }
+    
+    void Server::Update()
+    {
+        LogInfo.log("Skylar") << "Server is updating..";
+        
+        Controls.UpdateApplication();
+        Controls.SetActiveFlag(false);
+        Controls.ProcessQueue();
+    }
+    
+    uint32 Server::GetServerProcessId(const String& serverName) const
+    {
+        uint32 processId = 0;
+        {
             int memoryId;
+            MT::SpinLock lick(Mutex);
             
-            // Check if server is already running
-            bool exists = false;
+            if ((memoryId = Neko::Platform::OpenSharedMemory(serverName)) != -1)
             {
-                MT::SpinLock lock(Mutex);
+                Neko::Platform::ReadSharedMemory(memoryId, &processId, sizeof(processId));
+            }
+        }
+        
+        return processId;
+    }
+    
+    // Commands
+    
+    uint16 Server::StartCommand(const String& name, bool force/* = false*/)
+    {
+        Neko::Platform::CheckSharedMemoryName((String&)name);
+        
+        if (force)
+        {
+            LogInfo.log("Skylar") << "Force server startup: " << *name;
+            
+            Neko::Platform::DestroySharedMemory(*name);
+        }
+        
+        int memoryId;
+        
+        // Check if server is already running
+        bool exists = false;
+        {
+            MT::SpinLock lock(Mutex);
+            
+            if ((memoryId = Neko::Platform::OpenSharedMemory(*name)) != -1 )
+            {
+                int processId = 0;
                 
-                if ((memoryId = Neko::Platform::OpenSharedMemory(*name)) != -1 )
+                if (Neko::Platform::ReadSharedMemory(memoryId, &processId, sizeof(processId) ))
                 {
-                    int processId = 0;
-                    
-                    if (Neko::Platform::ReadSharedMemory(memoryId, &processId, sizeof(processId) ))
-                    {
-                        exists = Neko::Platform::ProcessExists(processId);
-                    }
+                    exists = Neko::Platform::ProcessExists(processId);
                 }
             }
+        }
+        
+        if (exists)
+        {
+            LogError.log("Skylar") << "Server instance '" << *name << "' is already running!";
             
-            if (exists)
+            return EXIT_FAILURE;
+        }
+        
+        Mutex.Lock();
+        
+        if ((memoryId = Neko::Platform::OpenSharedMemory(*name)) == -1)
+        {
+            if ((memoryId = Neko::Platform::CreateSharedMemory(*name, sizeof(uint32))) == -1)
             {
-                LogError.log("Skylar") << "Server instance '" << *name << "' is already running!";
-                
-                return EXIT_FAILURE;
-            }
-            
-            Mutex.Lock();
-            
-            if ((memoryId = Neko::Platform::OpenSharedMemory(*name)) == -1)
-            {
-                if ((memoryId = Neko::Platform::CreateSharedMemory(*name, sizeof(uint32))) == -1)
-                {
-                    Mutex.Unlock();
-                    LogError.log("Skylar") << "Could not allocate shared memory!";
-                    
-                    return EXIT_FAILURE;
-                }
-            }
-            
-            const uint32 processId = Neko::Platform::GetCurrentProcessId();
-            
-            if (Neko::Platform::WriteSharedMemory(memoryId, &processId, sizeof(processId)) == false)
-            {
-                Neko::Platform::DestroySharedMemory(name);
                 Mutex.Unlock();
-                
-                LogError.log("Skylar") << "Could not write data to shared memory!";
+                LogError.log("Skylar") << "Could not allocate shared memory!";
                 
                 return EXIT_FAILURE;
             }
-            
+        }
+        
+        const uint32 processId = Neko::Platform::GetCurrentProcessId();
+        
+        if (Neko::Platform::WriteSharedMemory(memoryId, &processId, sizeof(processId)) == false)
+        {
+            Neko::Platform::DestroySharedMemory(name);
             Mutex.Unlock();
             
-            uint16 code = EXIT_FAILURE;
+            LogError.log("Skylar") << "Could not write data to shared memory!";
             
-            do
+            return EXIT_FAILURE;
+        }
+        
+        Mutex.Unlock();
+        
+        uint16 code = EXIT_FAILURE;
+        
+        do
+        {
+            Controls.SetActiveFlag(false);
+            Controls.SetRestartFlag(false);
+            
+            code = Run();
+        }
+        while (Controls.Active or Controls.Restart);
+        
+        // cleanup
+        Neko::Platform::DestroySharedMemory(name);
+        
+        return code;
+    }
+    
+    uint16 Server::RestartCommand(const String& serverName) const
+    {
+        const uint32 processId = GetServerProcessId(serverName);
+        
+        return processId > 1 and Neko::Platform::SendSignal(processId, SIGUSR1) ? EXIT_SUCCESS : EXIT_FAILURE;
+    }
+    
+    uint16 Server::ExitCommand(const String& serverName) const
+    {
+        const uint32 processId = GetServerProcessId(serverName);
+        
+        return processId > 1 and Neko::Platform::SendSignal(processId, SIGTERM) ? EXIT_SUCCESS : EXIT_FAILURE;
+    }
+    
+    uint16 Server::UpdateModulesCommand(const String& serverName) const
+    {
+        const uint32 processId = GetServerProcessId(serverName);
+        
+        return processId > 1 and Neko::Platform::SendSignal(processId, SIGUSR2) ? EXIT_SUCCESS : EXIT_FAILURE;
+    }
+    
+    void Server::Clear()
+    {
+        QueueNotFullEvent.Reset();
+        
+        Controls.Clear();
+        
+        Settings.Clear();
+        
+        if (Ssl != nullptr)
+        {
+            Ssl->Clear();
+        }
+        
+        if (not Modules.IsEmpty())
+        {
+            for (auto& module : Modules)
             {
-                Controls.SetActiveFlag(false);
-                Controls.SetRestartFlag(false);
-                
-                code = Run();
-            }
-            while (Controls.Active or Controls.Restart);
-            
-            // cleanup
-            Neko::Platform::DestroySharedMemory(name);
-            
-            return code;
-        }
-        
-        uint16 Server::RestartCommand(const String& serverName) const
-        {
-            const uint32 processId = GetServerProcessId(serverName);
-            
-            return processId > 1 and Neko::Platform::SendSignal(processId, SIGUSR1) ? EXIT_SUCCESS : EXIT_FAILURE;
-        }
-        
-        uint16 Server::ExitCommand(const String& serverName) const
-        {
-            const uint32 processId = GetServerProcessId(serverName);
-            
-            return processId > 1 and Neko::Platform::SendSignal(processId, SIGTERM) ? EXIT_SUCCESS : EXIT_FAILURE;
-        }
-        
-        uint16 Server::UpdateModulesCommand(const String& serverName) const
-        {
-            const uint32 processId = GetServerProcessId(serverName);
-            
-            return processId > 1 and Neko::Platform::SendSignal(processId, SIGUSR2) ? EXIT_SUCCESS : EXIT_FAILURE;
-        }
-        
-        void Server::Clear()
-        {
-            QueueNotFullEvent.Reset();
-            
-            Controls.Clear();
-            
-            Settings.Clear();
-          
-            if (Ssl != nullptr)
-            {
-                Ssl->Clear();
+                module.Close();
             }
             
-            if (not Modules.IsEmpty())
-            {
-                for (auto& module : Modules)
-                {
-                    module.Close();
-                }
-                
-                Modules.Clear();
-            }
+            Modules.Clear();
         }
     }
 }
+
 

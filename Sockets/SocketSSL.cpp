@@ -34,139 +34,137 @@
 #if USE_OPENSSL
 #   include <openssl/opensslv.h>
 
-namespace Neko
+namespace Neko::Skylar
 {
-    namespace Skylar
+    SocketSSL::SocketSSL(const Net::INetSocket& socket, SSL_CTX* context)
+    : Socket(socket)
     {
-        SocketSSL::SocketSSL(const Net::INetSocket& socket, SSL_CTX* context)
-        : Socket(socket)
+        assert(context != nullptr);
+        
+        // create an SSL connection and attach it to the socket
+        this->Connection = SSL_new(context);
+        SSL_set_fd(this->Connection, socket.GetNativeHandle());
+    }
+    
+    SocketSSL::SocketSSL(const Net::INetSocket& socket, SSL* connection)
+    : Connection(connection)
+    , Socket(socket)
+    {
+        assert(connection != nullptr);
+    }
+    
+    int32 SocketSSL::Connect()
+    {
+        int32 result = SSL_connect(this->Connection);
+        return result;
+    }
+    
+    long SocketSSL::GetPacketBlocking(void* buffer, const ulong length, const int32& timeout) const
+    {
+        long result;
+        int32 innerError;
+        
+        Net::INetSocket socket;
+        socket.Init(this->GetNativeHandle(), Net::ESocketType::TCP);
+        
+        do
         {
-            assert(context != nullptr);
+            if (not socket.WaitForDataInternal(timeout, false))
+            {
+                // timeout
+                result = -1;
+                break;
+            }
             
-            // create an SSL connection and attach it to the socket
-            this->Connection = SSL_new(context);
-            SSL_set_fd(this->Connection, socket.GetNativeHandle());
+            result = ::SSL_read(this->Connection, buffer, length);
+            innerError = SSL_get_error(this->Connection, result);
+        }
+        while (innerError == SSL_ERROR_WANT_READ or innerError == SSL_ERROR_WANT_WRITE);
+        
+        return result;
+    }
+    
+    long SocketSSL::SendAllPacketsWait(const void* buffer, const ulong length, const int32& timeout) const
+    {
+        ulong checkSize = length;
+        
+        if (checkSize == 0)
+        {
+            return -1;
         }
         
-        SocketSSL::SocketSSL(const Net::INetSocket& socket, SSL* connection)
-        : Connection(connection)
-        , Socket(socket)
-        {
-            assert(connection != nullptr);
-        }
+        ulong total = 0;
+        int32 innerError = 0;
         
-        int32 SocketSSL::Connect()
-        {
-            int32 result = SSL_connect(this->Connection);
-            return result;
-        }
+        Net::INetSocket socket;
+        socket.Init(this->GetNativeHandle(), Net::ESocketType::TCP);
         
-        long SocketSSL::GetPacketBlocking(void* buffer, const ulong length, const int32& timeout) const
+        while (total < length)
         {
-            long result;
-            int32 innerError;
+            if (checkSize > length - total)
+            {
+                checkSize = length - total;
+            }
             
-            Net::INetSocket socket;
-            socket.Init(this->GetNativeHandle(), Net::ESocketType::TCP);
+            long result = 0;
             
             do
             {
-                if (not socket.WaitForDataInternal(timeout, false))
-                {
-                    // timeout
-                    result = -1;
-                    break;
-                }
-                
-                result = ::SSL_read(this->Connection, buffer, length);
-                innerError = SSL_get_error(this->Connection, result);
-            }
-            while (innerError == SSL_ERROR_WANT_READ or innerError == SSL_ERROR_WANT_WRITE);
-            
-            return result;
-        }
-        
-        long SocketSSL::SendAllPacketsWait(const void* buffer, const ulong length, const int32& timeout) const
-        {
-            ulong checkSize = length;
-            
-            if (checkSize == 0)
-            {
-                return -1;
-            }
-            
-            ulong total = 0;
-            int32 innerError = 0;
-            
-            Net::INetSocket socket;
-            socket.Init(this->GetNativeHandle(), Net::ESocketType::TCP);
-            
-            while (total < length)
-            {
-                if (checkSize > length - total)
-                {
-                    checkSize = length - total;
-                }
-                
-                long result = 0;
-                
-                do
-                {
-                    // Wait for send all data to client
-                    if (not socket.WaitForAnyDataInternal(-1, true))
-                    {
-                        continue;
-                    }
-                    
-                    result = ::SSL_write(this->Connection, reinterpret_cast<const uint8_t *>(buffer) + total, checkSize);
-                    innerError = ::SSL_get_error(this->Connection, result);
-                }
-                while (innerError == SSL_ERROR_WANT_WRITE);
-                
-                total += result;
-            }
-            
-            return total;
-        }
-        
-        bool SocketSSL::Handshake()
-        {
-            int32 innerResult = 0;
-            int32 result = 0;
-            
-            do
-            {
-                if (not Socket.WaitForAnyDataInternal(-1, false))
+                // Wait for send all data to client
+                if (not socket.WaitForAnyDataInternal(-1, true))
                 {
                     continue;
                 }
                 
-                result = SSL_accept(this->Connection);
-                innerResult = SSL_get_error(this->Connection, result);
+                result = ::SSL_write(this->Connection, reinterpret_cast<const uint8_t *>(buffer) + total, checkSize);
+                innerError = ::SSL_get_error(this->Connection, result);
             }
-            while (innerResult == SSL_ERROR_WANT_READ);
+            while (innerError == SSL_ERROR_WANT_WRITE);
             
-            // uhh
-//            do
-//            {
-//                result = SSL_do_handshake(this->Connection);
-//                innerResult = SSL_get_error(this->Connection, result);
-//            }
-//            while (innerResult == SSL_ERROR_WANT_READ || innerResult == SSL_ERROR_WANT_WRITE);
-            
-            return true;
+            total += result;
         }
         
-        void SocketSSL::Close()
+        return total;
+    }
+    
+    bool SocketSSL::Handshake()
+    {
+        int32 innerResult = 0;
+        int32 result = 0;
+        
+        do
         {
-            // Wait for send all data to client
-            Socket.WaitForAnyDataInternal(-1, true);
+            if (not Socket.WaitForAnyDataInternal(-1, false))
+            {
+                continue;
+            }
             
-            SSL_shutdown(this->Connection);
-            Socket.Close();
+            result = SSL_accept(this->Connection);
+            innerResult = SSL_get_error(this->Connection, result);
         }
+        while (innerResult == SSL_ERROR_WANT_READ);
+        
+        // uhh
+        //            do
+        //            {
+        //                result = SSL_do_handshake(this->Connection);
+        //                innerResult = SSL_get_error(this->Connection, result);
+        //            }
+        //            while (innerResult == SSL_ERROR_WANT_READ || innerResult == SSL_ERROR_WANT_WRITE);
+        
+        return true;
+    }
+    
+    void SocketSSL::Close()
+    {
+        // Wait for send all data to client
+        Socket.WaitForAnyDataInternal(-1, true);
+        
+        SSL_shutdown(this->Connection);
+        Socket.Close();
     }
 }
 
 #endif
+
 

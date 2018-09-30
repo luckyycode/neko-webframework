@@ -29,33 +29,30 @@
 //  Copyright © 2018 Neko Vision. All rights reserved.
 //
 
-namespace Neko
+namespace Neko::Skylar
 {
-    namespace Skylar
+    struct ContentDesc
     {
-        struct ContentDesc
-        {
-            // uint32 should fit..
-            
-            //! Size of all content.
-            uint32 FullSize;
-            //! Parsed content size.
-            uint32 BytesReceived;
-            //! Leftover
-            uint32 LeftBytes;
-            
-            //! State object, can be used to store transient content data.
-            void* State;
-            
-            void* Data;
-            
-            const class IContentType* ContentType;
-        };
+        // uint32 should fit..
         
-        static inline bool EnsureContentLength(ContentDesc& contentDesc)
-        {
-            return contentDesc.FullSize == 0
-                or contentDesc.FullSize != contentDesc.BytesReceived;;
-        }
+        //! Size of all content.
+        uint32 FullSize;
+        //! Parsed content size.
+        uint32 BytesReceived;
+        //! Leftover
+        uint32 LeftBytes;
+        
+        //! State object, can be used to store transient content data.
+        void* State;
+        
+        void* Data;
+        
+        const class IContentType* ContentType;
+    };
+    
+    static inline bool EnsureContentLength(ContentDesc& contentDesc)
+    {
+        return contentDesc.FullSize == 0
+            or contentDesc.FullSize != contentDesc.BytesReceived;;
     }
 }

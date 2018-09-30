@@ -32,30 +32,27 @@
 #include "ApplicationJson.h"
 #include "ContentDesc.h"
 
-namespace Neko
+namespace Neko::Skylar
 {
-    namespace Skylar
+    ApplicationJson::ApplicationJson(IAllocator& allocator)
+    : IContentType(allocator)
     {
-        ApplicationJson::ApplicationJson(IAllocator& allocator)
-        : IContentType(allocator)
+        Name = "application/json";
+    }
+    
+    bool ApplicationJson::ParseFromBuffer(const Neko::String& buffer, Http::RequestDataInternal& requestData, ContentDesc* contentDesc) const
+    {
+        if (buffer.IsEmpty())
         {
-            Name = "application/json";
+            return EnsureContentLength(*contentDesc);
         }
         
-        bool ApplicationJson::ParseFromBuffer(const Neko::String& buffer, Http::RequestDataInternal& requestData, ContentDesc* contentDesc) const
-        {
-            if (buffer.IsEmpty())
-            {
-                return EnsureContentLength(*contentDesc);
-            }
-            
-            requestData.IncomingData.Insert("jsonData", buffer);
-            
-            contentDesc->LeftBytes = 0;
-            contentDesc->BytesReceived = contentDesc->FullSize;
-            
-            return true;
-        }
+        requestData.IncomingData.Insert("jsonData", buffer);
+        
+        contentDesc->LeftBytes = 0;
+        contentDesc->BytesReceived = contentDesc->FullSize;
+        
+        return true;
     }
 }
 
