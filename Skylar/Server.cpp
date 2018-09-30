@@ -358,28 +358,29 @@ namespace Neko::Skylar
                 
                 Asynchrony::TaskData task;
                 Asynchrony::LambdaTask storage;
-                
-                Asynchrony::FromLambda([&]()
                 {
-                    // get socket and stream data
-                    if (not Sockets.IsEmpty())
+                    MT::SpinLock lock(Sockets.Mutex);
+                    Asynchrony::FromLambda([&]()
                     {
-                        Tie(socket, streamData) = Sockets.front();
+                        // get socket and stream data
+                        if (not Sockets.IsEmpty())
+                        {
+                            Tie(socket, streamData) = Sockets.front();
+                            
+                            Sockets.Pop();
+                        }
                         
-                        Sockets.Pop();
-                    }
+                        if (Sockets.IsEmpty())
+                        {
+                            *ThreadRequestCounter = 0; // Reset
+                            QueueNotFullEvent.Trigger();
+                        }
+                    }, &storage, &task, nullptr);
                     
-                    if (Sockets.IsEmpty())
-                    {
-                        *ThreadRequestCounter = 0; // Reset
-                        QueueNotFullEvent.Trigger();
-                    }
-                }, &storage, &task, nullptr);
-                
-                volatile int counter = 0;
-                Asynchrony::Run(&task, 1, &counter);
-                Asynchrony::Await(&counter);
-
+                    volatile int counter = 0;
+                    Asynchrony::Run(&task, 1, &counter);
+                    Asynchrony::Await(&counter);
+                }
                 if (not socket.IsOpen())
                 {
                     continue;
