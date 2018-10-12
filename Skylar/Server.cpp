@@ -43,6 +43,7 @@
 #include "Http.h"
 #include "ISsl.h"
 #include "IProtocol.h"
+#include "RequestTask.h"
 
 #include "../Sockets/SocketSSL.h"
 #include "../Sockets/SocketDefault.h"
@@ -69,8 +70,6 @@ namespace Neko::Skylar
     bool Server::Init()
     {
         LogInfo.log("Skylar") << "Server initializing..";
-        
-        LogInfo.log("Skylar") << "Loading server settings";
         
         // load every application & settings
         bool settingsLoaded = Settings.LoadAppSettings("serversettings.json", Modules);
@@ -100,22 +99,19 @@ namespace Neko::Skylar
         }
     }
     
-    void* Server::InitSsl(const PoolApplicationSettings& application)
+    void* Server::InitSslFor(const PoolApplicationSettings& application)
     {
         assert(this->Ssl != nullptr);
-        return this->Ssl->InitSsl(application);
+        return this->Ssl->InitSslFor(application);
     }
     
     void Server::PrepareApplications()
     {
         LogInfo.log("Skylar") << "Preparing server applications..";
-        
         // Applications settings list
         TArray< PoolApplicationSettings* > applications(Allocator);
-        
         // Get full applications settings list
         Settings.GetAllApplicationSettings(applications);
-        
         // Bound port list
         TArray<uint16> ports(Allocator);
         
@@ -127,7 +123,7 @@ namespace Neko::Skylar
             if (tlsPort != 0)
             {
                 // initialize it first
-                auto* context = InitSsl(*application);
+                auto* context = InitSslFor(*application);
                 
                 if (context != nullptr && BindPort(tlsPort, ports))
                 {
@@ -181,7 +177,7 @@ namespace Neko::Skylar
         // Create a task which will process all worker threads
         Asynchrony::TaskData task;
         Asynchrony::LambdaTask storage;
-        Asynchrony::FromLambda([&]() { ProcessWorkerThreads(this, sockets); },
+        Asynchrony::From([&]() { ProcessWorkerThreads(this, sockets); },
                                &storage, &task, nullptr);
         Asynchrony::Run(&task);
         
@@ -253,196 +249,12 @@ namespace Neko::Skylar
         
         return EXIT_SUCCESS;
     }
-    
-    
-    // Task for processing incoming requests. @see Server::ProcessWorkerThreads
-    class RequestTask : public MT::Task
-    {
-    public:
-        
-        RequestTask(Server& server, IAllocator& allocator, Net::SocketsQueue& sockets, int volatile* threadRequestCounter)
-        : MT::Task(allocator)
-        , Sockets(sockets)
-        , ThreadRequestCounter(threadRequestCounter)
-        , QueueNotFullEvent(server.QueueNotFullEvent)
-        , Settings(server.Settings)
-        , Controls(server.Controls)
-        , ThreadsWorkingCount(server.ThreadsWorkingCount)
-        , Ssl(server.Ssl)
-        , Allocator(allocator)
-        {
-        }
-        
-        IProtocol* CreateProto(ISocket& socket, void* stream, IAllocator& allocator) const
-        {
-            PROFILE_FUNCTION()
-            
-            IProtocol* protocol = nullptr;
-            
-            if (socket.GetTlsSession() != nullptr)
-            {
-                auto session = socket.GetTlsSession();
-                
-                String protocolName(Allocator);
-                bool result = Ssl->NegotiateProtocol(session, protocolName);
-                
-                if (result != false)
-                {
-                    LogInfo.log("Skylar") << "Protocol negotiated as " << *protocolName;
-                    
-                    if (protocolName == "h2")
-                    {
-                        // @todo
-                        protocol = nullptr;
-                    }
-                    else if (protocolName == "http/1.1")
-                    {
-                        protocol = NEKO_NEW(allocator, ProtocolHttp)(socket, &Settings, allocator);
-                    }
-                    
-                    return protocol;
-                }
-                
-                //LogWarning.log("Skylar") << "Tls session data found, but couldn't negotiate the needed protocol";
-            }
-            
-            protocol = NEKO_NEW(allocator, ProtocolHttp)(socket, &Settings, allocator);
-            
-            return protocol;
-        }
-        
-        void ThreadRequestProc(ISocket& socket, Net::SocketsQueue& sockets, void* stream) const
-        {
-            auto* protocol = CreateProto(socket, stream, Allocator);
-            
-            if (protocol != nullptr)
-            {
-                // Check if switching protocol
-                for (IProtocol* result = nullptr; ;)
-                {
-                    // This may return a new instance if switching protocols
-                    result = protocol->Process();
-                    // ..so check
-                    if (protocol == result)
-                    {
-                        break;
-                    }
-                    
-                    NEKO_DELETE(Allocator, protocol);
-                    protocol = result;
-                }
-                
-                protocol->Close();
-            }
-            
-            NEKO_DELETE(Allocator, protocol);
-        }
-        
-        virtual int32 DoTask() override
-        {
-            SetThreadDefaultAllocator(Allocator);
-            
-            while (true)
-            {
-                PROFILE_SECTION("Server request process");
-                
-                Net::INetSocket socket;
-                void* streamData = nullptr; // @todo http/2
-                
-                Asynchrony::Await(ThreadRequestCounter);
-                
-                if (not Controls.Active)
-                {
-                    break;
-                }
-                
-                Asynchrony::TaskData task;
-                Asynchrony::LambdaTask storage;
-                {
-                    MT::SpinLock lock(Sockets.Mutex);
-                    Asynchrony::FromLambda([&]()
-                    {
-                        // get socket and stream data
-                        if (not Sockets.IsEmpty())
-                        {
-                            Tie(socket, streamData) = Sockets.front();
-                            
-                            Sockets.Pop();
-                        }
-                        
-                        if (Sockets.IsEmpty())
-                        {
-                            *ThreadRequestCounter = 0; // Reset
-                            QueueNotFullEvent.Trigger();
-                        }
-                    }, &storage, &task, nullptr);
-                    
-                    volatile int counter = 0;
-                    Asynchrony::Run(&task, 1, &counter);
-                    Asynchrony::Await(&counter);
-                }
-                if (not socket.IsOpen())
-                {
-                    continue;
-                }
-                
-                ++ThreadsWorkingCount;
-                
-                // resolve
-                if (Net::NetAddress address; socket.GetAddress(address))
-                {
-                    const uint16 port = address.Port;
-                    
-                    // it's a valid tls data, secured
-                    if (auto it = Ssl->GetTlsData().Find(port); it.IsValid())
-                    {
-                        auto* context = it.value();
-                        assert(context != nullptr);
-#   if USE_OPENSSL
-                        SocketSSL socketSsl(socket, static_cast<SSL_CTX* >(context));
-#   endif
-                        if (socketSsl.Handshake())
-                        {
-                            ThreadRequestProc(socketSsl, Sockets, nullptr);
-                        }
-                    }
-                    else
-                    {
-                        // use default socket
-                        SocketDefault socketDefault(socket);
-                        
-                        ThreadRequestProc(socketDefault, Sockets, streamData);
-                    }
-                }
-                
-                --ThreadsWorkingCount;
-            }
-            
-            return EXIT_SUCCESS;
-        }
-        
-    private:
-        
-        CycleManager& Controls;
-        ServerSharedSettings& Settings;
-        
-        Net::SocketsQueue& Sockets;
-        
-        int volatile* ThreadRequestCounter;
-        MT::Event& QueueNotFullEvent;
-        
-        IAllocator& Allocator;
-        
-        ISsl* Ssl;
-        
-        ThreadSafeCounter& ThreadsWorkingCount;
-    };
-    
+
     uint16 Server::ProcessWorkerThreads(Server* instance, Net::SocketsQueue& sockets)
     {
         ThreadsWorkingCount.Set(0);
         
-        volatile int threadsProcessCounter = 1; // event
+        TaskCounter threadsProcessCounter = 1; // event
         
         const uint32& threadMaxCount = Settings.ThreadsMaxCount;
         

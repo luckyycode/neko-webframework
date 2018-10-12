@@ -36,8 +36,8 @@ namespace Neko::Skylar
 {
     // empty
     
-    ProtocolWebSocket::ProtocolWebSocket(ISocket& socket, const ServerSharedSettings* settings, IAllocator& allocator)
-    : IProtocol(socket, settings, allocator)
+    ProtocolWebSocket::ProtocolWebSocket(ISocket& socket, IAllocator& allocator)
+    : IProtocol(socket, allocator)
     { }
     
     ProtocolWebSocket::ProtocolWebSocket(const IProtocol& protocol)

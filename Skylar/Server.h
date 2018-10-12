@@ -100,7 +100,7 @@ namespace Neko::Skylar
         bool UpdateApplication(Module& module, TArray< PoolApplicationSettings* >& applications, const uint32 moduleIndex);
         
         
-        void* InitSsl(const PoolApplicationSettings& application);
+        void* InitSslFor(const PoolApplicationSettings& application);
         
         void CloseListeners();
         
@@ -156,6 +156,10 @@ namespace Neko::Skylar
         
         //! Amount of active worker threads.
         mutable ThreadSafeCounter ThreadsWorkingCount;
+        
+    private:
+        
+        NON_COPYABLE(Server)
     };
 }
 

@@ -47,8 +47,8 @@
 
 namespace Neko::Skylar
 {
-    ProtocolHttp::ProtocolHttp(ISocket& socket, const ServerSharedSettings* settings, IAllocator& allocator)
-    : IProtocol(socket, settings, allocator)
+    ProtocolHttp::ProtocolHttp(ISocket& socket, IAllocator& allocator)
+    : IProtocol(socket, allocator)
     {
         
     }
@@ -215,9 +215,10 @@ namespace Neko::Skylar
         
         String contentBuffer(allocator);
         
-        if (stringBuffer.Length() <= contentLength)
+        uint32 length = stringBuffer.Length();
+        if (length <= contentLength)
         {
-            contentDesc.BytesReceived = stringBuffer.Length();
+            contentDesc.BytesReceived = length;
             std::swap(contentBuffer, stringBuffer);
         }
         else
@@ -320,12 +321,14 @@ namespace Neko::Skylar
         // check limits
         if (applicationSettings.RequestMaxSize > 0 /* if max size is set */ and applicationSettings.RequestMaxSize < contentLength)
         {
-            LogWarning.log("Skylar") << "Large request " << (uint64)contentLength << "/" << applicationSettings.RequestMaxSize;
+            LogWarning.log("Skylar") << "Large request "
+                << (uint64)contentLength << "/" << applicationSettings.RequestMaxSize;
             
             return Http::StatusCode::RequestEntityTooLarge;
         }
         
-        const bool parsed = ParseRequestContentType(request, stringBuffer, contentTypeData, contentTypeName, contentLength, contentParams, Socket, Allocator);
+        const bool parsed = ParseRequestContentType(request, stringBuffer, contentTypeData,
+                                                    contentTypeName, contentLength, contentParams, Socket, Allocator);
         
         if (not parsed)
         {
@@ -471,7 +474,9 @@ namespace Neko::Skylar
                 auto headerName = stringBuffer.Mid(strCur, delimiter - strCur);
                 headerName.ToLowerInline();
                 
-                auto headerValue = stringBuffer.Mid(delimiter + 1, strEnd - delimiter - 1).Trim();
+                auto headerValue = stringBuffer
+                    .Mid(delimiter + 1, strEnd - delimiter - 1)
+                    .Trim();
                 
                 // save
                 request.IncomingHeaders.Insert(Neko::Move(headerName), Neko::Move(headerValue));
@@ -506,7 +511,7 @@ namespace Neko::Skylar
     
     static void SendStatus(const ISocket& socket, const Http::Request& request, const Http::StatusCode statusCode, IAllocator& allocator)
     {
-        const auto it = GetStatusList().Find((int)statusCode);
+        const auto it = GetStatusList().Find(static_cast<int>(statusCode));
         
         if (not it.IsValid())
         {
@@ -514,13 +519,13 @@ namespace Neko::Skylar
             return;
         }
         
-        String headers("HTTP/1.1 ", allocator);
-        headers += (int)statusCode; // the code itself
-        headers += " ";
-        headers += it.value();  // status name
-        headers += "\r\n\r\n";  // skip
+        StaticString<64> headers("HTTP/1.1 ");
+        headers << static_cast<int>(statusCode); // the code itself
+        headers << " ";
+        headers << it.value();  // status name
+        headers << "\r\n\r\n";  // skip
         
-        socket.SendAllPacketsWait(*headers, headers.Length(), request.Timeout);
+        socket.SendAllPacketsWait(headers, StringLength(headers), request.Timeout);
     }
     
     static inline void CheckRequestUpgrade(Http::Request& request, bool secure)

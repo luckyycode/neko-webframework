@@ -79,7 +79,7 @@ namespace Neko::Skylar
             return SSL_TLSEXT_ERR_NOACK;
         }
         
-        void* InitSsl(const PoolApplicationSettings& application) override
+        void* InitSslFor(const PoolApplicationSettings& application) override
         {
             SSL_CTX* context = nullptr;
             
@@ -119,7 +119,7 @@ namespace Neko::Skylar
             }
         }
         
-        bool NegotiateProtocol(void* session, String& protocol) override
+        bool NegotiateProtocol(void* session, char* protocol) override
         {
             const Byte* proto = nullptr;
             uint32 length = 0;
@@ -135,7 +135,7 @@ namespace Neko::Skylar
             bool ok = length > 0;
             if (ok)
             {
-                protocol.Assign((const char*)proto, length);
+                CopyString(protocol, length, (const char*)proto);
             }
             
             return ok;
@@ -174,6 +174,8 @@ namespace Neko::Skylar
     
     ISsl* ISsl::Create(IAllocator& allocator)
     {
+        LogInfo.log("Skylar") << "Initializing ssl settings";
+        
         static OpenSslImpl impl(allocator);
         if (impl.Init())
         {

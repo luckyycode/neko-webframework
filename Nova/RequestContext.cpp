@@ -244,7 +244,7 @@ namespace Neko::Nova
                 datastream >> request.IncomingHeaders >> request.IncomingData >> request.IncomingFiles;
                 
                 // instantiate protocol
-                protocol = NEKO_NEW(Allocator, ProtocolHttp)(*socket, nullptr, Allocator);
+                protocol = NEKO_NEW(Allocator, ProtocolHttp)(*socket, Allocator);
                 
                 break;
             }

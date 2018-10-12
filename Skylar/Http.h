@@ -36,6 +36,7 @@
 #include "Engine/Network/NetSocket.h"
 #include "Engine/Network/Http/HttpStatusCodes.h"
 #include "Engine/Network/Http/Request.h"
+#include "Engine/Utilities/NonCopyable.h"
 
 namespace Neko::Skylar
 {
@@ -46,7 +47,7 @@ namespace Neko::Skylar
         
         // See comments in IProtocol.
         
-        ProtocolHttp(class ISocket& socket, const ServerSharedSettings* settings, IAllocator& allocator);
+        ProtocolHttp(class ISocket& socket, IAllocator& allocator);
         
         virtual IProtocol* Process() override;
         
@@ -70,6 +71,10 @@ namespace Neko::Skylar
         
         /** Process a request using this protocol. */
         void RunProtocol(Http::Request& request, char* data, String& stringBuffer) const;
+        
+    private:
+        
+        NON_COPYABLE(ProtocolHttp)
     };
 }
 

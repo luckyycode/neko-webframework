@@ -39,6 +39,7 @@
 #include "Engine/Mt/Task.h"
 
 #include "Skylar/Server.h"
+#include "Clustering/ClusterHost.h"
 
 // Network base
 
@@ -116,6 +117,10 @@ namespace Neko
         : Engine(engine)
         , Allocator(engine.GetAllocator())
         {
+            Clustering::ClusterHost host("kek", Clustering::ClusterHostType::Primary);
+            host.NodeConfiguration.EndPoint.Resolve("127.0.0.1:1337", AF_UNSPEC);
+            host.Start();
+            
             if (this->Task = NEKO_NEW(Allocator, ServerTask)(Allocator, engine.GetFileSystem());
                 not this->Task->Create("Skylar task"))
             {

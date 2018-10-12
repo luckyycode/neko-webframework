@@ -48,8 +48,8 @@ namespace Neko::Skylar
         
         virtual bool Init() = 0;
         
-        virtual void* InitSsl(const PoolApplicationSettings& application) = 0;
-        virtual bool NegotiateProtocol(void* session, String& protocol) = 0;
+        virtual void* InitSslFor(const PoolApplicationSettings& application) = 0;
+        virtual bool NegotiateProtocol(void* session, char* protocol) = 0;
         
         virtual void AddSession(uint16 port, void* context) = 0;
         virtual const TlsMap& GetTlsData() const = 0;

@@ -43,9 +43,9 @@
 
 namespace Neko::Skylar
 {
-    IProtocol::IProtocol(ISocket& socket, const ServerSharedSettings* settings, IAllocator& allocator)
+    IProtocol::IProtocol(ISocket& socket, IAllocator& allocator)
     : Socket(socket)
-    , SharedSettings(settings)
+    , SharedSettings(nullptr)
     , Allocator(allocator)
     , Timer()
     { }
@@ -642,6 +642,11 @@ namespace Neko::Skylar
         NEKO_UNUSED(success)
         
         return true;
+    }
+    
+    void IProtocol::SetSettingsSource(const ServerSharedSettings& settings)
+    {
+        this->SharedSettings = &settings;
     }
 }
 

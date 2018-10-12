@@ -42,6 +42,8 @@
 
 namespace Neko::Skylar
 {
+    using namespace FileSystem;
+    
     ServerSharedSettings::ServerSharedSettings(FileSystem::IFileSystem& fileSystem, IAllocator& allocator)
     : Allocator(allocator)
     , FileSystem(fileSystem)
@@ -60,14 +62,16 @@ namespace Neko::Skylar
     
     void ServerSharedSettings::AddContentType(IContentType& contentType)
     {
-        LogInfo.log("Skylar") << "AddContentType: " << *contentType.GetName();
+        LogInfo.log("Skylar") << "AddContentType \"" << *contentType.GetName() << "\"";
         ContentTypes.Insert(contentType.GetName(), &contentType);
     }
     
     bool ServerSharedSettings::LoadAppSettings(const String& fileName, TArray<Module>& modules)
     {
+        LogInfo.log("Skylar") << "Loading application server settings";
+        
         Neko::Path path(*fileName);
-        IStream* file = FileSystem.Open(FileSystem.GetDiskDevice(), path, FileSystem::Mode::Read);
+        IStream* file = FileSystem.Open(FileSystem.GetDiskDevice(), path, Mode::Read);
         
         if (file == nullptr)
         {
@@ -78,7 +82,6 @@ namespace Neko::Skylar
         
         const auto tempDirectory = Neko::Platform::GetTempDirectory();
         const uint32 requestMaxSize = 10485760;
-        const uint64 maxDefaultSize = Megabyte(64);
         
         // Create appsettings
         TArray< PoolApplicationSettings* > applicationSettingItems(Allocator);
@@ -95,7 +98,10 @@ namespace Neko::Skylar
         json.DeserializeLabel(label, 255);
         json.DeserializeObjectBegin();
         {
-            json.Deserialize("threadMaxCount", this->ThreadsMaxCount, 0);
+            uint32 threadCount = Platform::GetNumberOfLogicalCores();
+            json.Deserialize("threadMaxCount", this->ThreadsMaxCount, threadCount);
+            
+            const uint64 maxDefaultSize = Megabyte(64);
             json.Deserialize("maxMemoryUsage", this->MaxMemoryUsage, maxDefaultSize);
         }
         json.DeserializeObjectEnd();
@@ -150,7 +156,10 @@ namespace Neko::Skylar
         
         FileSystem.Close(*file);
         
-        for (uint16 i = 0; i < applicationSettingItems.GetSize(); ++i)
+        uint32 applicationCount = applicationSettingItems.GetSize();
+        LogInfo.log("Skylar") << "Found " << applicationCount << " application(s)";
+        
+        for (uint16 i = 0; i < applicationCount; ++i)
         {
             auto* settings = applicationSettingItems[i];
             
@@ -202,6 +211,12 @@ namespace Neko::Skylar
         AddContentType(*NEKO_NEW(Allocator, TextPlain) (Allocator));
         AddContentType(*NEKO_NEW(Allocator, FormUrlencoded) (Allocator));
         AddContentType(*NEKO_NEW(Allocator, ApplicationJson) (Allocator));
+        
+        LogInfo.log("Skylar") << "Supported mime types:";
+        for (auto& type : SupportedMimeTypes)
+        {
+            LogInfo.log("Skylar") << "\t" << *type;
+        }
         
         return true;
     }
@@ -343,6 +358,8 @@ namespace Neko::Skylar
     
     bool ServerSharedSettings::AddApplication(const String& application, PoolApplicationSettings* settings)
     {
+        LogInfo.log("Skylar") << "Added \"" << *application << "\" application";
+        
         // Add application in server application list
         List.AddApplication(application, settings);
         

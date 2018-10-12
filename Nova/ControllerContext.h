@@ -60,12 +60,10 @@ namespace Neko
             : Allocator(allocator)
             , Actions(allocator)
             , Router(router)
+            , Path(path)
+            , Name(name)
             {
-                this->Path.Set(path);
-                this->Path << "/";
-                this->Path << name;
-                
-                this->Name.Set(name);
+                Path << "/" << name;
             }
             
             /**

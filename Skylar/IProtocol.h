@@ -63,7 +63,7 @@ namespace Neko::Skylar
          * @param settings  Shared server settings.
          * @param controls  Shared server controls.
          */
-        IProtocol(class ISocket& socket, const ServerSharedSettings* settings, class IAllocator& allocator);
+        IProtocol(class ISocket& socket, class IAllocator& allocator);
         
         IProtocol(const IProtocol& protocol);
         
@@ -147,6 +147,8 @@ namespace Neko::Skylar
         Timer Timer;
         
     public:
+        
+        void SetSettingsSource(const ServerSharedSettings& settings);
         
         /**
          * Sends a file. Can use partial send.

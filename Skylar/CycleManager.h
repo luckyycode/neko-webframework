@@ -34,6 +34,7 @@
 #include "Engine/Utilities/Cache.h"
 #include "Engine/Mt/Sync.h"
 #include "Engine/Mt/ThreadSafe.h"
+#include "Engine/Utilities/NonCopyable.h"
 
 namespace Neko::Skylar
 {
@@ -95,6 +96,10 @@ namespace Neko::Skylar
         ThreadSafeBool Active;
         
         ThreadSafeBool Restart;
+        
+    private:
+        
+        NON_COPYABLE(CycleManager)
     };
 }
 
