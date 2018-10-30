@@ -1,4 +1,4 @@
-//
+﻿//
 //          *                  *
 //             __                *
 //           ,db'    *     *
@@ -68,7 +68,7 @@ namespace Neko::Skylar
         String ServerModulePath;
         String ServerModuleUpdatePath;
         
-        // Ssl
+        // Ssl kek
         
         String CertificateFile;
         String KeyFile;
