@@ -17,11 +17,6 @@
 //          vV\|/vV|`-'\  ,---\   | \Vv\hjwVv\//v
 //                     _) )    `. \ /
 //                    (__/       ) )
-//  _   _      _           _____                                            _
-// | \ | | ___| | _____   |  ___| __ __ _ _ __ ___   _____      _____  _ __| | __
-// |  \| |/ _ \ |/ / _ \  | |_ | '__/ _` | '_ ` _ \ / _ \ \ /\ / / _ \| '__| |/ /
-// | |\  |  __/   < (_) | |  _|| | | (_| | | | | | |  __/\ V  V / (_) | |  |   <
-// |_| \_|\___|_|\_\___/  |_|  |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
 //
 //  TextPlain.h
 //  Neko Framework
@@ -35,15 +30,13 @@
 
 namespace Neko::Skylar
 {
-    /// Text/plain extension for content type.
+    /** Text/plain extension for content type. */
     class TextPlain: public IContentType
     {
     public:
-        
         TextPlain(IAllocator& allocator);
         
     public:
-        
         virtual bool ParseFromBuffer(const String& buffer, Net::Http::RequestDataInternal& requestData, ContentDesc* contentDesc) const override;
     };
 }

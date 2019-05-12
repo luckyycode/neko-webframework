@@ -17,11 +17,6 @@
 //          vV\|/vV|`-'\  ,---\   | \Vv\hjwVv\//v
 //                     _) )    `. \ /
 //                    (__/       ) )
-//  _   _      _           _____                                            _
-// | \ | | ___| | _____   |  ___| __ __ _ _ __ ___   _____      _____  _ __| | __
-// |  \| |/ _ \ |/ / _ \  | |_ | '__/ _` | '_ ` _ \ / _ \ \ /\ / / _ \| '__| |/ /
-// | |\  |  __/   < (_) | |  _|| | | (_| | | | | | |  __/\ V  V / (_) | |  |   <
-// |_| \_|\___|_|\_\___/  |_|  |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
 //
 //  ControllerContext.h
 //  Neko Framework
@@ -39,108 +34,111 @@
 
 #include <functional>
 
-namespace Neko
+namespace Neko::Nova
 {
-    namespace Nova
+    /** Controller context is created once on controller registration.
+     It must only manage own controller lifetime. Contains controller info for actions, etc */
+    template <class TController>
+    struct ControllerContext final : public IControllerContext
     {
-        /** Controller context is created once on controller registration.
-            It must only manage own controller lifetime. Contains controller info for actions, etc */
-        template <class TController>
-        struct ControllerContext final : public IControllerContext
-        {
-            // only controller interfaces
-            static_assert(std::is_convertible<TController, IController>::value, "Must inherit from IController!");
-            
-            typedef std::function<class IController* (Http::Request&, Http::Response&) > CreateControllerFunc;
-            
-            /**
-             *  Creates a new controller context for a controller type.
-             */
-            ControllerContext(IAllocator& allocator, Router& router, const char* path, const char* name)
+        // only controller interfaces
+        static_assert(std::is_convertible<TController, IController>::value, "Must inherit from IController!");
+        
+        using CreateControllerFunc = std::function<class IController* (Http::Request&, Http::Response&) >;
+        using ActionMap = THashMap<uint32, ControllerAction>;
+
+        /**
+         *  Creates a new controller context for a controller type.
+         */
+        ControllerContext(IAllocator& allocator, IRouter& router, const char* path, const char* name)
             : Allocator(allocator)
             , Actions(allocator)
             , Router(router)
             , Path(path)
             , Name(name)
-            {
-                Path << "/" << name;
-            }
+        {
+            Path << "/" << name;
+        }
+
+        /**
+         * Maps action to controller url.
+         */
+        template <void(TController::*A)()> ControllerContext& RouteAction(Http::Method method, const char* action,
+                const char* params = nullptr)
+        {
+            static_assert(std::is_convertible<TController, IController>::value,
+                          "Route action class must inherit from IController!");
             
-            /**
-             * Maps action to controller url.
-             */
-            template <void(TController::*A)()> ControllerContext& RouteAction(Http::Method method, const char* action, const char* params = nullptr)
+            if (IsValid())
             {
-                static_assert(std::is_convertible<TController, IController>::value, "Route action class must inherit from IController!");
+                // Build controller action uri
+                StaticString<32> controllerActionPath(this->Path, "/", action, "/", params);
                 
-                if (IsValid())
+                // Save route
+                bool success = Router.AddRoute(method, *controllerActionPath, *this->Name, action);
+                if (success)
                 {
-                    // Build controller action uri
-                    StaticString<16> controllerActionPath(this->Path, "/", action, "/", params);
+                    ControllerAction controllerAction;
+                    controllerAction.Bind<TController, A>(nullptr);
                     
-                    // Save route
-                    bool success = Router.AddRoute(method, *controllerActionPath, *this->Name, action);
-                    if (success)
-                    {
-                        ControllerAction controllerAction;
-                        controllerAction.Bind<TController, A>(nullptr);
-                        
-                        this->Actions.Insert(action, controllerAction);
-                    }
+                    uint32 actionHash = Crc32(action);
+                    this->Actions.Insert(actionHash, controllerAction);
                 }
-                else
-                {
-                    LogWarning.log("Nova") << "Couldn't add route for incorrect controller!";
-                }
-                
-                return *this;
             }
-            
-            /** Clears this controller context information. */
-            void Clear()
+            else
             {
-                this->Actions.Clear();
-                this->CreateControllerFunc = nullptr;
+                LogWarning.log("Nova") << "Couldn't add route for incorrect controller!";
             }
             
-            /**
-             * Returns TRUE if controller information is valid (name, path).
-             * If that information is not set then it's not a valid controller.
-             */
-            NEKO_FORCE_INLINE bool IsValid() const { return !this->Path.IsEmpty() && !this->Name.IsEmpty(); }
-          
-            virtual IController* CreateController(Http::Request& request, Http::Response& response) override
-            {
-                // create a new controller on request
-                return NEKO_NEW(Allocator, TController) (request, response, Allocator);
-            }
+            return *this;
+        }
+        
+        /** Clears this controller context information. */
+        void Clear()
+        {
+            this->Actions.Clear();
+            this->CreateControllerFunc = nullptr;
+        }
+        
+        /**
+         * Returns TRUE if controller information is valid (name, path).
+         * If that information is not set then it's not a valid controller.
+         */
+        NEKO_FORCE_INLINE bool IsValid() const { return not this->Path.IsEmpty() && not this->Name.IsEmpty(); }
+        
+        IController* CreateController(Http::Request& request, Http::Response& response) override
+        {
+            // create a new controller on request
+            return NEKO_NEW(Allocator, TController) (request, response, Allocator);
+        }
+        
+        void ReleaseController(IController& controller) override
+        {
+            NEKO_DELETE(Allocator, &controller);
+        }
+        
+        void InvokeAction(IController& controller, const String& name) override
+        {
+            uint32 actionHash = Crc32(*name);
             
-            virtual void ReleaseController(IController* controller) override
-            {
-                assert(controller != nullptr);
-                NEKO_DELETE(Allocator, controller);
-            }
+            auto& controllerAction = this->Actions.at(actionHash);
+            assert(controllerAction.IsValid());
             
-            virtual void InvokeAction(IController& controller, const char* name) override
-            {
-                auto& controllerAction = this->Actions.at(name);
-                assert(controllerAction.IsValid());
-                
-                controllerAction.InvokeWith(&controller);
-            }
-            
-        private:
-            
-            //! Controller url path
-            StaticString<16> Path;
-            //! Controller name
-            StaticString<16> Name;
-            
-            //! Controller action mappings
-            THashMap<String, ControllerAction> Actions;
-            
-            IAllocator& Allocator;
-            Router& Router;
-        };
-    }
+            controllerAction.InvokeWith(&controller);
+        }
+        
+    private:
+        /** Controller action mappings */
+        ActionMap Actions;
+
+        /** Router instance containing all needed paths. */
+        IRouter& Router;
+        IAllocator& Allocator;
+        
+        /** Controller url path */
+        StaticString<32> Path;
+        /** Controller name */
+        StaticString<32> Name;
+    };
 }
+

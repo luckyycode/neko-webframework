@@ -17,11 +17,6 @@
 //          vV\|/vV|`-'\  ,---\   | \Vv\hjwVv\//v
 //                     _) )    `. \ /
 //                    (__/       ) )
-//  _   _      _           _____                                            _
-// | \ | | ___| | _____   |  ___| __ __ _ _ __ ___   _____      _____  _ __| | __
-// |  \| |/ _ \ |/ / _ \  | |_ | '__/ _` | '_ ` _ \ / _ \ \ /\ / / _ \| '__| |/ /
-// | |\  |  __/   < (_) | |  _|| | | (_| | | | | | |  __/\ V  V / (_) | |  |   <
-// |_| \_|\___|_|\_\___/  |_|  |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
 //
 //  FormUrlEncoded.cpp
 //  Neko Framework
@@ -40,11 +35,10 @@ namespace Neko::Skylar
     using namespace Neko::Net;
     
     FormUrlencoded::FormUrlencoded(IAllocator& allocator)
-    : IContentType(allocator)
+        : IContentType(allocator)
     {
         Name = "application/x-www-form-urlencoded";
     }
-    
     
     bool FormUrlencoded::ParseFromBuffer(const Neko::String& buffer, Http::RequestDataInternal& requestData, ContentDesc* contentDesc) const
     {

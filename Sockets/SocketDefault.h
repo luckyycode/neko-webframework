@@ -17,11 +17,6 @@
 //          vV\|/vV|`-'\  ,---\   | \Vv\hjwVv\//v
 //                     _) )    `. \ /
 //                    (__/       ) )
-//  _   _      _           _____                                            _
-// | \ | | ___| | _____   |  ___| __ __ _ _ __ ___   _____      _____  _ __| | __
-// |  \| |/ _ \ |/ / _ \  | |_ | '__/ _` | '_ ` _ \ / _ \ \ /\ / / _ \| '__| |/ /
-// | |\  |  __/   < (_) | |  _|| | | (_| | | | | | |  __/\ V  V / (_) | |  |   <
-// |_| \_|\___|_|\_\___/  |_|  |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
 //
 //  SocketDefault.h
 //  Neko Framework
@@ -33,19 +28,18 @@
 
 #include "ISocket.h"
 
-#include "Engine/Network/NetSocket.h"
+#include "Engine/Network/NetSocketBase.h"
 
 namespace Neko::Skylar
 {
-    /**  Default network socket. Wrapper around Net::INetSocket. */
+    /**  Default network socket. Wrapper around Net::NetSocketBase. */
     class SocketDefault : public ISocket
     {
     public:
-        
         // see ISocket for comments
         
         SocketDefault() = delete;
-        SocketDefault(const Net::INetSocket& socket);
+        SocketDefault(const Net::NetSocketBase& socket);
         
         virtual long GetPacketBlocking(void* buffer, const ulong length, const int32& timeout) const override;
         
@@ -54,13 +48,12 @@ namespace Neko::Skylar
         virtual void Close() override;
         
         
-        virtual NEKO_FORCE_INLINE Net::SOCKET GetNativeHandle() const override { return Socket.GetNativeHandle(); };
+        virtual NEKO_FORCE_INLINE Net::SocketHandle GetNativeHandle() const override { return Socket.GetNativeHandle(); };
         
         virtual NEKO_FORCE_INLINE void* GetTlsSession() const override { return nullptr; };
         
     private:
-        
-        Net::INetSocket Socket;
+        Net::NetSocketBase Socket;
         
     };
 }

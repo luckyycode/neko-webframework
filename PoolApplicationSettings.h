@@ -17,11 +17,6 @@
 //          vV\|/vV|`-'\  ,---\   | \Vv\hjwVv\//v
 //                     _) )    `. \ /
 //                    (__/       ) )
-//  _   _      _           _____                                            _
-// | \ | | ___| | _____   |  ___| __ __ _ _ __ ___   _____      _____  _ __| | __
-// |  \| |/ _ \ |/ / _ \  | |_ | '__/ _` | '_ ` _ \ / _ \ \ /\ / / _ \| '__| |/ /
-// | |\  |  __/   < (_) | |  _|| | | (_| | | | | | |  __/\ V  V / (_) | |  |   <
-// |_| \_|\___|_|\_\___/  |_|  |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
 //
 //  PoolApplicationSettings.h
 //  Neko Framework
@@ -46,32 +41,26 @@ namespace Neko::Skylar
     /** Server settings for each application/pool. */
     struct PoolApplicationSettings
     {
-        // Request settings
-        
-        uint32 RequestMaxSize;
-        
         //! wwwroot
-        StaticString<MAX_PATH_LENGTH> RootDirectory;
+        StaticString<MAX_PATH_LENGTH - 1> RootDirectory;
         //! If empty then system default will be used.
-        StaticString<MAX_PATH_LENGTH> TempDirectory;
-        
-        // Ports
-        
-        uint16 Port;
-        //! Secure port, if set then secure socket context will be created.
-        uint16 TlsPort;
-        
-        // Module
-        
-        int32 ModuleIndex;
-        
-        String ServerModulePath;
-        String ServerModuleUpdatePath;
+        StaticString<MAX_PATH_LENGTH - 1> TempDirectory;
         
         // Ssl
         
         String CertificateFile;
         String KeyFile;
+        
+        // Module
+        
+        String ServerModulePath;
+        String ServerModuleUpdatePath;
+        
+        int32 ModuleIndex;
+        
+        // Request settings
+        
+        uint32 RequestMaxSize;
         
         /** Called on early server initialization. */
         std::function< bool(ApplicationInitContext) > OnApplicationInit;
@@ -82,6 +71,12 @@ namespace Neko::Skylar
         std::function< int16(Net::Http::RequestData* , Net::Http::ResponseData* ) > OnApplicationRequest;
         /** Called after processing request. */
         std::function< void(Net::Http::ResponseData* ) > OnApplicationPostRequest;
+        
+        // Ports
+        
+        uint16 Port;
+        //! Secure port, if set secure socket context will be created.
+        uint16 TlsPort;
     };
 }
 

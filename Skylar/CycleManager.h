@@ -17,11 +17,6 @@
 //          vV\|/vV|`-'\  ,---\   | \Vv\hjwVv\//v
 //                     _) )    `. \ /
 //                    (__/       ) )
-//  _   _      _           _____                                            _
-// | \ | | ___| | _____   |  ___| __ __ _ _ __ ___   _____      _____  _ __| | __
-// |  \| |/ _ \ |/ / _ \  | |_ | '__/ _` | '_ ` _ \ / _ \ \ /\ / / _ \| '__| |/ /
-// | |\  |  __/   < (_) | |  _|| | | (_| | | | | | |  __/\ V  V / (_) | |  |   <
-// |_| \_|\___|_|\_\___/  |_|  |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
 //
 //  CycleManager.h
 //  Neko Framework
@@ -38,16 +33,14 @@
 
 namespace Neko::Skylar
 {
-    /// Server threadsafe controls.
+    /** Server threadsafe controls. */
     class CycleManager
     {
     public:
-        
         CycleManager()
-        : ProcessQueueEvent(false)
+        : ProcessQueueSemaphore(0, INT_MAX)
         , UpdateModulesEvent(true)
-        {
-        }
+        { }
         
         ~CycleManager()
         {
@@ -56,18 +49,18 @@ namespace Neko::Skylar
         
         void Clear()
         {
-            ProcessQueueEvent.Reset();
+            ProcessQueueSemaphore.Signal();
             UpdateModulesEvent.Reset();
         }
         
         void UpdateApplication()
         {
-            UpdateModulesEvent.Trigger();
+            UpdateModulesEvent.Notify();
         }
         
         void ProcessQueue()
         {
-            ProcessQueueEvent.Trigger();
+            ProcessQueueSemaphore.Signal();
         }
         
         void SetActiveFlag(const bool active = true)
@@ -83,22 +76,18 @@ namespace Neko::Skylar
         void StopProcess()
         {
             Active = false;
-            
             ProcessQueue();
         }
         
     public:
-        
-        MT::Event ProcessQueueEvent;
+        MT::Semaphore ProcessQueueSemaphore;
         MT::Event UpdateModulesEvent;
         
         //! Says whether the server is active and has active threads.
-        ThreadSafeBool Active;
-        
-        ThreadSafeBool Restart;
+        MT::ThreadSafeBool Active;
+        MT::ThreadSafeBool Restart;
         
     private:
-        
         NON_COPYABLE(CycleManager)
     };
 }

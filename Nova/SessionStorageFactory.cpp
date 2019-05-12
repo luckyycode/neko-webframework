@@ -17,11 +17,6 @@
 //          vV\|/vV|`-'\  ,---\   | \Vv\hjwVv\//v
 //                     _) )    `. \ /
 //                    (__/       ) )
-//  _   _      _           _____                                            _
-// | \ | | ___| | _____   |  ___| __ __ _ _ __ ___   _____      _____  _ __| | __
-// |  \| |/ _ \ |/ / _ \  | |_ | '__/ _` | '_ ` _ \ / _ \ \ /\ / / _ \| '__| |/ /
-// | |\  |  __/   < (_) | |  _|| | | (_| | | | | | |  __/\ V  V / (_) | |  |   <
-// |_| \_|\___|_|\_\___/  |_|  |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
 //
 //  SessionStorageFactory.cpp
 //  Neko Framework
@@ -36,30 +31,28 @@
 
 #include "Session.h"
 
-namespace Neko
+namespace Neko::Nova
 {
-    namespace Nova
+    ISessionStorage* SessionStorageFactory::Get(const SessionStorageType type, IAllocator& allocator)
     {
-        ISessionStorage* SessionStorageFactory::Get(const SessionStorageType type)
+        static const auto cookieType = SessionCookieStorage(allocator).GetType();
+        
+        ISessionStorage* result = nullptr;
+        
+        if (type == cookieType)
         {
-            static const auto cookieType = SessionCookieStorage().GetType();
-            
-            ISessionStorage* result = nullptr;
-            
-            if (type == cookieType)
-            {
-                static SessionCookieStorage cookieStorage;
-                result = &cookieStorage;
-            }
-            
-            // we should always have something valid
-            assert(result != nullptr);
-            
-            return result;
+            static SessionCookieStorage cookieStorage(allocator);
+            result = &cookieStorage;
         }
         
-        void SessionStorageFactory::Cleanup(const SessionStorageType type, ISessionStorage& storage)
-        {
-        }
+        // we should always have something valid
+        assert(result != nullptr);
+        
+        return result;
+    }
+    
+    void SessionStorageFactory::Cleanup(const SessionStorageType type, ISessionStorage& storage)
+    {
     }
 }
+

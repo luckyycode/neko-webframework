@@ -17,11 +17,6 @@
 //          vV\|/vV|`-'\  ,---\   | \Vv\hjwVv\//v
 //                     _) )    `. \ /
 //                    (__/       ) )
-//  _   _      _           _____                                            _
-// | \ | | ___| | _____   |  ___| __ __ _ _ __ ___   _____      _____  _ __| | __
-// |  \| |/ _ \ |/ / _ \  | |_ | '__/ _` | '_ ` _ \ / _ \ \ /\ / / _ \| '__| |/ /
-// | |\  |  __/   < (_) | |  _|| | | (_| | | | | | |  __/\ V  V / (_) | |  |   <
-// |_| \_|\___|_|\_\___/  |_|  |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
 //
 //  SessionManager.cpp
 //  Neko Framework
@@ -38,155 +33,153 @@
 #include "SessionManager.h"
 #include "Session.h"
 
-namespace Neko
+namespace Neko::Nova
 {
-    namespace Nova
+    bool SessionManager::Store(Session& session)
     {
-        bool SessionManager::Store(Session& session)
+        assert(not session.GetId().IsEmpty());
+        
+        bool result = false;
+        auto* storage = SessionStorageFactory::Get(GetStoreType(), Allocator);
+        
+        if (storage != nullptr)
         {
-            assert(not session.GetId().IsEmpty());
-            
-            bool result = false;
-            auto* storage = SessionStorageFactory::Get(GetStoreType());
+            result = storage->Store(session);
+            SessionStorageFactory::Cleanup(GetStoreType(), *storage);
+        }
+        else
+        {
+            LogError.log("Nova") << "Session storage " << (int)GetStoreType() << " not found";
+        }
+        
+        return result;
+    }
+    
+    bool SessionManager::Remove(const String& sessionId)
+    {
+        if (not sessionId.IsEmpty())
+        {
+            auto* storage = SessionStorageFactory::Get(GetStoreType(), Allocator);
             
             if (storage != nullptr)
             {
-                result = storage->Store(session);
+                bool result = storage->Remove(sessionId);
+                SessionStorageFactory::Cleanup(GetStoreType(), *storage);
+                
+                return result;
+            }
+            else
+            {
+                LogError.log("Nova") << "Session storage \"" << (int)GetStoreType() << "\" not found";
+            }
+        }
+        
+        return false;
+    }
+    
+    
+    Session SessionManager::FindSession(const String& sessionId)
+    {
+        Session session(Allocator);
+        
+        if (not sessionId.IsEmpty())
+        {
+            auto* storage = SessionStorageFactory::Get(GetStoreType(), Allocator);
+            
+            if (storage != nullptr)
+            {
+                session = storage->Find(sessionId);
                 SessionStorageFactory::Cleanup(GetStoreType(), *storage);
             }
             else
             {
-                LogError.log("Nova") << "Session storage " << (int)GetStoreType() << " not found";
+                LogError.log("Nova") << "Session storage \"" << (int)GetStoreType() << "\" not found";
             }
-            
-            return result;
         }
         
-        bool SessionManager::Remove(const String& sessionId)
+        return session;
+    }
+    
+    void SessionManager::ClearSessionsCache()
+    {
+        static int16 probability = 5;
+        
+        int32 result = Math::rand(0, probability - 1);
+        
+        if (result == 0)
         {
-            if (not sessionId.IsEmpty())
+            LogInfo.log("Nova") << "Clearing session cache...";
+            
+            auto* storage = SessionStorageFactory::Get(GetStoreType(), Allocator);
+            if (storage != nullptr)
             {
-                auto* storage = SessionStorageFactory::Get(GetStoreType());
+                uint32 cacheLifetime = 1000;
                 
-                if (storage != nullptr)
-                {
-                    bool result = storage->Remove(sessionId);
-                    SessionStorageFactory::Cleanup(GetStoreType(), *storage);
-                    
-                    return result;
-                }
-                else
-                {
-                    LogError.log("Nova") << "Session storage \"" << (int)GetStoreType() << "\" not found";
-                }
-            }
-            
-            return false;
-        }
-        
-        Session SessionManager::FindSession(const String& sessionId)
-        {
-            Session session;
-            
-            if (not sessionId.IsEmpty())
-            {
-                auto* storage = SessionStorageFactory::Get(GetStoreType());
+                auto expiryDate = DateTime::UtcNow();
+                TimeValue lifeTimeValue((int64)cacheLifetime);
                 
-                if (storage != nullptr)
-                {
-                    session = storage->Find(sessionId);
-                    SessionStorageFactory::Cleanup(GetStoreType(), *storage);
-                }
-                else
-                {
-                    LogError.log("Nova") << "Session storage \"" << (int)GetStoreType() << "\" not found";
-                }
-            }
-            
-            return session;
-        }
-        
-        void SessionManager::ClearSessionsCache()
-        {
-            static int16 probability = 5;
-            
-            int32 result = Math::rand(0, probability - 1);
-            
-            if (result == 0)
-            {
-                LogInfo.log("Nova") << "Clearing session cache...";
+                auto expireDate = expiryDate - lifeTimeValue;
                 
-                auto* storage = SessionStorageFactory::Get(GetStoreType());
-                if (storage != nullptr)
-                {
-                    uint32 cacheLifetime = 1000;
-                    
-                    auto expiryDate = DateTime::UtcNow();
-                    TimeValue lifeTimeValue((int64)cacheLifetime);
-                    
-                    auto expireDate = expiryDate - lifeTimeValue;
-                    
-                    storage->ClearCache(expireDate);
-                    
-                    SessionStorageFactory::Cleanup(GetStoreType(), *storage);
-                }
+                storage->ClearCache(expireDate);
+                
+                SessionStorageFactory::Cleanup(GetStoreType(), *storage);
             }
-        }
-        
-        void SessionManager::SetCsrfProtectionData(Session& session)
-        {
-            const auto& type = Options::SessionOptions().StorageType;
-            
-            if (type == SessionStorageType::Cookie)
-            {
-                const auto& key = Options::SessionOptions().CsrfKey;
-                session.Insert(key, NewSessionId());
-            }
-        }
-        
-        void SessionManager::ResetSession(Session& session)
-        {
-            session.Reset();
-            
-            SetCsrfProtectionData(session);
-        }
-        
-        String CreateHash()
-        {
-            // @todo more specific
-            uint64 hash = Math::RandGUID();
-            String result;
-            result += hash;
-            return result;
-        }
-        
-        String SessionManager::NewSessionId()
-        {
-            String sessionId;
-            
-            int16 i;
-            
-            for (i = 0; i < 3; ++i)
-            {
-                sessionId = CreateHash();
-                if (FindSession(sessionId).IsEmpty())
-                {
-                    break;
-                }
-            }
-            
-            if (i == 3)
-            {
-                LogError.log("Nova") << "Couldn't generate session UID!";
-            }
-            
-            return sessionId;
-        }
-        
-        const SessionStorageType SessionManager::GetStoreType() const
-        {
-            const auto& type = Options::SessionOptions().StorageType;
-            return type;
         }
     }
+    
+    void SessionManager::SetCsrfProtectionData(Session& session)
+    {
+        const auto& type = Options::SessionOptions().StorageType;
+        
+        if (type == SessionStorageType::Cookie)
+        {
+            const auto& key = Options::SessionOptions().CsrfKey;
+            session.Insert(key, NewSessionId());
+        }
+    }
+    
+    void SessionManager::ResetSession(Session& session)
+    {
+        session.Reset();
+        
+        SetCsrfProtectionData(session);
+    }
+    
+    String CreateHash()
+    {
+        // @todo more specific
+        uint64 hash = Math::RandGuid();
+        String result;
+        result += hash;
+        return result;
+    }
+    
+    String SessionManager::NewSessionId()
+    {
+        String sessionId;
+        
+        int16 i;
+        
+        for (i = 0; i < 3; ++i)
+        {
+            sessionId = CreateHash();
+            if (FindSession(sessionId).IsEmpty())
+            {
+                break;
+            }
+        }
+        
+        if (i == 3)
+        {
+            LogError.log("Nova") << "Couldn't generate session UID!";
+        }
+        
+        return sessionId;
+    }
+    
+    const SessionStorageType SessionManager::GetStoreType() const
+    {
+        return Options::SessionOptions().StorageType;
+    }
 }
+

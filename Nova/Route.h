@@ -17,11 +17,6 @@
 //          vV\|/vV|`-'\  ,---\   | \Vv\hjwVv\//v
 //                     _) )    `. \ /
 //                    (__/       ) )
-//  _   _      _           _____                                            _
-// | \ | | ___| | _____   |  ___| __ __ _ _ __ ___   _____      _____  _ __| | __
-// |  \| |/ _ \ |/ / _ \  | |_ | '__/ _` | '_ ` _ \ / _ \ \ /\ / / _ \| '__| |/ /
-// | |\  |  __/   < (_) | |  _|| | | (_| | | | | | |  __/\ V  V / (_) | |  |   <
-// |_| \_|\___|_|\_\___/  |_|  |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
 //
 //  Route.h
 //  Neko Framework
@@ -36,28 +31,26 @@
 #include "Engine/Containers/Array.h"
 #include "Engine/Utilities/NekoString.h"
 
-namespace Neko
+namespace Neko::Nova
 {
-    namespace Nova
+    /// Url route.
+    struct Route
     {
-        /// Url route.
-        struct Route
-        {
-        public:
-            
-            Route(IAllocator& allocator);
-
-            // url parameters (not query parameters)
-            uint8 ParamCount;
-            bool HasCustomParams;
-            
-            Http::Method Method;
-            
-            String Controller;
-            String Action;
-            
-            TArray<String> Components;
-            TArray<int16>  ParamIndexes;
-        };
-    }
+    public:
+        Route(IAllocator& allocator);
+        
+        TArray<String> Components;
+        
+        // url parameters (not query parameters)
+        uint8 ParamCount;
+        
+        String Controller;
+        String Action;
+        
+        TArray<int16>  ParamIndexes;
+        bool HasCustomParams;
+        
+        Http::Method Method;
+    };
 }
+

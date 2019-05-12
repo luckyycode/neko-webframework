@@ -5,7 +5,7 @@
 
 namespace Neko
 {
-    struct StudioServerPlugin : public IStudioApp::IPlugin
+    struct StudioServerPlugin : public IStudioApp::UiPlugin
     {
         StudioServerPlugin(IStudioApp& app)
         : App(app)
@@ -23,13 +23,7 @@ namespace Neko
         
         void OnWindowGUI() override
         {
-            if (!UI::BeginDock("Http Server"))
-            {
-                UI::EndDock();
-                return;
-            }
-            
-            UI::EndDock();
+          
         }
         
         

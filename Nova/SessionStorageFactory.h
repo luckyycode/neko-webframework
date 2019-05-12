@@ -17,11 +17,6 @@
 //          vV\|/vV|`-'\  ,---\   | \Vv\hjwVv\//v
 //                     _) )    `. \ /
 //                    (__/       ) )
-//  _   _      _           _____                                            _
-// | \ | | ___| | _____   |  ___| __ __ _ _ __ ___   _____      _____  _ __| | __
-// |  \| |/ _ \ |/ / _ \  | |_ | '__/ _` | '_ ` _ \ / _ \ \ /\ / / _ \| '__| |/ /
-// | |\  |  __/   < (_) | |  _|| | | (_| | | | | | |  __/\ V  V / (_) | |  |   <
-// |_| \_|\___|_|\_\___/  |_|  |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
 //
 //  SessionStorageFactory.h
 //  Neko Framework
@@ -34,24 +29,21 @@
 #include "Engine/Utilities/NekoString.h"
 #include "Conventions/Enums/SessionCookieType.h"
 
-namespace Neko
+namespace Neko::Nova
 {
-    namespace Nova
+    class ISessionStorage;
+    
+    /** Session storage factory. Creates the requested session storages. */
+    class SessionStorageFactory
     {
-        class ISessionStorage;
+    public:
+        /** Returns the list of available storage key type names. */
+        //static TArray<SessionStorageFactory> GetAvailableStorageTypes();
         
-        /// Session storage factory. Creates the requested session storages.
-        class SessionStorageFactory
-        {
-        public:
-            
-            /** Returns the list of available storage key type names. */
-            //static TArray<SessionStorageFactory> GetAvailableStorageTypes();
-
-            /** Lookups a needed storage by the key. */
-            static ISessionStorage* Get(const SessionStorageType type);
-            /** Removes data if session storage has created any. */
-            static void Cleanup(const SessionStorageType type, ISessionStorage& storage);
-        };
-    }
+        /** Lookups a needed storage by the key. */
+        static ISessionStorage* Get(const SessionStorageType type, IAllocator& allocator);
+        /** Removes data if session storage has created any. */
+        static void Cleanup(const SessionStorageType type, ISessionStorage& storage);
+    };
 }
+

@@ -17,11 +17,6 @@
 //          vV\|/vV|`-'\  ,---\   | \Vv\hjwVv\//v
 //                     _) )    `. \ /
 //                    (__/       ) )
-//  _   _      _           _____                                            _
-// | \ | | ___| | _____   |  ___| __ __ _ _ __ ___   _____      _____  _ __| | __
-// |  \| |/ _ \ |/ / _ \  | |_ | '__/ _` | '_ ` _ \ / _ \ \ /\ / / _ \| '__| |/ /
-// | |\  |  __/   < (_) | |  _|| | | (_| | | | | | |  __/\ V  V / (_) | |  |   <
-// |_| \_|\___|_|\_\___/  |_|  |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
 //
 //  ContentDesc.h
 //  Neko Framework
@@ -33,21 +28,20 @@ namespace Neko::Skylar
 {
     struct ContentDesc
     {
-        // uint32 should fit..
+        //! State object, can be used to store transient content data.
+        void* State;
+        void* Data;
+        
+        const class IContentType* ContentType;
         
         //! Size of all content.
         uint32 FullSize;
         //! Parsed content size.
-        uint32 BytesReceived;
+        int32 BytesReceived;
         //! Leftover
         uint32 LeftBytes;
         
-        //! State object, can be used to store transient content data.
-        void* State;
-        
-        void* Data;
-        
-        const class IContentType* ContentType;
+        char pad[4];
     };
     
     static inline bool EnsureContentLength(ContentDesc& contentDesc)

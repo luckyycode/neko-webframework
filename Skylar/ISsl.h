@@ -17,11 +17,6 @@
 //          vV\|/vV|`-'\  ,---\   | \Vv\hjwVv\//v
 //                     _) )    `. \ /
 //                    (__/       ) )
-//  _   _      _           _____                                            _
-// | \ | | ___| | _____   |  ___| __ __ _ _ __ ___   _____      _____  _ __| | __
-// |  \| |/ _ \ |/ / _ \  | |_ | '__/ _` | '_ ` _ \ / _ \ \ /\ / / _ \| '__| |/ /
-// | |\  |  __/   < (_) | |  _|| | | (_| | | | | | |  __/\ V  V / (_) | |  |   <
-// |_| \_|\___|_|\_\___/  |_|  |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
 //
 //  Http.h
 //  Neko Framework
@@ -43,8 +38,7 @@ namespace Neko::Skylar
     class ISsl
     {
     public:
-        
-        typedef THashMap<uint16, void*> TlsMap;
+        using TlsMap = THashMap<uint16, void* >;
         
         virtual bool Init() = 0;
         
@@ -56,6 +50,7 @@ namespace Neko::Skylar
         
         virtual void Clear() = 0;
         
+    public:
         static ISsl* Create(IAllocator& allocator);
         static void Destroy(ISsl& ssl);
     };

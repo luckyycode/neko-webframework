@@ -17,11 +17,6 @@
 //          vV\|/vV|`-'\  ,---\   | \Vv\hjwVv\//v
 //                     _) )    `. \ /
 //                    (__/       ) )
-//  _   _      _           _____                                            _
-// | \ | | ___| | _____   |  ___| __ __ _ _ __ ___   _____      _____  _ __| | __
-// |  \| |/ _ \ |/ / _ \  | |_ | '__/ _` | '_ ` _ \ / _ \ \ /\ / / _ \| '__| |/ /
-// | |\  |  __/   < (_) | |  _|| | | (_| | | | | | |  __/\ V  V / (_) | |  |   <
-// |_| \_|\___|_|\_\___/  |_|  |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
 //
 //  UserManager.cpp
 //  Neko Framework
@@ -37,50 +32,46 @@
 
 #define SESSION_USER_NAME   "loginUserName"
 
-namespace Neko
+namespace Neko::Nova
 {
-    namespace Nova
+    UserManager::UserManager(class SessionManager& sessionManager)
+    : SessionManager(sessionManager)
     {
-        UserManager::UserManager(class SessionManager& sessionManager)
-        : SessionManager(sessionManager)
+    }
+    
+    bool UserManager::IsUserAuthenticated(Session& session)
+    {
+        return session.HasKey(SESSION_USER_NAME);
+    }
+    
+    bool UserManager::Login(const IUser& user, Session& session)
+    {
+        if (user.GetPrimaryKey().IsEmpty())
         {
-            
+            LogWarning.log("Nova") << "User identity key is empty!";
+            return false;
         }
         
-        bool UserManager::IsUserAuthenticated(Session& session)
+        if (IsUserAuthenticated(session))
         {
-            auto keyIt = session.Find(SESSION_USER_NAME);
-            return keyIt.IsValid();
-        }
-        
-        bool UserManager::UserLogin(const IUser& user, Session& session)
-        {
-            if (user.GetPrimaryKey().IsEmpty())
-            {
-                LogWarning.log("Nova") << "User identity key is empty!";
-                return false;
-            }
-            
-            if (IsUserAuthenticated(session))
-            {
-                LogInfo.log("Nova") << "User is already authenticated!";
-                return true;
-            }
-            
-            session.Insert(SESSION_USER_NAME, user.GetPrimaryKey());
-            
-            LogInfo.log("Nova") << "User logged in!";
-            
+            LogInfo.log("Nova") << "User is already authenticated!";
             return true;
         }
         
-        void UserManager::UserLogout(Session& session)
+        session.Insert(SESSION_USER_NAME, user.GetPrimaryKey());
+        
+        LogInfo.log("Nova") << "User logged in!";
+        
+        return true;
+    }
+    
+    void UserManager::Logout(Session& session)
+    {
+        if (const auto keyIt = session.Find(SESSION_USER_NAME); keyIt.IsValid())
         {
-            if (const auto keyIt = session.Find(SESSION_USER_NAME); keyIt.IsValid())
-            {
-                LogInfo.log("Nova") << "User logged out.";
-                session.Erase(keyIt);
-            }
+            LogInfo.log("Nova") << "User logged out.";
+            session.Erase(keyIt);
         }
     }
 }
+

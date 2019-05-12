@@ -17,11 +17,6 @@
 //          vV\|/vV|`-'\  ,---\   | \Vv\hjwVv\//v
 //                     _) )    `. \ /
 //                    (__/       ) )
-//  _   _      _           _____                                            _
-// | \ | | ___| | _____   |  ___| __ __ _ _ __ ___   _____      _____  _ __| | __
-// |  \| |/ _ \ |/ / _ \  | |_ | '__/ _` | '_ ` _ \ / _ \ \ /\ / / _ \| '__| |/ /
-// | |\  |  __/   < (_) | |  _|| | | (_| | | | | | |  __/\ V  V / (_) | |  |   <
-// |_| \_|\___|_|\_\___/  |_|  |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
 //
 //  RequestContext.cpp
 //  Neko Framework
@@ -37,11 +32,11 @@
 #include "Engine/Data/JsonSerializer.h"
 
 #include "Engine/Network/Http/Response.h"
-#include "Engine/Network/NetSocket.h"
+#include "Engine/Network/NetSocketBase.h"
 
 #include "Engine/Platform/Platform.h"
 
-#include "../Skylar/IProtocol.h"
+#include "Protocol.h"
 #include "../Skylar/Http.h"
 
 #include "../Sockets/SocketSSL.h"
@@ -57,28 +52,29 @@ namespace Neko::Nova
     using namespace Neko::Skylar;
     using namespace Neko::Net;
     
-    /**
-     * Creates socket object from a native client socket.
-     */
-    static inline ISocket* CreateSocket(Net::INetSocket& socket, Http::RequestData* request, void* stack, bool& secure)
+    namespace SocketUtils
     {
-        socket.Init(request->Socket, Net::ESocketType::TCP);
-        
-        secure = request->TlsSession != nullptr;
-        if (secure)
+        /** Creates socket object from a native client socket. */
+        static inline ISocket* CreateSocket(Net::NetSocketBase& socket, const Http::RequestData* request, void* stack, bool& secure)
         {
-            return new (stack) SocketSSL(socket, (SSL* )request->TlsSession);
+            socket.Init(request->Socket, Net::SocketType::Tcp);
+            
+            secure = request->TlsSession != nullptr;
+            if (secure)
+            {
+                return new (stack) SocketSSL(socket, *(SSL* )(request->TlsSession));
+            }
+            
+            return new (stack) SocketDefault(socket);
         }
         
-        return new (stack) SocketDefault(socket);
-    }
-    
-    static inline void DestroySocket(ISocket* socket)
-    {
-        if (socket != nullptr)
+        static inline void DestroySocket(ISocket* socket)
         {
-            // was allocated on a stack
-            socket->~ISocket();
+            if (socket != nullptr)
+            {
+                // was allocated on a stack
+                socket->~ISocket();
+            }
         }
     }
     
@@ -120,7 +116,8 @@ namespace Neko::Nova
         }
     };
     
-    static inline void WriteResponseData(Http::Response& response, Http::ResponseData& responseData, IAllocator& allocator)
+    static inline void SerializeResponseData(Http::Response& response, Http::ResponseData& responseData,
+            IAllocator& allocator)
     {
         // these will be processed by server after running this app
         auto& outHeaders = response.GetHeaders();
@@ -132,12 +129,12 @@ namespace Neko::Nova
             responseData.Data = data;
             responseData.Size = size;
             // write headers
-            OutputData datastream(responseData.Data, INT_MAX);
-            datastream << outHeaders;
+            OutputData dataStream(responseData.Data, INT_MAX);
+            dataStream << outHeaders;
         }
     }
     
-    void RequestContext::ProcessRequest(Skylar::IProtocol& protocol, Http::Request& request, Http::Response& response, const char* documentRoot, const bool secure)
+    void RequestContext::ProcessRequest(Http::Request& request, Http::Response& response, const RequestMetadata& metadata)
     {
         PROFILE_SECTION("nova process request")
         
@@ -150,38 +147,41 @@ namespace Neko::Nova
         
         // route request to controllers
         auto routing = MainRouter.FindRoute(request.Method, clearUri);
-        
+        auto& protocol = *metadata.Protocol;
+
         if (routing.IsValid)
         {
             // route is valid.. controller should be too
-            ControllerFactory.ExecuteController(routing, protocol, request, response);
+            bool executed = ControllerFactory.ExecuteController(routing, protocol, request, response);
+            if (not executed)
+            {
+                LogWarning.log("Nova") << "Couldn't execute a controller.";
+            }
         }
         else
         {
-            PROFILE_SECTION("non-mapped route")
-            
+            PROFILE_SECTION("Non-mapped route")
+
             // check if this is a file request
-            if (request.Method == "get")
+            if (request.Method == Http::Method::Get)
             {
                 // build a path
                 char path[MAX_PATH_LENGTH];
-                CopyString(path, documentRoot);
+                CopyString(path, metadata.DocumentRoot);
                 CatString(path, *clearUri);
                 
                 // show directory list
                 bool isDirectory = Neko::Platform::DirectoryExists(path);
                 if (isDirectory)
                 {
-                    PROFILE_SECTION("directory listing")
-                    
-                    ShowDirectoryList(path, request, response, secure, Allocator);
+                    PROFILE_SECTION("Directory listing")
+                    ShowDirectoryList(path, request, response, metadata.Secure, Allocator);
                     
                     protocol.SendResponse(response);
                 }
                 else
                 {
-                    PROFILE_SECTION("file send")
-                    
+                    PROFILE_SECTION("File send")
                     // or send a file
                     if (Platform::FileExists(path))
                     {
@@ -198,74 +198,79 @@ namespace Neko::Nova
             else
             {
                 LogInfo.log("Nova") << "Request to unmapped url - " << *request.Path;
-                // @todo something
-                
+
                 response.SetStatusCode(Http::StatusCode::NotFound);
                 protocol.SendResponse(response, Http::DEFAULT_RESPONSE_TIME);
             }
         }
     }
     
-    int16 RequestContext::Execute(Http::RequestData& requestData, Http::ResponseData& responseData)
+    RequestMetadata RequestContext::DeserializeRequest(const Http::RequestData& requestData, const Http::ResponseData& responseData, Http::Request& request, Http::Response& response)
     {
-        PROFILE_FUNCTION()
-        
-        bool secure;
         // http version
         uint8 protocolVersion;
-        // socket wrapper
-        Net::INetSocket netSocket;
-        // application document root
-        char documentRoot[MAX_PATH_LENGTH];
         // large socket object
         uint8 stack[sizeof(SocketSSL)];
         
-        // Initialize socket from existing native socket descriptor
-        ISocket* socket = CreateSocket(netSocket, &requestData, &stack, secure);
-        // incoming protocol type by request
-        IProtocol* protocol = nullptr;
+        // socket wrapper
+        Net::NetSocketBase netSocket;
+        RequestMetadata metadata;
         
-        // Read incoming header info
-        InputData datastream(const_cast<void* >(requestData.Data), INT_MAX);
+        // initialize socket from existing native socket descriptor
+        metadata.Socket = SocketUtils::CreateSocket(netSocket, &requestData, &stack, metadata.Secure);
+
+        // read incoming header info
+        InputData dataStream(const_cast<void* >(requestData.Data), INT_MAX);
         
-        datastream << protocolVersion;
+        dataStream >> protocolVersion;
         
         const auto version = static_cast<Http::Version>(protocolVersion);
         
-        Http::Request request(Allocator, version); // request
-        Http::Response response(Allocator, version); // response
+        request.ProtocolVersion = version;
+        response.ProtocolVersion = version;
         
         switch (version)
         {
             case Http::Version::Http_1:
             {
-                datastream >> request.Host >> request.Path >> request.Method;
-                datastream.ReadString(documentRoot, sizeof(documentRoot));
-                datastream >> request.IncomingHeaders >> request.IncomingData >> request.IncomingFiles;
+                request.Deserialize(dataStream);
+                metadata.Deserialize(dataStream);
                 
                 // instantiate protocol
-                protocol = NEKO_NEW(Allocator, ProtocolHttp)(*socket, Allocator);
+                metadata.Protocol = NEKO_NEW(Allocator, ProtocolHttp)(*metadata.Socket, Allocator);
                 
                 break;
             }
                 
-                // @todo
+            // @todo
             case Http::Version::Http_2: { break; }
                 
             default: { assert(false); break; }
         }
         
         // process request
+        Neko::LogInfo.log("Skylar") << "Request ## Http " << static_cast<uint32>(protocolVersion) << " "
+            << request.Path << " /" << static_cast<int16>(request.Method);
         
-        LogInfo.log("Skylar") << "Request ## Http " << static_cast<uint32>(protocolVersion) << " " << request.Path << " /" << request.Method;
+        return metadata;
+    }
+    
+    int16 RequestContext::Execute(Http::RequestData& requestData, Http::ResponseData& responseData)
+    {
+        PROFILE_FUNCTION()
+    
+        Http::Request request(Allocator, Version::Unknown); // request
+        Http::Response response(Allocator, Version::Unknown); // response
         
-        ProcessRequest(*protocol, request, response, documentRoot, secure);
-        DestroySocket(socket);
+        auto metadata = DeserializeRequest(requestData, responseData, request, response);
+  
+        ProcessRequest(request, response, metadata);
+        SocketUtils::DestroySocket(metadata.Socket);
         
         // Post process
-        WriteResponseData(response, responseData, Allocator);
+        SerializeResponseData(response, responseData, Allocator);
         
-        NEKO_DELETE(Allocator, protocol);
+        NEKO_DELETE(Allocator, metadata.Protocol);
         
         return APPLICATION_EXIT_SUCCESS;
     }

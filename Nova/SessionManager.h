@@ -17,11 +17,6 @@
 //          vV\|/vV|`-'\  ,---\   | \Vv\hjwVv\//v
 //                     _) )    `. \ /
 //                    (__/       ) )
-//  _   _      _           _____                                            _
-// | \ | | ___| | _____   |  ___| __ __ _ _ __ ___   _____      _____  _ __| | __
-// |  \| |/ _ \ |/ / _ \  | |_ | '__/ _` | '_ ` _ \ / _ \ \ /\ / / _ \| '__| |/ /
-// | |\  |  __/   < (_) | |  _|| | | (_| | | | | | |  __/\ V  V / (_) | |  |   <
-// |_| \_|\___|_|\_\___/  |_|  |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
 //
 //  SessionManager.h
 //  Neko Framework
@@ -33,43 +28,43 @@
 
 #include "Session.h"
 
-namespace Neko
+namespace Neko::Nova
 {
-    namespace Nova
+    /// Main class for managing sessions.
+    class SessionManager
     {
-        /// Main class for managing sessions.
-        class SessionManager
-        {
-        public:
-            
-            SessionManager() { }
-            
-            ~SessionManager() { }
-            
-            /** Gets a session by its id. */
-            Session FindSession(const String& sessionId);
-            
-            /** Saves a session. */
-            bool Store(Session& session);
-            
-            /** Removes a session. */
-            bool Remove(const String& sessionId);
-            
-            
-            /** Returns shared session storage type. */
-            const SessionStorageType GetStoreType() const;
-            
-            /** Clears session cache. */
-            void ClearSessionsCache();
-            
-            
-            /** Generates random & unique session id. */
-            String NewSessionId();
-            
-            void SetCsrfProtectionData(Session& session);
-            
-            /** Clears a session and resets csrf data. */
-            void ResetSession(Session& session);
-        };
-    }
+    public:
+        SessionManager(IAllocator& allocator) : Allocator(allocator) { }
+        
+        ~SessionManager() { }
+        
+        /** Gets a session by its id. */
+        Session FindSession(const String& sessionId);
+        
+        /** Saves a session. */
+        bool Store(Session& session);
+        
+        /** Removes a session. */
+        bool Remove(const String& sessionId);
+        
+        
+        /** Returns shared session storage type. */
+        const SessionStorageType GetStoreType() const;
+        
+        /** Clears session cache. */
+        void ClearSessionsCache();
+        
+        
+        /** Generates random & unique session id. */
+        String NewSessionId();
+        
+        void SetCsrfProtectionData(Session& session);
+        
+        /** Clears a session and resets csrf data. */
+        void ResetSession(Session& session);
+
+    private:
+        IAllocator& Allocator;
+    };
 }
+

@@ -17,11 +17,6 @@
 //          vV\|/vV|`-'\  ,---\   | \Vv\hjwVv\//v
 //                     _) )    `. \ /
 //                    (__/       ) )
-//  _   _      _           _____                                            _
-// | \ | | ___| | _____   |  ___| __ __ _ _ __ ___   _____      _____  _ __| | __
-// |  \| |/ _ \ |/ / _ \  | |_ | '__/ _` | '_ ` _ \ / _ \ \ /\ / / _ \| '__| |/ /
-// | |\  |  __/   < (_) | |  _|| | | (_| | | | | | |  __/\ V  V / (_) | |  |   <
-// |_| \_|\___|_|\_\___/  |_|  |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
 //
 //  FormUrlEncoded.h
 //  Neko Framework
@@ -38,11 +33,9 @@ namespace Neko::Skylar
     class FormUrlencoded : public IContentType
     {
     public:
-        
         FormUrlencoded(IAllocator& allocator);
         
     public:
-        
         virtual bool ParseFromBuffer(const String& buffer, Net::Http::RequestDataInternal& requestData, ContentDesc* contentDesc) const override;
     };
 }

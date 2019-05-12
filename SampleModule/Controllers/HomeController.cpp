@@ -22,8 +22,9 @@ namespace Neko
             .Value = (uint8* )aaa,
             .Size = StringLength(aaa)
         };
-        
+
         Ok(&result);
+
         //PhysicalFile("index.html");
     }
     
@@ -45,7 +46,7 @@ namespace Neko
         User user;
         user.UserName = "neko";
         
-        GetUserManager().UserLogin(user, Session);
+        GetUserManager().Login(user, Session);
         
         const char* aaa = *user.UserName;
         Http::ObjectResult result
@@ -58,7 +59,7 @@ namespace Neko
     
     void HomeController::Logout()
     {
-        GetUserManager().UserLogout(Session);
+        GetUserManager().Logout(Session);
     }
 }
 

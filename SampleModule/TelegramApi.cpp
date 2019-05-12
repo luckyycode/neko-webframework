@@ -17,11 +17,6 @@
 //          vV\|/vV|`-'\  ,---\   | \Vv\hjwVv\//v
 //                     _) )    `. \ /
 //                    (__/       ) )
-//  _   _      _           _____                                            _
-// | \ | | ___| | _____   |  ___| __ __ _ _ __ ___   _____      _____  _ __| | __
-// |  \| |/ _ \ |/ / _ \  | |_ | '__/ _` | '_ ` _ \ / _ \ \ /\ / / _ \| '__| |/ /
-// | |\  |  __/   < (_) | |  _|| | | (_| | | | | | |  __/\ V  V / (_) | |  |   <
-// |_| \_|\___|_|\_\___/  |_|  |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
 //
 //  TelegramApi.cpp
 //  Neko Framework
@@ -30,13 +25,13 @@
 //
 
 #include "Engine/Network/Http/Url.h"
-#include "Engine/Network/NetSocket.h"
+#include "Engine/Network/NetSocketBase.h"
 #include "Engine/Containers/HashMap.h"
 #include "Engine/Core/Log.h"
 
 #include "TelegramApi.h"
 
-#include "ISsl.h"
+#include "../Skylar/ISsl.h"
 #include "../Sockets/SocketSSL.h"
 #include "../Utils.h"
 
@@ -90,10 +85,10 @@ namespace Neko
     {
         LogInfo.log("Telegram") << "Sending request " << *url.Host;
         
-        Net::INetSocket socket;
-        Net::NetAddress address;
+        Net::NetSocketBase socket;
+        Net::Endpoint address;
         
-        address = socket.Init(*url.Host, TelegramApiPort, Net::ESocketType::TCP);
+        address = socket.Init(*url.Host, TelegramApiPort, Net::SocketType::Tcp);
         
         socket.MakeNonBlocking(false);
         socket.SetSocketStreamNoDelay();
@@ -107,7 +102,7 @@ namespace Neko
             return false;
         }
         
-        Skylar::SocketSSL socketSsl(socket, (SSL_CTX* )SslContext);
+        Skylar::SocketSSL socketSsl(socket, reinterpret_cast<SSL_CTX& >(SslContext));
         
         // connect using ssl
         result = socketSsl.Connect();

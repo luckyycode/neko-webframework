@@ -26,7 +26,6 @@ using namespace Neko::Net::Http;
 class WebApplication : public IWebApplication
 {
 public:
-    
     explicit WebApplication(const ApplicationInitContext& context)
     : IWebApplication(context)
     {

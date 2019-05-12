@@ -17,11 +17,6 @@
 //          vV\|/vV|`-'\  ,---\   | \Vv\hjwVv\//v
 //                     _) )    `. \ /
 //                    (__/       ) )
-//  _   _      _           _____                                            _
-// | \ | | ___| | _____   |  ___| __ __ _ _ __ ___   _____      _____  _ __| | __
-// |  \| |/ _ \ |/ / _ \  | |_ | '__/ _` | '_ ` _ \ / _ \ \ /\ / / _ \| '__| |/ /
-// | |\  |  __/   < (_) | |  _|| | | (_| | | | | | |  __/\ V  V / (_) | |  |   <
-// |_| \_|\___|_|\_\___/  |_|  |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
 //
 //  ISocket.h
 //  Neko Framework
@@ -32,7 +27,7 @@
 #pragma once
 
 #include "Engine/Utilities/NekoString.h"
-#include "Engine/Network/NetSocket.h"
+#include "Engine/Network/NetSocketBase.h"
 
 namespace Neko::Skylar
 {
@@ -40,33 +35,32 @@ namespace Neko::Skylar
     class ISocket
     {
     public:
-        
         virtual ~ISocket() = default;
         
-        /** @copydoc INetSocket::GetPacketBlocking */
+        /** @copydoc NetSocketBase::GetPacketBlocking */
         NEKO_FORCE_INLINE long GetPacketBlocking(TArray<String::value_type>& buffer, const int32& timeout) const
         {
             return GetPacketBlocking(&buffer[0], buffer.GetSize(), timeout);
         }
         
-        /** @copydoc INetSocket::SendAllPacketsWait */
+        /** @copydoc NetSocketBase::SendAllPacketsWait */
         NEKO_FORCE_INLINE long SendAllPacketsWait(const String& buffer, const int32& timeout) const
         {
             return SendAllPacketsWait(*buffer, buffer.Length(), timeout);
         }
         
-        /** @copydoc INetSocket::GetPacketBlocking */
+        /** @copydoc NetSocketBase::GetPacketBlocking */
         virtual long GetPacketBlocking(void* buffer, const ulong length, const int32& timeout) const = 0;
         
-        /** @copydoc INetSocket::SendAllPacketsWait */
+        /** @copydoc NetSocketBase::SendAllPacketsWait */
         virtual long SendAllPacketsWait(const void* buffer, const ulong length, const int32& timeout) const = 0;
         
-        /** @copydoc INetSocket::Close */
+        /** @copydoc NetSocketBase::Close */
         virtual void Close() = 0;
         
         
         /** Returns the native socket handle this socket interface got bound to. */
-        virtual Net::SOCKET GetNativeHandle() const = 0;
+        virtual Net::SocketHandle GetNativeHandle() const = 0;
         
         /** Tls session data. */
         virtual void* GetTlsSession() const = 0;

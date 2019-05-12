@@ -17,11 +17,6 @@
 //          vV\|/vV|`-'\  ,---\   | \Vv\hjwVv\//v
 //                     _) )    `. \ /
 //                    (__/       ) )
-//  _   _      _           _____                                            _
-// | \ | | ___| | _____   |  ___| __ __ _ _ __ ___   _____      _____  _ __| | __
-// |  \| |/ _ \ |/ / _ \  | |_ | '__/ _` | '_ ` _ \ / _ \ \ /\ / / _ \| '__| |/ /
-// | |\  |  __/   < (_) | |  _|| | | (_| | | | | | |  __/\ V  V / (_) | |  |   <
-// |_| \_|\___|_|\_\___/  |_|  |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
 //
 //  Utils.h
 //  Neko Framework
@@ -77,13 +72,13 @@ namespace Neko::Skylar
     NEKO_FORCE_INLINE bool IsConnectionLeaveOpen(const Http::Request& request)
     {
         return (request.ConnectionParams & Net::Http::ConnectionParams::Connection_LeaveOpen)
-        == Net::Http::ConnectionParams::Connection_LeaveOpen;
+            == Net::Http::ConnectionParams::Connection_LeaveOpen;
     }
     
     NEKO_FORCE_INLINE bool IsConnectionInReuse(const Http::Request& request)
     {
         return (request.ConnectionParams & Net::Http::ConnectionParams::Connection_Reuse)
-        == Net::Http::ConnectionParams::Connection_Reuse;
+            == Net::Http::ConnectionParams::Connection_Reuse;
     }
 }
 

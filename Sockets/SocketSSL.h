@@ -17,11 +17,6 @@
 //          vV\|/vV|`-'\  ,---\   | \Vv\hjwVv\//v
 //                     _) )    `. \ /
 //                    (__/       ) )
-//  _   _      _           _____                                            _
-// | \ | | ___| | _____   |  ___| __ __ _ _ __ ___   _____      _____  _ __| | __
-// |  \| |/ _ \ |/ / _ \  | |_ | '__/ _` | '_ ` _ \ / _ \ \ /\ / / _ \| '__| |/ /
-// | |\  |  __/   < (_) | |  _|| | | (_| | | | | | |  __/\ V  V / (_) | |  |   <
-// |_| \_|\___|_|\_\___/  |_|  |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
 //
 //  SocketSSL.h
 //  Neko Framework
@@ -36,7 +31,7 @@
 
 #if USE_OPENSSL
 
-#   include "Engine/Network/NetSocket.h"
+#   include "Engine/Network/NetSocketBase.h"
 
 #   include <openssl/ssl.h>
 
@@ -46,14 +41,13 @@ namespace Neko::Skylar
     class SocketSSL : public ISocket
     {
     public:
-        
         // @see ISocket for comments
         
         SocketSSL() = delete;
         /** Created a new SSL connection based on an existing context (server/client). */
-        SocketSSL(const Net::INetSocket& socket, SSL_CTX* context);
+        SocketSSL(const Net::NetSocketBase& socket, SSL_CTX& context);
         /** Initiates from an existing SSL connection. */
-        SocketSSL(const Net::INetSocket& socket, SSL* connection);
+        SocketSSL(const Net::NetSocketBase& socket, SSL& connection);
         
         virtual long GetPacketBlocking(void* buffer, const ulong length, const int32& timeout) const override;
         
@@ -62,7 +56,7 @@ namespace Neko::Skylar
         virtual void Close() override;
         
         
-        virtual NEKO_FORCE_INLINE Net::SOCKET GetNativeHandle() const override { return Socket.GetNativeHandle(); };
+        virtual NEKO_FORCE_INLINE Net::SocketHandle GetNativeHandle() const override { return Socket.GetNativeHandle(); };
         
         virtual NEKO_FORCE_INLINE void* GetTlsSession() const override { return static_cast<void* >(this->Connection); };
         
@@ -73,9 +67,9 @@ namespace Neko::Skylar
         
     private:
         
-        Net::INetSocket Socket;
+        Net::NetSocketBase Socket;
         
-        SSL* Connection;
+        ::SSL* Connection;
     };
 }
 

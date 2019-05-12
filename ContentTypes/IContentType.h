@@ -17,11 +17,6 @@
 //          vV\|/vV|`-'\  ,---\   | \Vv\hjwVv\//v
 //                     _) )    `. \ /
 //                    (__/       ) )
-//  _   _      _           _____                                            _
-// | \ | | ___| | _____   |  ___| __ __ _ _ __ ___   _____      _____  _ __| | __
-// |  \| |/ _ \ |/ / _ \  | |_ | '__/ _` | '_ ` _ \ / _ \ \ /\ / / _ \| '__| |/ /
-// | |\  |  __/   < (_) | |  _|| | | (_| | | | | | |  __/\ V  V / (_) | |  |   <
-// |_| \_|\___|_|\_\___/  |_|  |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
 //
 //  IContentType.h
 //  Neko Framework
@@ -33,7 +28,7 @@
 
 #include "Engine/Utilities/NekoString.h"
 #include "Engine/Utilities/Templates.h"
-#include "Engine/Network/NetSocket.h"
+#include "Engine/Network/NetSocketBase.h"
 #include "Engine/Network/Http/Request.h"
 
 namespace Neko::Skylar
@@ -44,7 +39,6 @@ namespace Neko::Skylar
     class IContentType
     {
     public:
-        
         IContentType(IAllocator& allocator);
         
         /**
@@ -67,12 +61,10 @@ namespace Neko::Skylar
         virtual bool ParseFromBuffer(const Neko::String& buffer, Net::Http::RequestDataInternal& requestData, class ContentDesc* contentDesc) const = 0;
       
     public:
-        
         /** Content-Type */
         const Neko::String& GetName() const;
         
     protected:
-        
         //! Content-Type.
         Neko::String Name;
         //! Allocator to keep track on created objects.

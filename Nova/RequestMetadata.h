@@ -17,23 +17,31 @@
 //          vV\|/vV|`-'\  ,---\   | \Vv\hjwVv\//v
 //                     _) )    `. \ /
 //                    (__/       ) )
-//  _   _      _           _____                                            _
-// | \ | | ___| | _____   |  ___| __ __ _ _ __ ___   _____      _____  _ __| | __
-// |  \| |/ _ \ |/ / _ \  | |_ | '__/ _` | '_ ` _ \ / _ \ \ /\ / / _ \| '__| |/ /
-// | |\  |  __/   < (_) | |  _|| | | (_| | | | | | |  __/\ V  V / (_) | |  |   <
-// |_| \_|\___|_|\_\___/  |_|  |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
 //
-//  RequestTask.cpp
+//  RequestContext.h
 //  Neko Framework
 //
 //  Copyright © 2018 Neko Vision. All rights reserved.
 //
 
-#include "RequestTask.h"
+#pragma once
 
-namespace Neko::Skylar
+#include "Engine/Core/Path.h"
+
+namespace Neko::Nova
 {
-    
+    struct RequestMetadata
+    {
+        void Deserialize(class Neko::InputData& data);
+        
+        // incoming protocol type by request
+        class Protocol* Protocol = nullptr;
+        class ISocket* Socket = nullptr;
+        
+        bool Secure;
+        
+        // application document root
+        char DocumentRoot[Neko::MAX_PATH_LENGTH];
+    };
 }
-
 

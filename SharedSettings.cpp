@@ -17,11 +17,6 @@
 //          vV\|/vV|`-'\  ,---\   | \Vv\hjwVv\//v
 //                     _) )    `. \ /
 //                    (__/       ) )
-//  _   _      _           _____                                            _
-// | \ | | ___| | _____   |  ___| __ __ _ _ __ ___   _____      _____  _ __| | __
-// |  \| |/ _ \ |/ / _ \  | |_ | '__/ _` | '_ ` _ \ / _ \ \ /\ / / _ \| '__| |/ /
-// | |\  |  __/   < (_) | |  _|| | | (_| | | | | | |  __/\ V  V / (_) | |  |   <
-// |_| \_|\___|_|\_\___/  |_|  |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
 //
 //  Settings.cpp
 //  Neko Framework
@@ -50,7 +45,6 @@ namespace Neko::Skylar
     , List(allocator)
     , SupportedMimeTypes(allocator)
     , ContentTypes(allocator)
-    , ThreadsMaxCount(4)
     , MaxMemoryUsage(0)
     {
     }
@@ -98,9 +92,6 @@ namespace Neko::Skylar
         json.DeserializeLabel(label, 255);
         json.DeserializeObjectBegin();
         {
-            uint32 threadCount = Platform::GetNumberOfLogicalCores();
-            json.Deserialize("threadMaxCount", this->ThreadsMaxCount, threadCount);
-            
             const uint64 maxDefaultSize = Megabyte(64);
             json.Deserialize("maxMemoryUsage", this->MaxMemoryUsage, maxDefaultSize);
         }
@@ -162,8 +153,21 @@ namespace Neko::Skylar
         for (uint16 i = 0; i < applicationCount; ++i)
         {
             auto* settings = applicationSettingItems[i];
+            const auto* rootDirectory = *settings->RootDirectory;
             
-            int16 moduleIndex = LoadModule(settings->ServerModulePath, settings->RootDirectory.data, modules, *settings);
+            // check directories
+            if (Platform::FileExists(rootDirectory) == false)
+            {
+                LogWarning.log("Skylar") << "Set content directory does not exist, creating a new one at " << rootDirectory;
+                if (Platform::MakePath(rootDirectory, true) == false)
+                {
+                    LogError.log("Skylar")
+                        << "Couldn't create root directory for the application \"" << applicationNames[i] << "\", "
+                        << *Platform::GetLastErrorMessage();
+                }
+            }
+            
+            int16 moduleIndex = LoadModule(settings->ServerModulePath, rootDirectory, modules, *settings);
             bool success = moduleIndex!= -1;
             
             if (not success)
@@ -177,10 +181,10 @@ namespace Neko::Skylar
             this->AddApplication(applicationNames[i], settings);
         }
         
-        if (Net::NetAddress address; address.Resolve(*applicationNames[0], Net::NA_UNSPEC))
+        if (Net::Endpoint address; address.Resolve(*applicationNames[0], Net::NetworkAddressType::Unspec))
         {
             this->ResolvedAddressString.Set(address.ToString());
-            LogWarning.log("Skylar") << "Resolved address: " << *this->ResolvedAddressString;
+            LogInfo.log("Skylar") << "Resolved address: " << *this->ResolvedAddressString;
         }
         else
         {

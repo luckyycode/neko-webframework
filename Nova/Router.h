@@ -17,11 +17,6 @@
 //          vV\|/vV|`-'\  ,---\   | \Vv\hjwVv\//v
 //                     _) )    `. \ /
 //                    (__/       ) )
-//  _   _      _           _____                                            _
-// | \ | | ___| | _____   |  ___| __ __ _ _ __ ___   _____      _____  _ __| | __
-// |  \| |/ _ \ |/ / _ \  | |_ | '__/ _` | '_ ` _ \ / _ \ \ /\ / / _ \| '__| |/ /
-// | |\  |  __/   < (_) | |  _|| | | (_| | | | | | |  __/\ V  V / (_) | |  |   <
-// |_| \_|\___|_|\_\___/  |_|  |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
 //
 //  Router.h
 //  Neko Framework
@@ -34,70 +29,47 @@
 #include "Engine/Containers/Array.h"
 #include "Engine/Utilities/NekoString.h"
 
-#include "Route.h"
-#include "Routing.h"
+#include "IRouter.h"
 
-namespace Neko
+namespace Neko::Nova
 {
-    namespace Nova
+    /** Routing object container. */
+    class Router : public IRouter
     {
-        // Url router for controllers and actions.
-        class Router
-        {
-        public:
-            
-            Router(IAllocator& allocator)
-            : Routes(allocator)
-            , Allocator(allocator)
-            {
-            }
-            
-            /**
-             * Adds a new route to router.
-             *
-             * @param method    Http method (e.g. get, post, etc...)
-             * @param path      Controller path.
-             *
-             * @return TRUE if route has been processed and successfully created.
-             */
-            bool AddRoute(const Http::Method method, const String& path, const String& controller, const String& action);
-            
-            /**
-             * Looks up for a routing.
-             *
-             * @param method        Http method as string.
-             * @param components    Parsed request path.
-             *
-             * @return Routing object (check Valid field to check if routing is found).
-             */
-            Routing FindRoute(const String& method, TArray<String>& components) const;
-            
-            /** @copydoc Router::FindRoute */
-            Routing FindRoute(Http::Method method, TArray<String>& components) const;
-            
-            Routing FindRoute(const String& method, const String& uri) const;
-            
-            /** Builds url with action and controller with parameters. */
-            String FindUrlByController(const String& controller, const String& action, const TArray<String>& params) const;
-            
-            /** Splits the given path to array (differs from ParseIntoArray). */
-            static void ParsePathForRoute(TArray<String>& outArray, const String& path);
-            
-        private:
-            
-            String GeneratePathFromComponents(const TArray<String>& components, const TArray<String>& params) const;
-            
-            void PrintAllRoutes();
-            
-        protected:
-            
-            void Clear();
-            
-        private:
-            
-            TArray<Route> Routes;
-            
-            IAllocator& Allocator;
-        };
-    }
+    public:
+        Router(IAllocator& allocator)
+        : Routes(allocator)
+        , Allocator(allocator)
+        { }
+        
+        virtual ~Router() { }
+        
+        bool AddRoute(const Http::Method method, const String& path, const String& controller, const String& action) override;
+        
+        Routing FindRoute(const String& method, const TArray<String>& components) const override;
+        
+        /** @copydoc Router::FindRoute */
+        Routing FindRoute(Http::Method method, const TArray<String>& components) const;
+        
+        Routing FindRoute(Http::Method method, const String& uri) const override;
+        
+        String FindUrlByController(const String& controller, const String& action, const TArray<String>& params) const override;
+        
+        /** Splits the given path to array (differs from ParseIntoArray). */
+        static void ParsePathForRoute(TArray<String>& outArray, const String& path);
+        
+    private:
+        String GeneratePathFromComponents(const TArray<String>& components, const TArray<String>& params) const;
+        
+        void PrintAllRoutes();
+        
+    protected:
+        void Clear();
+        
+    private:
+        TArray<Route> Routes;
+        
+        IAllocator& Allocator;
+    };
 }
+

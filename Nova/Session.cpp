@@ -17,11 +17,6 @@
 //          vV\|/vV|`-'\  ,---\   | \Vv\hjwVv\//v
 //                     _) )    `. \ /
 //                    (__/       ) )
-//  _   _      _           _____                                            _
-// | \ | | ___| | _____   |  ___| __ __ _ _ __ ___   _____      _____  _ __| | __
-// |  \| |/ _ \ |/ / _ \  | |_ | '__/ _` | '_ ` _ \ / _ \ \ /\ / / _ \| '__| |/ /
-// | |\  |  __/   < (_) | |  _|| | | (_| | | | | | |  __/\ V  V / (_) | |  |   <
-// |_| \_|\___|_|\_\___/  |_|  |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
 //
 //  Session.cpp
 //  Neko Framework
@@ -31,13 +26,11 @@
 
 #include "Session.h"
 
-namespace Neko
+namespace Neko::Nova
 {
-    namespace Nova
+    void Session::Reset()
     {
-        void Session::Reset()
-        {
-            SessionMap::Clear();
-        }
+        Storage.Clear();
     }
 }
+

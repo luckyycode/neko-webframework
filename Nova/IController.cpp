@@ -17,11 +17,6 @@
 //          vV\|/vV|`-'\  ,---\   | \Vv\hjwVv\//v
 //                     _) )    `. \ /
 //                    (__/       ) )
-//  _   _      _           _____                                            _
-// | \ | | ___| | _____   |  ___| __ __ _ _ __ ___   _____      _____  _ __| | __
-// |  \| |/ _ \ |/ / _ \  | |_ | '__/ _` | '_ ` _ \ / _ \ \ /\ / / _ \| '__| |/ /
-// | |\  |  __/   < (_) | |  _|| | | (_| | | | | | |  __/\ V  V / (_) | |  |   <
-// |_| \_|\___|_|\_\___/  |_|  |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
 //
 //  IController.cpp
 //  Neko Framework
@@ -29,7 +24,8 @@
 //  Copyright © 2018 Neko Vision. All rights reserved.
 //
 
-#include "../Skylar/IProtocol.h"
+#include "Engine/Core/Log.h"
+#include "Protocol.h"
 
 #include "SessionManager.h"
 #include "IController.h"
@@ -48,6 +44,7 @@ namespace Neko
         , HttpResponse(response)
         , Rollback(false)
         , UserManager(nullptr)
+        , Session(allocator)
         {
             
         }

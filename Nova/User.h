@@ -17,11 +17,6 @@
 //          vV\|/vV|`-'\  ,---\   | \Vv\hjwVv\//v
 //                     _) )    `. \ /
 //                    (__/       ) )
-//  _   _      _           _____                                            _
-// | \ | | ___| | _____   |  ___| __ __ _ _ __ ___   _____      _____  _ __| | __
-// |  \| |/ _ \ |/ / _ \  | |_ | '__/ _` | '_ ` _ \ / _ \ \ /\ / / _ \| '__| |/ /
-// | |\  |  __/   < (_) | |  _|| | | (_| | | | | | |  __/\ V  V / (_) | |  |   <
-// |_| \_|\___|_|\_\___/  |_|  |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
 //
 //  User.h
 //  Neko Framework
@@ -33,22 +28,19 @@
 
 #include "Engine/Utilities/NekoString.h"
 
-namespace Neko
+namespace Neko::Nova
 {
-    namespace Nova
+    /** Interface class for user object. */
+    class IUser
     {
-        /// Interface class for user object.
-        class IUser
-        {
-        public:
-            
-            virtual ~IUser() { }
-            
-            /** Returns the identity key (i.e. user name) */
-            virtual const String& GetPrimaryKey() const = 0;
-            
-            /** Returns the secondary key. */
-            virtual const String& GetSecondaryKey() const { return String::Empty; }
-        };
-    }
+    public:
+        virtual ~IUser() { }
+        
+        /** Returns the identity key (i.e. user name) */
+        virtual const String& GetPrimaryKey() const = 0;
+        
+        /** Returns the secondary key. */
+        virtual const String& GetSecondaryKey() const { return String::Empty; }
+    };
 }
+

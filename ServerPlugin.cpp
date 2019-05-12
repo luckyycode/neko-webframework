@@ -17,14 +17,9 @@
 //          vV\|/vV|`-'\  ,---\   | \Vv\hjwVv\//v
 //                     _) )    `. \ /
 //                    (__/       ) )
-//  _   _      _           _____                                            _
-// | \ | | ___| | _____   |  ___| __ __ _ _ __ ___   _____      _____  _ __| | __
-// |  \| |/ _ \ |/ / _ \  | |_ | '__/ _` | '_ ` _ \ / _ \ \ /\ / / _ \| '__| |/ /
-// | |\  |  __/   < (_) | |  _|| | | (_| | | | | | |  __/\ V  V / (_) | |  |   <
-// |_| \_|\___|_|\_\___/  |_|  |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
 //
 //  Network.cpp
-//  Neko engine
+//  Neko SDK
 //
 //  Created by Neko Vision on 11/08/2013.
 //  Copyright (c) 2013 Neko Vision. All rights reserved.
@@ -39,19 +34,18 @@
 #include "Engine/Mt/Task.h"
 
 #include "Skylar/Server.h"
-#include "Clustering/ClusterHost.h"
+#include "Clustering/Mako.h"
 
 // Network base
 
 namespace Neko
 {
-    class ServerTask : public MT::Task
+    class ServerStartupTask : public MT::Task
     {
     public:
-        
-        ServerTask(IAllocator& allocator, FileSystem::IFileSystem& fileSystem)
-        : Task(allocator)
-        , FileSystem(fileSystem)
+        ServerStartupTask(IAllocator& allocator, FileSystem::IFileSystem& fileSystem)
+            : Task(allocator)
+            , FileSystem(fileSystem)
         {
         }
         
@@ -64,7 +58,7 @@ namespace Neko
                 char commandLine[2048];
                 Platform::GetSystemCommandLine(commandLine, Neko::lengthOf(commandLine));
                 
-                CCommandLineParser parser(commandLine);
+                CommandLineParser parser(commandLine);
                 while (parser.Next())
                 {
                     if (parser.CurrentEquals("--force"))
@@ -91,6 +85,7 @@ namespace Neko
                         parser.GetCurrent(memory, Neko::lengthOf(memory));
                         maxMemory = StringToUnsignedLong(memory);
                     }
+
                     if (not parser.Next())
                     {
                         break;
@@ -99,29 +94,23 @@ namespace Neko
             }
             
             Skylar::Server server(GetAllocator(), FileSystem);
-            int32 exitCode = server.StartCommand(serverName, forceStart);
-            
-            return exitCode;
+            String mutableName(serverName);
+
+            return server.StartCommand(mutableName, forceStart);
         }
         
     private:
-        
         FileSystem::IFileSystem& FileSystem;
     };
     
     class Network : public IPlugin
     {
     public:
-        
         explicit Network(IEngine& engine)
-        : Engine(engine)
-        , Allocator(engine.GetAllocator())
+            : Engine(engine)
+            , Allocator(engine.GetAllocator())
         {
-            Clustering::ClusterHost host("kek", Clustering::ClusterHostType::Primary);
-            host.NodeConfiguration.EndPoint.Resolve("127.0.0.1:1337", AF_UNSPEC);
-            host.Start();
-            
-            if (this->Task = NEKO_NEW(Allocator, ServerTask)(Allocator, engine.GetFileSystem());
+            if (this->Task = NEKO_NEW(Allocator, ServerStartupTask)(Allocator, engine.GetFileSystem());
                 not this->Task->Create("Skylar task"))
             {
                 assert(false);
@@ -137,14 +126,12 @@ namespace Neko
         }
         
     public:
-        
         NEKO_FORCE_INLINE const char* GetName() const override { return "skylar"; }
       
         void Update(float fDelta) override { }
 
     private:
-        
-        ServerTask* Task;
+        ServerStartupTask* Task;
         
         Neko::IAllocator& Allocator;
         IEngine& Engine;

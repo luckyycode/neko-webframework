@@ -17,11 +17,6 @@
 //          vV\|/vV|`-'\  ,---\   | \Vv\hjwVv\//v
 //                     _) )    `. \ /
 //                    (__/       ) )
-//  _   _      _           _____                                            _
-// | \ | | ___| | _____   |  ___| __ __ _ _ __ ___   _____      _____  _ __| | __
-// |  \| |/ _ \ |/ / _ \  | |_ | '__/ _` | '_ ` _ \ / _ \ \ /\ / / _ \| '__| |/ /
-// | |\  |  __/   < (_) | |  _|| | | (_| | | | | | |  __/\ V  V / (_) | |  |   <
-// |_| \_|\___|_|\_\___/  |_|  |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
 //
 //  Utils.cpp
 //  Neko Framework
@@ -54,6 +49,7 @@ namespace Neko::Skylar
     void ShowDirectoryList(const String& documentRoot, const Http::Request& request, Http::Response& response, bool secure, IAllocator& allocator)
     {
         auto fullHost = request.IncomingHeaders.Find("host"); // get host with port (request.Host may have no port)
+        const char* hostString = *fullHost.value();
         
         String body(allocator);
         body += R"(
@@ -99,7 +95,7 @@ namespace Neko::Skylar
             
             // name
             String fileUrl = secure ? "https://" : "http://";
-            fileUrl += fullHost.value();
+            fileUrl += hostString;
             fileUrl += request.Path;
             fileUrl += "/";
             fileUrl += info.Filename;
@@ -193,7 +189,7 @@ namespace Neko::Skylar
                         String name(allocator);
                         Util::DecodeUrl(uri.Mid(paramCur, INDEX_NONE != paramEnd ? paramEnd - paramCur : INT_MAX), name);
                         
-                        incomingData.Insert(Neko::Move(name), Neko::String::Empty);
+                        incomingData.Insert(Neko::Move(name), Neko::String());
                     }
                     else
                     {

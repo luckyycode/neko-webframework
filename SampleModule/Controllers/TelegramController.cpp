@@ -1,10 +1,10 @@
 #include "TelegramController.h"
 
-#include "../../../Engine/Network/Network.h"
-#include "../../../Engine/Platform/Platform.h"
-#include "../../../Engine/Data/JsonSerializer.h"
-#include "../../../Engine/Data/MemoryStream.h"
-#include "../../../Engine/FileSystem/PlatformFile.h"
+#include "Engine/Network/Network.h"
+#include "Engine/Platform/Platform.h"
+#include "Engine/Data/JsonSerializer.h"
+#include "Engine/Data/MemoryStream.h"
+#include "Engine/FileSystem/PlatformFile.h"
 #include "../SampleModule.h"
 
 #include "../Models/UpdateModel.h"

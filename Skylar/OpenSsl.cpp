@@ -17,11 +17,6 @@
 //          vV\|/vV|`-'\  ,---\   | \Vv\hjwVv\//v
 //                     _) )    `. \ /
 //                    (__/       ) )
-//  _   _      _           _____                                            _
-// | \ | | ___| | _____   |  ___| __ __ _ _ __ ___   _____      _____  _ __| | __
-// |  \| |/ _ \ |/ / _ \  | |_ | '__/ _` | '_ ` _ \ / _ \ \ /\ / / _ \| '__| |/ /
-// | |\  |  __/   < (_) | |  _|| | | (_| | | | | | |  __/\ V  V / (_) | |  |   <
-// |_| \_|\___|_|\_\___/  |_|  |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
 //
 //  OpenSsl.cpp
 //  Neko Framework
@@ -41,7 +36,6 @@ namespace Neko::Skylar
     class OpenSslImpl : public ISsl
     {
     public:
-        
         OpenSslImpl(IAllocator& allocator)
         : TlsData(allocator)
         { }
@@ -88,33 +82,33 @@ namespace Neko::Skylar
             
             LogInfo.log("Skylar") << "Configuring ssl configuration for the application..";
             
-            context = SSL_CTX_new(SSLv23_server_method());
+            context = ::SSL_CTX_new(SSLv23_server_method());
             
-            if (SSL_CTX_use_certificate_file(context, *certificate, SSL_FILETYPE_PEM) <= 0)
+            if (::SSL_CTX_use_certificate_file(context, *certificate, SSL_FILETYPE_PEM) <= 0)
             {
                 LogError.log("Skylar") << "Couldn't load SSL certificate..  ";
                 goto cleanupSsl;
             }
             
-            if (SSL_CTX_use_PrivateKey_file(context, privateKey.IsEmpty() ? *certificate : *privateKey, SSL_FILETYPE_PEM) <= 0)
+            if (::SSL_CTX_use_PrivateKey_file(context, privateKey.IsEmpty() ? *certificate : *privateKey, SSL_FILETYPE_PEM) <= 0)
             {
                 LogError.log("Skylar") << "Couldn't load SSL private key (or certificate pair)..";
                 goto cleanupSsl;
             }
             
-            if (not SSL_CTX_check_private_key(context))
+            if (::SSL_CTX_check_private_key(context) == false)
             {
                 LogError.log("Skylar") << "Couldn't verify SSL private key!";
                 goto cleanupSsl;
             }
             
-            // SSL_CTX_set_alpn_select_cb(context, AlpnCallback, nullptr);
+           //  SSL_CTX_set_alpn_select_cb(context, AlpnCallback, nullptr);
             
             return context;
             
         cleanupSsl:
             {
-                SSL_CTX_free(context);
+                ::SSL_CTX_free(context);
                 return nullptr;
             }
         }
@@ -125,17 +119,17 @@ namespace Neko::Skylar
             uint32 length = 0;
             
             // ALPN
-            SSL_get0_alpn_selected(static_cast<SSL* >(session), &proto, &length);
+            ::SSL_get0_alpn_selected(static_cast<SSL* >(session), &proto, &length);
             if (length == 0)
             {
                 // NPN
-                SSL_get0_next_proto_negotiated(static_cast<SSL* >(session), &proto, &length);
+                ::SSL_get0_next_proto_negotiated(static_cast<SSL* >(session), &proto, &length);
             }
             
             bool ok = length > 0;
             if (ok)
             {
-                CopyString(protocol, length, (const char*)proto);
+                CopyString(protocol, length, (const char* ) proto);
             }
             
             return ok;
@@ -147,7 +141,7 @@ namespace Neko::Skylar
             {
                 for (auto& item : TlsData)
                 {
-                    SSL_CTX_free(static_cast<SSL_CTX* >(item));
+                    ::SSL_CTX_free(static_cast<SSL_CTX* >(item));
                 }
                 TlsData.Clear();
             }
@@ -155,7 +149,6 @@ namespace Neko::Skylar
         }
         
     public:
-        
         void AddSession(uint16 port, void* context) override
         {
             this->TlsData.Insert(port, context);
@@ -167,7 +160,6 @@ namespace Neko::Skylar
         }
         
     private:
-        
         //! Ssl contexts map.
         TlsMap TlsData;
     };

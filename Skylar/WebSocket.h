@@ -17,11 +17,6 @@
 //          vV\|/vV|`-'\  ,---\   | \Vv\hjwVv\//v
 //                     _) )    `. \ /
 //                    (__/       ) )
-//  _   _      _           _____                                            _
-// | \ | | ___| | _____   |  ___| __ __ _ _ __ ___   _____      _____  _ __| | __
-// |  \| |/ _ \ |/ / _ \  | |_ | '__/ _` | '_ ` _ \ / _ \ \ /\ / / _ \| '__| |/ /
-// | |\  |  __/   < (_) | |  _|| | | (_| | | | | | |  __/\ V  V / (_) | |  |   <
-// |_| \_|\___|_|\_\___/  |_|  |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
 //
 //  WebSocket.h
 //  Neko Framework
@@ -31,28 +26,25 @@
 
 #pragma once
 
-#include "IProtocol.h"
+#include "Protocol.h"
 
 namespace Neko::Skylar
 {
-    /// Websockets
-    class ProtocolWebSocket final : public IProtocol
+    /** Websockets protocol */
+    class ProtocolWebSocket final : public Protocol
     {
     public:
-        
-        // @see comments in IProtocol
-        
+        // @see comments in Protocol
         ProtocolWebSocket(class ISocket& socket, class IAllocator& allocator);
+        ProtocolWebSocket(const Protocol& protocol);
         
-        ProtocolWebSocket(const IProtocol& protocol);
+        virtual bool SendHeaders(const Http::StatusCode status, ListOfHeaderPair& headers, const int32& timeout, bool end) const override;
+        virtual long SendData(const void* source, ulong size, const int32& timeout, Http::DataCounter* dataCounter) const override;
         
-        virtual bool    SendHeaders(const Http::StatusCode status, TArray< std::pair<String, String> >& headers, const int32& timeout, bool end) const override;
-        virtual long    SendData(const void* source, ulong size, const int32& timeout, Http::DataCounter* dataCounter) const override;
+        virtual void WriteRequest(char* buffer, const Http::Request& repuest, const PoolApplicationSettings& applicationSettings) const override;
+        virtual void ReadResponse(Http::Request& request, const Http::ResponseData& responseData) const override;
         
-        virtual void    WriteRequest(char* buffer, const Http::Request& repuest, const PoolApplicationSettings& applicationSettings) const override;
-        virtual void    ReadResponse(Http::Request& request, const Http::ResponseData& responseData) const override;
-        
-        virtual IProtocol* Process() override;
+        virtual Protocol* Process() override;
         virtual void Close() override;
     };
 }

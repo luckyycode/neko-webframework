@@ -17,11 +17,6 @@
 //          vV\|/vV|`-'\  ,---\   | \Vv\hjwVv\//v
 //                     _) )    `. \ /
 //                    (__/       ) )
-//  _   _      _           _____                                            _
-// | \ | | ___| | _____   |  ___| __ __ _ _ __ ___   _____      _____  _ __| | __
-// |  \| |/ _ \ |/ / _ \  | |_ | '__/ _` | '_ ` _ \ / _ \ \ /\ / / _ \| '__| |/ /
-// | |\  |  __/   < (_) | |  _|| | | (_| | | | | | |  __/\ V  V / (_) | |  |   <
-// |_| \_|\___|_|\_\___/  |_|  |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
 //
 //  SocketSSL.cpp
 //  Neko Framework
@@ -36,21 +31,18 @@
 
 namespace Neko::Skylar
 {
-    SocketSSL::SocketSSL(const Net::INetSocket& socket, SSL_CTX* context)
+    SocketSSL::SocketSSL(const Net::NetSocketBase& socket, SSL_CTX& context)
     : Socket(socket)
     {
-        assert(context != nullptr);
-        
         // create an SSL connection and attach it to the socket
-        this->Connection = SSL_new(context);
+        this->Connection = SSL_new(&context);
         SSL_set_fd(this->Connection, socket.GetNativeHandle());
     }
     
-    SocketSSL::SocketSSL(const Net::INetSocket& socket, SSL* connection)
-    : Connection(connection)
+    SocketSSL::SocketSSL(const Net::NetSocketBase& socket, SSL& connection)
+    : Connection(&connection)
     , Socket(socket)
     {
-        assert(connection != nullptr);
     }
     
     int32 SocketSSL::Connect()
@@ -64,12 +56,12 @@ namespace Neko::Skylar
         long result;
         int32 innerError;
         
-        Net::INetSocket socket;
-        socket.Init(this->GetNativeHandle(), Net::ESocketType::TCP);
+        Net::NetSocketBase socket;
+        socket.Init(this->GetNativeHandle(), Net::SocketType::Tcp);
         
         do
         {
-            if (not socket.WaitForDataInternal(timeout, false))
+            if (not socket.WaitForData(timeout, false))
             {
                 // timeout
                 result = -1;
@@ -96,8 +88,8 @@ namespace Neko::Skylar
         ulong total = 0;
         int32 innerError = 0;
         
-        Net::INetSocket socket;
-        socket.Init(this->GetNativeHandle(), Net::ESocketType::TCP);
+        Net::NetSocketBase socket;
+        socket.Init(this->GetNativeHandle(), Net::SocketType::Tcp);
         
         while (total < length)
         {
@@ -111,7 +103,7 @@ namespace Neko::Skylar
             do
             {
                 // Wait for send all data to client
-                if (not socket.WaitForAnyDataInternal(-1, true))
+                if (not socket.WaitForAnyData(-1, true))
                 {
                     continue;
                 }
@@ -134,7 +126,7 @@ namespace Neko::Skylar
         
         do
         {
-            if (not Socket.WaitForAnyDataInternal(-1, false))
+            if (not Socket.WaitForAnyData(-1, false))
             {
                 continue;
             }
@@ -158,7 +150,7 @@ namespace Neko::Skylar
     void SocketSSL::Close()
     {
         // Wait for send all data to client
-        Socket.WaitForAnyDataInternal(-1, true);
+        Socket.WaitForAnyData(-1, true);
         
         SSL_shutdown(this->Connection);
         Socket.Close();

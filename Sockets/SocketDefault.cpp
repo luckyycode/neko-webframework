@@ -17,11 +17,6 @@
 //          vV\|/vV|`-'\  ,---\   | \Vv\hjwVv\//v
 //                     _) )    `. \ /
 //                    (__/       ) )
-//  _   _      _           _____                                            _
-// | \ | | ___| | _____   |  ___| __ __ _ _ __ ___   _____      _____  _ __| | __
-// |  \| |/ _ \ |/ / _ \  | |_ | '__/ _` | '_ ` _ \ / _ \ \ /\ / / _ \| '__| |/ /
-// | |\  |  __/   < (_) | |  _|| | | (_| | | | | | |  __/\ V  V / (_) | |  |   <
-// |_| \_|\___|_|\_\___/  |_|  |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
 //
 //  SocketDefault.cpp
 //  Neko Framework
@@ -33,10 +28,9 @@
 
 namespace Neko::Skylar
 {
-    SocketDefault::SocketDefault(const Net::INetSocket& socket)
+    SocketDefault::SocketDefault(const Net::NetSocketBase& socket)
         : Socket(socket)
-    {
-    }
+    { }
     
     long SocketDefault::GetPacketBlocking(void* buffer, const ulong length, const int32& timeout) const
     {
@@ -49,7 +43,7 @@ namespace Neko::Skylar
     
     long SocketDefault::SendAllPacketsWait(const void* buffer, const ulong length, const int32& timeout) const
     {
-        //Net::NetAddress address;
+        //Net::Endpoint address;
         //bool succeeded = Socket.GetAddress(address);
         
         return Socket.SendAllPacketsWait(nullptr, buffer, length, timeout);
@@ -58,7 +52,7 @@ namespace Neko::Skylar
     void SocketDefault::Close()
     {
         // Send all data to client
-        Socket.WaitForAnyDataInternal(-1, true);
+        Socket.WaitForAnyData(-1, true);
         
         Socket.Close();
     }

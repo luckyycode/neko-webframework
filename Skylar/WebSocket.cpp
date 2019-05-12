@@ -17,11 +17,6 @@
 //          vV\|/vV|`-'\  ,---\   | \Vv\hjwVv\//v
 //                     _) )    `. \ /
 //                    (__/       ) )
-//  _   _      _           _____                                            _
-// | \ | | ___| | _____   |  ___| __ __ _ _ __ ___   _____      _____  _ __| | __
-// |  \| |/ _ \ |/ / _ \  | |_ | '__/ _` | '_ ` _ \ / _ \ \ /\ / / _ \| '__| |/ /
-// | |\  |  __/   < (_) | |  _|| | | (_| | | | | | |  __/\ V  V / (_) | |  |   <
-// |_| \_|\___|_|\_\___/  |_|  |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
 //
 //  WebSocket.cpp
 //  Neko Framework
@@ -35,16 +30,15 @@
 namespace Neko::Skylar
 {
     // empty
-    
     ProtocolWebSocket::ProtocolWebSocket(ISocket& socket, IAllocator& allocator)
-    : IProtocol(socket, allocator)
+    : Protocol(socket, allocator)
     { }
     
-    ProtocolWebSocket::ProtocolWebSocket(const IProtocol& protocol)
-    : IProtocol(protocol)
+    ProtocolWebSocket::ProtocolWebSocket(const Protocol& protocol)
+    : Protocol(protocol)
     { }
     
-    IProtocol* ProtocolWebSocket::Process()
+    Protocol* ProtocolWebSocket::Process()
     {
         return this;
     }
@@ -54,7 +48,7 @@ namespace Neko::Skylar
         return 0;
     }
     
-    bool ProtocolWebSocket::SendHeaders(const Http::StatusCode status, TArray< std::pair<String, String> >& headers, const int32& timeout, bool end) const
+    bool ProtocolWebSocket::SendHeaders(const Http::StatusCode status, ListOfHeaderPair& headers, const int32& timeout, bool end) const
     {
         return false;
     }
@@ -65,12 +59,10 @@ namespace Neko::Skylar
     
     void ProtocolWebSocket::ReadResponse(Http::Request& request, const Http::ResponseData& responseData) const
     {
-        
     }
     
     void ProtocolWebSocket::Close()
     {
-        
     }
 }
 
