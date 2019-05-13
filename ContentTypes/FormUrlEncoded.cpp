@@ -51,7 +51,6 @@ namespace Neko::Skylar
         {
             // Search next parameter
             strEnd = buffer.Find("&", strPos);
-            
             if (strEnd == INDEX_NONE)
             {
                 if (contentDesc->FullSize != contentDesc->BytesReceived)
@@ -64,19 +63,17 @@ namespace Neko::Skylar
                 }
             }
             
-            // Search parameter value
+            // Search parameter Value
             int32 delimiter = buffer.Find("=", strPos);
-            
             const int32 last = (strEnd == INDEX_NONE) ? INT_MAX : strEnd; // hmmm
-            
+
             if (delimiter >= last)
             {
                 String stringToDecode = buffer.Mid(strPos, (strEnd != INT_MAX) ? strEnd - strPos : INT_MAX);
                 // name
                 String name(Allocator);
                 Util::DecodeUrl(stringToDecode, name);
-                
-                // empty value
+                // empty Value
                 requestData.IncomingData.Insert(Neko::Move(name), String());
             }
             else
@@ -84,16 +81,14 @@ namespace Neko::Skylar
                 // name
                 String name(Allocator);
                 Util::DecodeUrl(buffer.Mid(strPos, delimiter - strPos), name);
-                
                 ++delimiter;
                 
                 String stringToDecode = buffer.Mid(delimiter, (strEnd != INDEX_NONE) ? strEnd - delimiter : INT_MAX);
                 
-                // value
+                // Value
                 String value(Allocator);
                 Util::DecodeUrl(stringToDecode, value);
-                
-                // Store parameter and value
+                // Store parameter and Value
                 requestData.IncomingData.Insert(Neko::Move(name), Neko::Move(value));
             }
         }

@@ -1,9 +1,11 @@
-
 #include "SharedSettings.h"
 
 namespace Neko::Skylar
 {
-    /** Pure interface capable for http, websockets, etc. */
+    /**
+     * Pure interface capable for any type of a connection.
+     * A protocol is created per connection/switch.
+     */
     class IProtocol
     {
     public:

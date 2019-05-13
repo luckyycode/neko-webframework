@@ -42,14 +42,11 @@ namespace Neko::Skylar
         SocketDefault(const Net::NetSocketBase& socket);
         
         virtual long GetPacketBlocking(void* buffer, const ulong length, const int32& timeout) const override;
-        
         virtual long SendAllPacketsWait(const void* buffer, const ulong length, const int32& timeout) const override;
         
         virtual void Close() override;
-        
-        
+
         virtual NEKO_FORCE_INLINE Net::SocketHandle GetNativeHandle() const override { return Socket.GetNativeHandle(); };
-        
         virtual NEKO_FORCE_INLINE void* GetTlsSession() const override { return nullptr; };
         
     private:

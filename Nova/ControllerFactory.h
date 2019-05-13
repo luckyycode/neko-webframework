@@ -89,7 +89,7 @@ namespace Neko::Nova
             String fullControllerName(controllerName);
             fullControllerName += "controller";
             
-            ControllerDispatcher.Insert(fullControllerName, static_cast< IControllerContext* >(context));
+            ControllerDispatcher.Insert(Crc32(*fullControllerName), static_cast< IControllerContext* >(context));
             
             return *context;
         }
@@ -104,7 +104,7 @@ namespace Neko::Nova
         
     private:
         
-        THashMap<String, IControllerContext* > ControllerDispatcher;
+        THashMap<uint32, IControllerContext* > ControllerDispatcher;
         
         UserManager UserManager;
         

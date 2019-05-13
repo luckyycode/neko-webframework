@@ -211,7 +211,7 @@ namespace Neko::Skylar
         SupportedMimeTypes.Insert("mp4", "video/mp4");
         SupportedMimeTypes.Insert("3gp", "video/3gp");
         
-        // @todo More data content types (e.g. multipart/form-data).
+        // @todo More Data content types (e.g. multipart/form-Data).
         AddContentType(*NEKO_NEW(Allocator, TextPlain) (Allocator));
         AddContentType(*NEKO_NEW(Allocator, FormUrlencoded) (Allocator));
         AddContentType(*NEKO_NEW(Allocator, ApplicationJson) (Allocator));

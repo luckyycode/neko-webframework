@@ -48,26 +48,22 @@ namespace Neko::Skylar
         {
             // find the next param
             end = buffer.Find("&", pos);
-            
             if (end == INDEX_NONE and contentDesc->FullSize != contentDesc->BytesReceived)
             {
                 // end of params but we still have something to read
-                
                 // save leftover
                 contentDesc->LeftBytes = buffer.Length() - pos;
                 return true;
             }
             
-            // get param value
+            // get param Value
             int32 delimiter = buffer.Find("=", pos);
-            
             const int32 last = (end == INDEX_NONE) ? INT_MAX : end; // hmmm
             
             if (delimiter >= last)
             {
                 // param name
                 auto name = buffer.Mid(pos, (last != INT_MAX) ? end - pos : INT_MAX);
-                
                 // save param
                 requestData.IncomingData.Insert(Neko::Move(name), Neko::String());
             }
@@ -75,12 +71,10 @@ namespace Neko::Skylar
             {
                 // param name
                 auto name = buffer.Mid(pos, (last != INT_MAX) ? delimiter - pos : INT_MAX);
-                
                 ++delimiter;
                 
-                // param value
+                // param Value
                 auto value = buffer.Mid(delimiter, (end != INDEX_NONE) ? end - delimiter : INT_MAX);
-                
                 // save both
                 requestData.IncomingData.Insert(Neko::Move(name), Neko::Move(value));
             }

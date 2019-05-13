@@ -20,7 +20,7 @@ Structure:
 | --------------------- |:-----------------------------------------------------------------:|
 | /Nova/                     | Contains higher level logic (e.g. controllers, routing)
 | /Skylar/                  | Skylar server, contains lower level logic for processing requests      
-| /ContentTypes/        | Supported content data parsers for content-type      
+| /ContentTypes/        | Supported content Data parsers for content-type      
 | /SampleModule/     | Sample project 
 
 

@@ -56,7 +56,7 @@ namespace Neko::Nova
         const int32& lifetime = options.Lifetime;
         const auto& path = options.CookiePath;
         
-        TimeValue value;
+        TimeSpan value;
         value.SetSeconds(static_cast<int64>(lifetime));
         const DateTime expire = DateTime::UtcNow() + value;
         
@@ -111,7 +111,7 @@ namespace Neko::Nova
         PROFILE_SECTION("controller context execute");
         
         // get controller context
-        auto* const context = ControllerDispatcher.at(routing.Controller);
+        auto* const context = ControllerDispatcher.at(Crc32(*routing.Controller));
         assert(context != nullptr);
 
         // create a brand new controller
@@ -153,12 +153,12 @@ namespace Neko::Nova
                     controller->Session.Id = SessionManager.NewSessionId();
                 }
                 
-                // update csrf data
+                // update csrf Data
                 SessionManager.SetCsrfProtectionData(controller->Session);
             }
             
             
-            if (const auto& action = routing.Action; controller->PreFilter(*action))
+            if (const auto& action = routing.Action; controller->PreFilter(action))
             {
                 // execute controller action
                 context->InvokeAction(*controller, action);
@@ -167,8 +167,7 @@ namespace Neko::Nova
                 // session store
                 if (controller->IsSessionSupported())
                 {
-                    bool stored = SessionManager.Store(controller->Session);
-                    if (stored)
+                    if (SessionManager.Store(controller->Session))
                     {
                         StoreSessionCookie(*controller);
                     }
@@ -190,7 +189,7 @@ namespace Neko::Nova
         }
         else
         {
-            // response has no data and empty status codes
+            // response has no Data and empty status codes
             if (not response.HasBodyData())
             {
                 response.SetStatusCode(Http::StatusCode::NotImplemented);
@@ -198,7 +197,6 @@ namespace Neko::Nova
         }
         
         context->ReleaseController(*controller);
-
         // Session cache cleanup
         SessionManager.ClearSessionsCache();
 

@@ -32,23 +32,22 @@
 namespace Neko::Skylar
 {
     SocketSSL::SocketSSL(const Net::NetSocketBase& socket, SSL_CTX& context)
-    : Socket(socket)
+        : Socket(socket)
     {
         // create an SSL connection and attach it to the socket
-        this->Connection = SSL_new(&context);
-        SSL_set_fd(this->Connection, socket.GetNativeHandle());
+        this->Connection = ::SSL_new(&context);
+        ::SSL_set_fd(this->Connection, socket.GetNativeHandle());
     }
     
     SocketSSL::SocketSSL(const Net::NetSocketBase& socket, SSL& connection)
-    : Connection(&connection)
-    , Socket(socket)
+        : Connection(&connection)
+        , Socket(socket)
     {
     }
     
     int32 SocketSSL::Connect()
     {
-        int32 result = SSL_connect(this->Connection);
-        return result;
+        return ::SSL_connect(this->Connection);
     }
     
     long SocketSSL::GetPacketBlocking(void* buffer, const ulong length, const int32& timeout) const
@@ -58,7 +57,6 @@ namespace Neko::Skylar
         
         Net::NetSocketBase socket;
         socket.Init(this->GetNativeHandle(), Net::SocketType::Tcp);
-        
         do
         {
             if (not socket.WaitForData(timeout, false))
@@ -69,9 +67,10 @@ namespace Neko::Skylar
             }
             
             result = ::SSL_read(this->Connection, buffer, length);
-            innerError = SSL_get_error(this->Connection, result);
+            innerError = ::SSL_get_error(this->Connection, result);
         }
-        while (innerError == SSL_ERROR_WANT_READ or innerError == SSL_ERROR_WANT_WRITE);
+        while (innerError == SSL_ERROR_WANT_READ
+            or innerError == SSL_ERROR_WANT_WRITE);
         
         return result;
     }
@@ -90,7 +89,6 @@ namespace Neko::Skylar
         
         Net::NetSocketBase socket;
         socket.Init(this->GetNativeHandle(), Net::SocketType::Tcp);
-        
         while (total < length)
         {
             if (checkSize > length - total)
@@ -99,10 +97,9 @@ namespace Neko::Skylar
             }
             
             long result = 0;
-            
             do
             {
-                // Wait for send all data to client
+                // wait for send all Data to client
                 if (not socket.WaitForAnyData(-1, true))
                 {
                     continue;
@@ -112,7 +109,6 @@ namespace Neko::Skylar
                 innerError = ::SSL_get_error(this->Connection, result);
             }
             while (innerError == SSL_ERROR_WANT_WRITE);
-            
             total += result;
         }
         
@@ -131,16 +127,16 @@ namespace Neko::Skylar
                 continue;
             }
             
-            result = SSL_accept(this->Connection);
-            innerResult = SSL_get_error(this->Connection, result);
+            result = ::SSL_accept(this->Connection);
+            innerResult = ::SSL_get_error(this->Connection, result);
         }
         while (innerResult == SSL_ERROR_WANT_READ);
         
         // uhh
         //            do
         //            {
-        //                result = SSL_do_handshake(this->Connection);
-        //                innerResult = SSL_get_error(this->Connection, result);
+        //                result = ::SSL_do_handshake(this->Connection);
+        //                innerResult = ::SSL_get_error(this->Connection, result);
         //            }
         //            while (innerResult == SSL_ERROR_WANT_READ || innerResult == SSL_ERROR_WANT_WRITE);
         
@@ -149,10 +145,10 @@ namespace Neko::Skylar
     
     void SocketSSL::Close()
     {
-        // Wait for send all data to client
+        // Wait for send all Data to client
         Socket.WaitForAnyData(-1, true);
         
-        SSL_shutdown(this->Connection);
+        ::SSL_shutdown(this->Connection);
         Socket.Close();
     }
 }

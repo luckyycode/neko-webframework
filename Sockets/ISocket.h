@@ -31,7 +31,7 @@
 
 namespace Neko::Skylar
 {
-    /** Wrapper for system socket. */
+    /** Wrapper for a system socket. */
     class ISocket
     {
     public:
@@ -57,11 +57,9 @@ namespace Neko::Skylar
         
         /** @copydoc NetSocketBase::Close */
         virtual void Close() = 0;
-        
-        
+
         /** Returns the native socket handle this socket interface got bound to. */
         virtual Net::SocketHandle GetNativeHandle() const = 0;
-        
         /** Tls session data. */
         virtual void* GetTlsSession() const = 0;
         

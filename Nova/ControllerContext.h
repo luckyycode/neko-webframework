@@ -47,9 +47,7 @@ namespace Neko::Nova
         using CreateControllerFunc = std::function<class IController* (Http::Request&, Http::Response&) >;
         using ActionMap = THashMap<uint32, ControllerAction>;
 
-        /**
-         *  Creates a new controller context for a controller type.
-         */
+        /**  Creates a new controller context for a controller type. */
         ControllerContext(IAllocator& allocator, IRouter& router, const char* path, const char* name)
             : Allocator(allocator)
             , Actions(allocator)
@@ -60,11 +58,9 @@ namespace Neko::Nova
             Path << "/" << name;
         }
 
-        /**
-         * Maps action to controller url.
-         */
+        /** Maps action to controller url. */
         template <void(TController::*A)()> ControllerContext& RouteAction(Http::Method method, const char* action,
-                const char* params = nullptr)
+            const char* params = nullptr)
         {
             static_assert(std::is_convertible<TController, IController>::value,
                           "Route action class must inherit from IController!");
@@ -75,19 +71,18 @@ namespace Neko::Nova
                 StaticString<32> controllerActionPath(this->Path, "/", action, "/", params);
                 
                 // Save route
-                bool success = Router.AddRoute(method, *controllerActionPath, *this->Name, action);
-                if (success)
+                if (Router.AddRoute(method, *controllerActionPath, *this->Name, action))
                 {
                     ControllerAction controllerAction;
                     controllerAction.Bind<TController, A>(nullptr);
                     
-                    uint32 actionHash = Crc32(action);
+                    const uint32 actionHash = Crc32(action);
                     this->Actions.Insert(actionHash, controllerAction);
                 }
             }
             else
             {
-                LogWarning.log("Nova") << "Couldn't add route for incorrect controller!";
+                LogWarning.log("Nova") << "Couldn't add route for an incorrect controller!";
             }
             
             return *this;
@@ -119,7 +114,7 @@ namespace Neko::Nova
         
         void InvokeAction(IController& controller, const String& name) override
         {
-            uint32 actionHash = Crc32(*name);
+            const uint32 actionHash = Crc32(*name);
             
             auto& controllerAction = this->Actions.at(actionHash);
             assert(controllerAction.IsValid());

@@ -28,17 +28,17 @@ namespace Neko::Skylar
 {
     struct ContentDesc
     {
-        //! State object, can be used to store transient content data.
+        /** State object, can be used to store transient content data. */
         void* State;
         void* Data;
         
         const class IContentType* ContentType;
         
-        //! Size of all content.
+        /** Size of all content. */
         uint32 FullSize;
-        //! Parsed content size.
+        /** Parsed content size. */
         int32 BytesReceived;
-        //! Leftover
+        /** Leftover */
         uint32 LeftBytes;
         
         char pad[4];

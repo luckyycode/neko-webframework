@@ -36,15 +36,13 @@ namespace Neko::Skylar
     class OpenSslImpl : public ISsl
     {
     public:
-        OpenSslImpl(IAllocator& allocator)
-        : TlsData(allocator)
-        { }
+        OpenSslImpl(IAllocator& allocator) : TlsData(allocator) { }
         
         bool Init() override
         {
             // initialize OpenSSL
             ::SSL_load_error_strings ();
-            ::SSL_library_init (); // @note SSL_library_init() always returns "1", so it is safe to discard the return value.
+            ::SSL_library_init (); // @note SSL_library_init() always returns "1", so it is safe to discard the return Value.
             
             return true;
         }
@@ -57,7 +55,7 @@ namespace Neko::Skylar
         {
             for (uint32 i = 0; i < inLength; i += in[i] + 1)
             {
-                auto protocol = String((const char* ) &in[i + 1]).Mid(0, in[i]);
+                auto protocol = String(reinterpret_cast<const char* > (&in[i + 1])).Mid(0, in[i]);
                 
                 if (StartsWith(*protocol, "h2"))
                 {
@@ -75,7 +73,7 @@ namespace Neko::Skylar
         
         void* InitSslFor(const PoolApplicationSettings& application) override
         {
-            SSL_CTX* context = nullptr;
+            ::SSL_CTX* context = nullptr;
             
             const auto& certificate = application.CertificateFile;
             const auto& privateKey = application.KeyFile;
@@ -96,7 +94,7 @@ namespace Neko::Skylar
                 goto cleanupSsl;
             }
             
-            if (::SSL_CTX_check_private_key(context) == false)
+            if (::SSL_CTX_check_private_key(context) == 0)
             {
                 LogError.log("Skylar") << "Couldn't verify SSL private key!";
                 goto cleanupSsl;
@@ -113,17 +111,17 @@ namespace Neko::Skylar
             }
         }
         
-        bool NegotiateProtocol(void* session, char* protocol) override
+        bool NegotiateProtocol(void* context, char* protocol) override
         {
             const Byte* proto = nullptr;
             uint32 length = 0;
             
             // ALPN
-            ::SSL_get0_alpn_selected(static_cast<SSL* >(session), &proto, &length);
+            ::SSL_get0_alpn_selected(static_cast<::SSL* >(context), &proto, &length);
             if (length == 0)
             {
                 // NPN
-                ::SSL_get0_next_proto_negotiated(static_cast<SSL* >(session), &proto, &length);
+                ::SSL_get0_next_proto_negotiated(static_cast<::SSL* >(context), &proto, &length);
             }
             
             bool ok = length > 0;
@@ -145,7 +143,7 @@ namespace Neko::Skylar
                 }
                 TlsData.Clear();
             }
-            
+
         }
         
     public:
@@ -169,14 +167,9 @@ namespace Neko::Skylar
         LogInfo.log("Skylar") << "Initializing ssl settings";
         
         static OpenSslImpl impl(allocator);
-        if (impl.Init())
-        {
-            return static_cast<ISsl* >(&impl);
-        }
-        else
-        {
-            return nullptr;
-        }
+        return impl.Init()
+            ? static_cast<ISsl * >(&impl)
+            : nullptr;
     }
     
     void ISsl::Destroy(ISsl& ssl)

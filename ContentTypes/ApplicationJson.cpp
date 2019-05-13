@@ -41,7 +41,7 @@ namespace Neko::Skylar
         {
             return EnsureContentLength(*contentDesc);
         }
-        
+        // todo not so cool inserting like that
         requestData.IncomingData.Insert("jsonData", buffer);
         
         contentDesc->LeftBytes = 0;

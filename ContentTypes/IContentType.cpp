@@ -38,14 +38,14 @@ namespace Neko::Skylar
         return this->Name;
     }
     
-    void* IContentType::CreateState(const Http::RequestDataInternal& requestData , const THashMap<String, String>& contentParams) const
+    void* IContentType::CreateState(const Http::RequestDataInternal& requestData ,
+        const THashMap<String, String>& contentParams) const
     {
         return nullptr;
     }
     
     void IContentType::DestroyState(void* state) const
     {
-        
     }
 }
 

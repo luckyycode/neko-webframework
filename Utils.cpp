@@ -42,11 +42,11 @@ namespace Neko::Skylar
     void ClearRequestUri(const String& path, String& clean)
     {
         const int32 index = FindFirstOf(*path, "?#");
-        
         Util::DecodeUrl(index == INDEX_NONE ? path : path.Mid(0, index), clean);
     }
     
-    void ShowDirectoryList(const String& documentRoot, const Http::Request& request, Http::Response& response, bool secure, IAllocator& allocator)
+    void ShowDirectoryList(const String& documentRoot, const Http::Request& request, Http::Response& response,
+        bool secure, IAllocator& allocator)
     {
         auto fullHost = request.IncomingHeaders.Find("host"); // get host with port (request.Host may have no port)
         const char* hostString = *fullHost.value();
@@ -56,16 +56,14 @@ namespace Neko::Skylar
             <head>
                 <style>
                 body {
-                    background-color: #7E7D7D;
+                    background-color: #FFFFFF;
                 }
                 </style>
             </head>
         
             <body>
-                <p style="color:white"> Exploring: <i><font size=4>)";
-        
+                <p style="color:grey"> Exploring: <i><font size=4>)";
                 body += documentRoot;
-        
                 body += R"(</font></i>
                 <table style="width:75%">
                     <tr>

@@ -36,7 +36,7 @@ namespace Neko::Nova
     /** Points to a function of a controller. */
     using ControllerAction = TDelegate< void() >;
 
-    /** Controller context interface. */
+    /** Controller context pure interface. */
     struct IControllerContext
     {
         /** Virtual destructor. */

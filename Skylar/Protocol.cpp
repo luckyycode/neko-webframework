@@ -63,7 +63,7 @@ namespace Neko::Skylar
         
         bool result = SendHeaders(response, nullptr, timeout);
         
-        // send data if have any
+        // send Data if have any
         if (result and data != nullptr and size > 0)
         {
             result = SendData(data, size, timeout, nullptr) > 0;
@@ -126,7 +126,7 @@ namespace Neko::Skylar
             {
                 ReadResponse(request, responseData);
                 
-                // Clear application outgoing data
+                // Clear application outgoing Data
                 applicationSettings.OnApplicationPostRequest(&responseData);
             }
         }
@@ -139,7 +139,6 @@ namespace Neko::Skylar
     ContentDesc* Protocol::CreateContentDescriptor(const Http::RequestDataInternal& requestData, const THashMap<String, IContentType* >& contentTypes, IAllocator& allocator)
     {
         auto it = requestData.IncomingHeaders.Find("content-type");
-        
         if (not it.IsValid())
         {
             LogInfo.log("Skylar") << "CreateContentDescriptor: No content-type header set.";
@@ -150,8 +149,7 @@ namespace Neko::Skylar
         
         String contentTypeName(allocator);
         THashMap<String, String> contentParams(allocator);
-        
-        // Check if request content type has additional data
+        // Check if request content type has additional Data
         int32 delimiter = header.Find(";");
         
         // we have somethin
@@ -195,7 +193,6 @@ namespace Neko::Skylar
         }
         
         const auto contentTypeIt = contentTypes.Find(contentTypeName);
-        
         if (not contentTypeIt.IsValid())
         {
             return nullptr;
@@ -204,16 +201,13 @@ namespace Neko::Skylar
         ulong dataLength = 0;
         
         const auto* contentType = contentTypeIt.value();
-        const auto contentLengthIt = requestData.IncomingHeaders.Find("content-length");
-        
-        if (contentLengthIt.IsValid())
+        if (const auto contentLengthIt = requestData.IncomingHeaders.Find("content-length"); contentLengthIt.IsValid())
         {
             dataLength = StringToUnsignedLong(*contentLengthIt.value());
         }
         
-        // transient content data
+        // transient content Data
         auto* state = contentType->CreateState(requestData, contentParams);
-        
         return NEKO_NEW(allocator, ContentDesc)
         {
             state,
@@ -227,7 +221,6 @@ namespace Neko::Skylar
     void Protocol::DestroyContentDescriptor(void* source, IAllocator& allocator)
     {
         auto* content = static_cast<ContentDesc* >(source);
-        
         if (content != nullptr)
         {
             content->ContentType->DestroyState(content->State);
@@ -247,7 +240,6 @@ namespace Neko::Skylar
     {
         // supported range units
         static const THashMap< String, uint32 > rangesUnits({ { "bytes", 1 } }, allocator);
-        
         TArray< Tuple<ulong, ulong> > ranges(allocator);
         
         int32 delimiter = valueOffset;
@@ -257,11 +249,11 @@ namespace Neko::Skylar
         if (not unitIt.IsValid())
         {
             LogWarning.log("Skylar") << "Unsupported range unit type \"" << *rangeUnitString << "\".";
+
             return ranges;
         }
         
         const uint32 rangeUnit = unitIt.value();
-        
         for (int32 strPos; delimiter != INDEX_NONE; )
         {
             strPos = delimiter + 1;
@@ -280,19 +272,17 @@ namespace Neko::Skylar
                     : delimiter - (rangePos + 1);
 
                 const String rangeStrEnd(rangeHeader, rangePos + 1, c);
-
                 if (not rangeStrBegin.IsEmpty())
                 {
                     const ulong rangeBeginValue = StringToUnsignedLong(*rangeStrBegin) * rangeUnit;
-
                     // we have something get
                     if (rangeBeginValue < fileSize)
                     {
-                        // end value is set..
+                        // end Value is set..
                         if (not rangeStrEnd.IsEmpty())
                         {
                             ulong rangeEndValue = StringToUnsignedLong(*rangeStrEnd) * rangeUnit;
-                            // end value always should have more length than begin value
+                            // end Value always should have more length than begin Value
                             if (rangeEndValue >= rangeBeginValue)
                             {
                                 // clamp
@@ -313,7 +303,7 @@ namespace Neko::Skylar
                                 ranges.Emplace(Tuple< ulong, ulong > { rangeBeginValue, length });
                             }
                         }
-                        else // if range end value is empty, use full file size value
+                        else // if range end Value is empty, use full file size Value
                         {
                             const ulong length = fileSize - rangeBeginValue;
                             *contentLength += length;
@@ -331,7 +321,6 @@ namespace Neko::Skylar
                 else if (not rangeStrEnd.IsEmpty())
                 {
                     ulong rangeEndValue = StringToUnsignedLong(*rangeStrEnd) * rangeUnit; // convert
-
                     const ulong length = (rangeEndValue < fileSize) ? fileSize - rangeEndValue : fileSize;
                     const ulong rangeBeginValue = fileSize - length;
 
@@ -478,14 +467,13 @@ namespace Neko::Skylar
     {
         // maybe we only need the info
         const bool headersOnly = request.Method == Method::Head;
-        
+
         // Current time in Gmt
         const auto now = DateTime::GmtNow().ToRfc882();
         extraHeaders.Emplace("date", now);
-        
+
         // get file info
         const auto fileInfo = Neko::Platform::GetFileData(*fileName);
-        
         uint64 fileSize;
         DateTime fileModificationTime;
         
@@ -516,9 +504,18 @@ namespace Neko::Skylar
         if (const auto modifiedIt = request.IncomingHeaders.Find("if-modified-since");
             modifiedIt.IsValid())
         {
-            if (fileModificationTime == DateTime::FromRfc822(*modifiedIt.value()))
+            const auto time = DateTime::FromRfc822(*modifiedIt.value());
+            if (not time.IsValid())
+            {
+                protocol.SendHeaders(Http::StatusCode::NotAcceptable, extraHeaders, request.Timeout);
+
+                return false;
+            }
+
+            if (fileModificationTime == time)
             {
                 protocol.SendHeaders(Http::StatusCode::NotModified, extraHeaders, request.Timeout);
+
                 return false;
             }
         }
@@ -529,6 +526,7 @@ namespace Neko::Skylar
         if (const auto rangeIt = request.IncomingHeaders.Find("range"); rangeIt.IsValid())
         {
             LogInfo.log("Skylar") << "Range header found, partial transfer...";
+
             return SendPartial(protocol, request, fileName, fileModificationTime, fileSize,
                rangeIt.value(), extraHeaders, mimeTypes, headersOnly, allocator);
         }
@@ -538,9 +536,9 @@ namespace Neko::Skylar
         if (not file.Open(*fileName, FileSystem::Mode::Read))
         {
             file.Close();
-            
             LogError.log("Skylar") << "Unable open the requested file.";
             protocol.SendHeaders(Http::StatusCode::InternalServerError, extraHeaders, request.Timeout);
+
             return false;
         }
         
@@ -563,6 +561,7 @@ namespace Neko::Skylar
         {
             file.Close();
             LogError.log("Skylar") << "Unable to send headers";
+
             return false;
         }
         
@@ -587,8 +586,8 @@ namespace Neko::Skylar
             while (not file.IsEof()
                 and (dataCounter.FullSize - dataCounter.SendTotal) and sendSize > 0);
         }
-        
         file.Close();
+
         return true;
     }
     
@@ -603,10 +602,9 @@ namespace Neko::Skylar
         }
         
         ListOfHeaderPair headers(Allocator);
-        
         if (request.ProtocolVersion == Http::Version::Http_1)
         {
-            if (IsConnectionInReuse(request))
+            if (request.IsConnectionInReuse())
             {
                 headers.Emplace("connection", "keep-alive");
                 

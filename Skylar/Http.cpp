@@ -50,7 +50,7 @@ namespace Neko::Skylar
     {
         const IContentType* ContentTypeData;
         const String& ContentTypeName;
-        const ulong ContentLength;
+        const uint32 ContentLength;
         const THashMap<String, String>& ContentParams;
     };
     
@@ -62,9 +62,8 @@ namespace Neko::Skylar
         const PoolApplicationSettings& applicationSettings) const
     {
         OutputData dataStream(reinterpret_cast<void* >(buffer), INT_MAX);
-
         request.Serialize(dataStream);
-        
+
         // app
         dataStream.WriteString(applicationSettings.RootDirectory);
     }
@@ -82,10 +81,9 @@ namespace Neko::Skylar
         char data[RequestBufferSize]; // @todo  perhaps use memstack Allocator?
         
         // profiling
-        TimeValue start, end;
+        TimeSpan start, end;
         Http::Request request(Allocator, Http::Version::Http_1); // this
         start = Timer.GetAsyncTime();
-        
         do
         {
             // protocol may change connection parameter under some circumstances (e.g. upgrade request)
@@ -95,13 +93,12 @@ namespace Neko::Skylar
             // cleanup after processing request
             request.Clear();
         }
-        while (IsConnectionInReuse(request));
+        while (request.IsConnectionInReuse());
         
         end = Timer.GetAsyncTime();
         LogInfo.log("Skylar") << "Request completed in " << (end - start).GetMilliSeconds() << "ms";
-        
         // see docs
-        if (IsConnectionLeaveOpen(request))
+        if (request.IsConnectionLeaveOpen())
         {
             LogInfo.log("Skylar") << "Switching to websocket..";
             return NEKO_NEW(Allocator, ProtocolWebSocket)(*this);
@@ -125,7 +122,6 @@ namespace Neko::Skylar
         // If domain name is set
         // use default port if not set
         const auto defaultPort = uint16(secure ? DefaultHttpsPort : DefaultHttpPort);
-        
         const auto& hostHeader = hostIt.value();
         const int32 delimiter = hostHeader.Find(":"); // port
         
@@ -134,7 +130,7 @@ namespace Neko::Skylar
             ? hostHeader
             : hostHeader.Mid(0, delimiter);  // name/address
         
-        // port value
+        // port Value
         const uint16 port = (delimiter != INDEX_NONE)
             ? static_cast<uint16>(::atoi(*hostHeader.Mid(delimiter + 1)))
             : defaultPort;
@@ -152,7 +148,7 @@ namespace Neko::Skylar
     static void ParseContentParameters(const String& headerValue, THashMap<String, String>& contentParameters,
         String& contentTypeName)
     {
-        // check if request data has additional parameters
+        // check if request Data has additional parameters
         int32 delimiter = headerValue.Find(";");
         
         // if there are some..
@@ -198,10 +194,10 @@ namespace Neko::Skylar
     static inline bool ParseRequestContentType(Http::Request& request, String& stringBuffer,
        const ContentInfo& contentInfo, ISocket& socket, IAllocator& allocator)
     {
-        auto requestData = static_cast<Http::RequestDataInternal& >(request);
-        auto contentLength = contentInfo.ContentLength;
-        auto* contentTypeData = contentInfo.ContentTypeData;
-        auto& contentParams = contentInfo.ContentParams;
+        auto requestData = static_cast<const Http::RequestDataInternal& >(request);
+        const auto contentLength = contentInfo.ContentLength;
+        const auto* contentTypeData = contentInfo.ContentTypeData;
+        const auto& contentParams = contentInfo.ContentParams;
         
         auto contentTypeState = contentTypeData->CreateState(requestData, contentParams);
         
@@ -278,7 +274,7 @@ namespace Neko::Skylar
     Http::StatusCode ProtocolHttp::GetRequestData(Http::Request& request, String& stringBuffer,
         const PoolApplicationSettings& applicationSettings) const
     {
-        // get a content type and check if we have any data
+        // get a content type and check if we have any Data
         auto it = request.IncomingHeaders.Find("content-type");
         
         if (not it.IsValid())
@@ -299,7 +295,7 @@ namespace Neko::Skylar
         THashMap<String, String> contentParams(Allocator);
         ParseContentParameters(headerValue, contentParams, contentTypeName);
         
-        // Get variant-data by name
+        // Get variant-Data by name
         const auto contentTypeIt = SharedSettings->ContentTypes.Find(contentTypeName);
         // Check if we support that one
         if (not contentTypeIt.IsValid())
@@ -341,7 +337,7 @@ namespace Neko::Skylar
         const bool parsed = ParseRequestContentType(request, stringBuffer, info, Socket, Allocator);
         if (not parsed)
         {
-            LogError.log("Skylar") << "Couldn't parse data of content-type " << contentTypeName;
+            LogError.log("Skylar") << "Couldn't parse Data of content-type " << contentTypeName;
             // eh
             
             // if content-type parser has created some
@@ -475,7 +471,7 @@ namespace Neko::Skylar
         for ( ; strCur != headersEnd;
              strEnd = stringBuffer.Find("\r\n", strCur), stringBuffer[strEnd] = '\0')
         {
-            // look for delimiter of header-value
+            // look for delimiter of header-Value
             delimiter = stringBuffer.Find(":", strCur);
             // if delimiter is not found (or somehow is not at the right place)
             if (delimiter < strEnd)
@@ -502,7 +498,7 @@ namespace Neko::Skylar
     
     static bool GetRequest(const ISocket& socket, Http::Request& request, char* buffer, String& stringBuffer)
     {
-        // Get request data from client
+        // Get request Data from client
         const auto size = socket.GetPacketBlocking(reinterpret_cast<void* >(buffer), RequestBufferSize, request.Timeout);
         
         // no content or error
@@ -536,7 +532,7 @@ namespace Neko::Skylar
         headers << it.value();  // status name
         headers << "\r\n\r\n";  // skip
         
-        socket.SendAllPacketsWait(headers, StringLength(headers), request.Timeout);
+        socket.SendAllPacketsWait(headers, (uint32) StringLength(headers), request.Timeout);
     }
     
     static inline void CheckRequestUpgrade(Http::Request& request, bool secure)

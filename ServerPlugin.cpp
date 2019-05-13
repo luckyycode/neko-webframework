@@ -40,7 +40,7 @@
 
 namespace Neko
 {
-    class ServerStartupTask : public MT::Task
+    class ServerStartupTask : public Sync::Task
     {
     public:
         ServerStartupTask(IAllocator& allocator, FileSystem::IFileSystem& fileSystem)
@@ -52,7 +52,9 @@ namespace Neko
         virtual int32 DoTask() override
         {
             bool forceStart = false;
-            char serverName[64] = { DEFAULT_SERVER_NAME };
+            char serverName[64];
+
+            CopyString(serverName, Skylar::DEFAULT_SERVER_NAME);
             {
                 uint64 maxMemory = 1024 * 1024 * 128; // in mb
                 char commandLine[2048];

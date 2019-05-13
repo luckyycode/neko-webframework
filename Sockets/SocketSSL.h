@@ -30,9 +30,7 @@
 #include "ISocket.h"
 
 #if USE_OPENSSL
-
 #   include "Engine/Network/NetSocketBase.h"
-
 #   include <openssl/ssl.h>
 
 namespace Neko::Skylar
@@ -50,28 +48,21 @@ namespace Neko::Skylar
         SocketSSL(const Net::NetSocketBase& socket, SSL& connection);
         
         virtual long GetPacketBlocking(void* buffer, const ulong length, const int32& timeout) const override;
-        
         virtual long SendAllPacketsWait(const void* buffer, const ulong length, const int32& timeout) const override;
-        
+
         virtual void Close() override;
         
-        
         virtual NEKO_FORCE_INLINE Net::SocketHandle GetNativeHandle() const override { return Socket.GetNativeHandle(); };
-        
         virtual NEKO_FORCE_INLINE void* GetTlsSession() const override { return static_cast<void* >(this->Connection); };
         
         /** Higher level SSL connect */
         int32 Connect();
-        
         bool Handshake();
         
     private:
-        
         Net::NetSocketBase Socket;
-        
         ::SSL* Connection;
     };
 }
-
 #endif
 

@@ -48,7 +48,7 @@ namespace Neko::Nova
         
         String sessionData(size, Allocator);
         
-        // Write session data
+        // Write session Data
         OutputData data((void* )*sessionData, INT_MAX);
         session << data;
         

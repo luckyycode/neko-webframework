@@ -45,10 +45,8 @@ namespace Neko::Skylar
             
             /** Adds application in the list */
             void AddApplication(const String& name, PoolApplicationSettings* settings);
-            
             /** Recursively looks up for appsettings. */
             PoolApplicationSettings* Find(const String& name) const;
-            
             /** Collects all settings from every node. */
             void GetAllApplicationSettings(TArray< PoolApplicationSettings* >& applications) const;
             

@@ -87,7 +87,7 @@ namespace Neko::Nova
     private:
         friend class SessionManager;
         
-        // Key-value data.
+        // Key-Value Data.
         SessionMap Storage;
         
         /** Resets this session. */

@@ -84,7 +84,7 @@ namespace Neko::Skylar
             {
                 const uint16 port = address.Port;
 
-                // it's a valid tls data, secured
+                // it's a valid tls Data, secured
                 if (auto it = data->Instance->Ssl->GetTlsData().Find(port); it.IsValid())
                 {
                     auto* context = it.value();
@@ -114,7 +114,7 @@ namespace Neko::Skylar
         void* StreamData;
     };
 
-    RequestPoolHandler::RequestPoolHandler(Skylar::Server& server, Net::SocketPool& sockets, MT::Event* event)
+    RequestPoolHandler::RequestPoolHandler(Skylar::Server& server, Net::SocketPool& sockets, Sync::Event* event)
         : Sockets(sockets)
         , Server(server)
         , Event(event)
@@ -133,10 +133,10 @@ namespace Neko::Skylar
         PROFILE_FUNCTION();
 
         IProtocol* protocol = nullptr;
-        if (socket.GetTlsSession() != nullptr)
-        {
-            auto* session = socket.GetTlsSession();
+        auto* session = socket.GetTlsSession();
 
+        if (session != nullptr)
+        {
             char protocolName[12];
             bool result = Ssl->NegotiateProtocol(session, protocolName);
 
@@ -158,7 +158,7 @@ namespace Neko::Skylar
                 return protocol;
             }
 
-            LogWarning.log("Skylar") << "Tls session data found, but couldn't negotiate a needed protocol";
+            LogWarning.log("Skylar") << "Tls session Data found, but couldn't negotiate a needed protocol.";
         }
 
         protocol = NEKO_NEW(allocator, ProtocolHttp)(socket, allocator);
@@ -195,14 +195,12 @@ namespace Neko::Skylar
     bool RequestPoolHandler::Handle()
     {
         PROFILE_SECTION("Request pool process");
-
         if (not Controls.Active)
         {
             return false;
         }
 
-        TaskSignal executeSignal = INVALID_HANDLE;
-
+        Async::TaskCounter executeCounter = Async::INVALID_HANDLE;
         while (true)
         {
             Sockets.CriticalSection.Enter();
@@ -218,11 +216,11 @@ namespace Neko::Skylar
             Job* jobData = NEKO_NEW(Allocator, Job);
             jobData->Instance = this;
 
-            // TaskSignal precondition = lastSignal;
-            Async::Run(jobData, &Job::Execute, &executeSignal, INVALID_HANDLE, 0);
+            // TaskCounter PreCondition = lastSignal;
+            Async::Run(jobData, &Job::Execute, &executeCounter, Async::INVALID_HANDLE, 0);
         }
 
-        Async::Wait(executeSignal);
+        Async::Wait(executeCounter);
 
         return true;
     }

@@ -34,7 +34,6 @@
 namespace Neko::Skylar
 {
     using namespace Neko::Net;
-    
     /** Content type interface. Used for types, e.g. text/plain, application/json, multipart/form-data and so on. */
     class IContentType
     {
@@ -47,7 +46,8 @@ namespace Neko::Skylar
         virtual ~IContentType() = default;
         
         /** Creates transient content data state. */
-        virtual void* CreateState(const Net::Http::RequestDataInternal& requestData, const Neko::THashMap< Neko::String, Neko::String >& contentParams) const;
+        virtual void* CreateState(const Net::Http::RequestDataInternal& requestData,
+            const Neko::THashMap< Neko::String, Neko::String >& contentParams) const;
         /** Destroys transient content data state. */
         virtual void DestroyState(void* state) const;
         
@@ -58,16 +58,17 @@ namespace Neko::Skylar
          * @param requestData   Parsed data will be saved in request.
          * @param contentDesc   Used to keep data on track.
          */
-        virtual bool ParseFromBuffer(const Neko::String& buffer, Net::Http::RequestDataInternal& requestData, class ContentDesc* contentDesc) const = 0;
+        virtual bool ParseFromBuffer(const Neko::String& buffer, Net::Http::RequestDataInternal& requestData,
+            class ContentDesc* contentDesc) const = 0;
       
     public:
-        /** Content-Type */
+        /** Readable Content-Type */
         const Neko::String& GetName() const;
         
     protected:
-        //! Content-Type.
+        /** Content-Type. */
         Neko::String Name;
-        //! Allocator to keep track on created objects.
+        /** Allocator to keep track on created objects. */
         IAllocator& Allocator;
     };
 }

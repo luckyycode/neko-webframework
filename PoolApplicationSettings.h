@@ -41,9 +41,9 @@ namespace Neko::Skylar
     /** Server settings for each application/pool. */
     struct PoolApplicationSettings
     {
-        //! wwwroot
+        /** wwwroot */
         StaticString<MAX_PATH_LENGTH - 1> RootDirectory;
-        //! If empty then system default will be used.
+        /** If empty then system default will be used. */
         StaticString<MAX_PATH_LENGTH - 1> TempDirectory;
         
         // Ssl
@@ -73,9 +73,10 @@ namespace Neko::Skylar
         std::function< void(Net::Http::ResponseData* ) > OnApplicationPostRequest;
         
         // Ports
-        
+
+        /** Default port. */
         uint16 Port;
-        //! Secure port, if set secure socket context will be created.
+        /** Secure port, if set secure socket context will be created. */
         uint16 TlsPort;
     };
 }

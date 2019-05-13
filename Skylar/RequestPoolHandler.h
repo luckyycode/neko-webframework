@@ -52,7 +52,7 @@ namespace Neko::Skylar
     class RequestPoolHandler
     {
     public:
-        RequestPoolHandler(Server& server, Net::SocketPool& sockets, MT::Event* event);
+        RequestPoolHandler(Server& server, Net::SocketPool& sockets, Sync::Event* event);
 
         IProtocol* CreateProto(ISocket& socket, void* stream, IAllocator& allocator) const;
         void InstantiateProtocolFor(ISocket &socket, void *stream) const;
@@ -63,7 +63,7 @@ namespace Neko::Skylar
         friend struct Job;
 
         /** Amount of active requests. */
-        mutable MT::ThreadSafeCounter ConcurrentRequestCount;
+        mutable Sync::ThreadSafeCounter ConcurrentRequestCount;
 
         Server& Server;
         CycleManager& Controls;
@@ -71,13 +71,13 @@ namespace Neko::Skylar
 
         Net::SocketPool& Sockets;
 
-        MT::Event& QueueNotFullEvent;
+        Sync::Event& QueueNotFullEvent;
 
         IAllocator& Allocator;
 
         ISsl* Ssl;
 
-        MT::Event* Event;
+        Sync::Event* Event;
     };
 
 }

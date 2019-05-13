@@ -58,7 +58,7 @@ namespace Neko::Skylar
         , Allocator(allocator)
         , Modules(allocator)
         , Listeners(allocator)
-        , SocketsList(allocator)
+        , Pooler(allocator)
         , FileSystem(fileSystem)
         , Settings(fileSystem, allocator)
     {
@@ -70,16 +70,14 @@ namespace Neko::Skylar
         LogInfo.log("Skylar") << "Server initializing..";
         
         // load every application & settings
-        bool settingsLoaded = Settings.LoadAppSettings(ServerSettingsFileName, Modules);
-        
-        if (not settingsLoaded)
+        if (not Settings.LoadAppSettings(ServerSettingsFileName, Modules))
         {
             return false;
         }
         
         this->Ssl = ISsl::Create(Allocator);
-        
         LogInfo.log("Skylar") << "Server initialization complete.";
+
         return true;
     }
     
@@ -115,21 +113,27 @@ namespace Neko::Skylar
         // open applications sockets
         for (auto& application : applications)
         {
-            const uint16& tlsPort = application->TlsPort;
-            // init ssl data for this port
+            const uint16 tlsPort = application->TlsPort;
+            const uint16 port = application->Port;
+
+            // init ssl Data for this port
             if (tlsPort != 0)
             {
                 // initialize it first
                 auto* context = InitSslFor(*application);
-                
                 if (context != nullptr && BindPort(tlsPort, ports))
                 {
                     // save context
                     this->Ssl->AddSession(tlsPort, context);
                 }
             }
-            
-            BindPort(application->Port, ports);
+
+            // init default port
+            if (port != 0)
+            {
+                BindPort(port, ports);
+            }
+
             LogInfo.log("Skylar") << "Content directory: " << *application->RootDirectory;
         }
     }
@@ -153,28 +157,24 @@ namespace Neko::Skylar
         }
         
         // Init sockets
-        SocketsList.Create((uint32) Listeners.GetSize());
+        Pooler.Create((uint32) Listeners.GetSize());
         
         // Init list with created sockets
         for (const auto& socket : Listeners)
         {
-            SocketsList.AddSocket(socket);
+            Pooler.AddSocket(socket);
         }
         
         // start processing immediately
         Controls.SetActiveFlag();
-        
         LogInfo.log("Skylar") << "Creating the main request task..";
 
-        struct RequestProcessTask final : public Neko::MT::Task
+        struct RequestProcessTask final : public Neko::Sync::Task
         {
             RequestProcessTask(Neko::IAllocator& Allocator, Skylar::Server* server)
-                    : Task(Allocator), Server(server) { }
+                : Task(Allocator), Server(server) { }
 
-            int32 DoTask()
-            {
-                return Server->ProcessWorkerThreads();
-            }
+            int32 DoTask() { return Server->ProcessWorkerThreads(); }
 
             Server* Server;
         };
@@ -195,12 +195,11 @@ namespace Neko::Skylar
         // a list of new connections
         TArray<Net::NetSocketBase> socketsToAccept(Allocator);
         socketsToAccept.Reserve(128);
-
         // process receiving new connections
         do
         {
             PROFILE_FUNCTION();
-            if (SocketsList.Accept(socketsToAccept)) // blocking
+            if (Pooler.Accept(socketsToAccept)) // blocking
             {
                 Sockets.CriticalSection.Enter();
                 
@@ -213,12 +212,11 @@ namespace Neko::Skylar
 
                     socket.MakeNonBlocking();
                     socket.SetSocketStreamNoDelay(true);
-                    
+
                     Sockets.Push(Tuple<Net::NetSocketBase, void* > { socket, nullptr });
                 }
 
                 Sockets.CriticalSection.Exit();
-
                 Controls.ProcessQueueSemaphore.Signal();
 
                 if (Sockets.GetSize() >= Net::PoolMaxLength)
@@ -237,7 +235,6 @@ namespace Neko::Skylar
         
         // cleanup
         Controls.ProcessQueueSemaphore.Signal();
-        
         if (not Listeners.IsEmpty())
         {
             CloseListeners();
@@ -245,15 +242,14 @@ namespace Neko::Skylar
         }
 
         Clear();
-
         NEKO_DELETE(Allocator, task);
+
         return EXIT_SUCCESS;
     }
 
     uint16 Server::ProcessWorkerThreads()
     {
-        MT::Event event(false, true); // event
-
+        Sync::Event event(false, true); // event
         RequestPoolHandler requestPool(*this, Sockets, &event);
         // update applications
         do
@@ -282,7 +278,7 @@ namespace Neko::Skylar
         }
         while (Controls.UpdateModulesEvent.Poll(false));
         
-        SocketsList.Destroy();
+        Pooler.Destroy();
         return EXIT_SUCCESS;
     }
     
@@ -326,17 +322,13 @@ namespace Neko::Skylar
                         auto moduleDate = updateModuleStat.ModificationTime;
                         
                         auto& module = Modules[moduleIndex];
-                        
-                        if (updateModuleStat.IsValid)
+
+                        if (updateModuleStat.IsValid && (moduleSize != updateModuleSize or moduleDate < updateModuleDate))
                         {
-                            if (moduleSize != updateModuleSize or moduleDate < updateModuleDate)
-                            {
-                                UpdateApplication(module, applications, moduleIndex);
-                            }
+                            UpdateApplication(module, applications, moduleIndex);
                         }
                     }
                 }
-                
                 updatedModules.Push(moduleIndex);
             }
         }
@@ -351,7 +343,8 @@ namespace Neko::Skylar
     {
         if (ports.Contains(port))
         {
-            LogError.log("Skylar") << "Attempt to bind socket with the used port " << port << ".";
+            LogError.log("Skylar") << "Attempt to bind a socket with the used port " << port << ".";
+
             return false;
         }
         
@@ -370,6 +363,7 @@ namespace Neko::Skylar
         {
             LogError.log("Skylar") << "Server couldn't start at " << Settings.ResolvedAddressString << ":" << port << ". "
                 << *Platform::GetLastErrorMessage();
+
             return false;
         }
         
@@ -394,10 +388,8 @@ namespace Neko::Skylar
             {
                 existing.Push(application);
                 
-                assert (application->OnApplicationExit);
-                {
-                    application->OnApplicationExit();
-                }
+                assert(application->OnApplicationExit != nullptr);
+                application->OnApplicationExit();
                 
                 application->OnApplicationInit = std::function<bool(ApplicationInitContext)>();
                 application->OnApplicationRequest = std::function<int16(Http::RequestData* , Http::ResponseData* )>();
@@ -432,6 +424,7 @@ namespace Neko::Skylar
         if (not source.Open(*application->ServerModuleUpdatePath, FileSystem::Mode::Read))
         {
             LogError.log("Skylar") << "File \"" << *application->ServerModuleUpdatePath << "\" cannot be open.";
+
             return false;
         }
         
@@ -439,40 +432,46 @@ namespace Neko::Skylar
         if (not destination.Open(*moduleNameNew, FileSystem::Mode::CreateAndWrite))
         {
             LogError.log("Skylar") << "File \"" << *moduleName << "\" cannot be open.";
+
             return false;
         }
-        
-        // Rewrite module file
-        TArray<uint8> data(Allocator);
-        data.Resize(source.GetSize());
-        source.Read(&data[0], source.GetSize());
-        destination.Write(&data[0], data.GetSize());
-        
-        source.Close();
-        destination.Close();
-        
+
+        // rewrite a module file
+        {
+            TArray<uint8> data(Allocator);
+            data.Resize(source.GetSize());
+            source.Read(&data[0], source.GetSize());
+            destination.Write(&data[0], data.GetSize());
+
+            source.Close();
+            destination.Close();
+        }
+
         // Open updated module
         module.Open(moduleNameNew);
         
         if (not Neko::Platform::DeleteFile(*moduleName))
         {
-            LogError.log("Skylar") << "File '" << *moduleName << "' could not be removed";
+            LogError.log("Skylar") << "File '" << *moduleName << "' can not be removed.";
+
             return false;
         }
         
         if (not Neko::Platform::MoveFile(*moduleNameNew, *moduleName))
         {
-            LogError.log("Skylar") << "Module '" << *moduleNameNew << "' could not be renamed";
+            LogError.log("Skylar") << "Module '" << *moduleNameNew << "' can not be renamed.";
+
             return false;
         }
         
         if (not module.IsOpen())
         {
             LogError.log("Skylar") << "Application module '" << *moduleName << "' can not be opened";
+
             return false;
         }
         
-        // Set application module methods
+        // set application module methods
         bool success = Settings.SetApplicationModuleMethods(*application, module);
         if (not success)
         {
@@ -486,7 +485,7 @@ namespace Neko::Skylar
             app->OnApplicationPostRequest = application->OnApplicationPostRequest;
             app->OnApplicationExit = application->OnApplicationExit;
             
-            assert (app->OnApplicationInit);
+            assert(app->OnApplicationInit);
             
             ApplicationInitContext items
             {
@@ -495,9 +494,9 @@ namespace Neko::Skylar
                 &Allocator,
                 &FileSystem
             };
-            
             app->OnApplicationInit(items);
         }
+
         return true;
     }
     
@@ -547,7 +546,7 @@ namespace Neko::Skylar
         uint32 processId = 0;
         {
             int memoryId;
-            MT::SpinLock lick(Mutex);
+            Sync::SpinLock lick(Mutex);
             
             if ((memoryId = Neko::Platform::OpenSharedMemory(serverName)) != -1)
             {
@@ -575,15 +574,13 @@ namespace Neko::Skylar
         // Check if server is already running
         bool exists = false;
         {
-            MT::SpinLock lock(Mutex);
-            
-            if ((memoryId = Neko::Platform::OpenSharedMemory(*mutableName)) != -1 )
+            Sync::SpinLock lock(Mutex);
+
+            uint32 processId = 0;
+            if ((memoryId = Neko::Platform::OpenSharedMemory(*mutableName)) != -1
+                && Neko::Platform::ReadSharedMemory(memoryId, &processId, sizeof(processId)))
             {
-                int processId = 0;
-                if (Neko::Platform::ReadSharedMemory(memoryId, &processId, sizeof(processId) ))
-                {
-                    exists = Neko::Platform::ProcessExists(processId);
-                }
+                exists = Neko::Platform::ProcessExists(processId);
             }
         }
         
@@ -613,7 +610,7 @@ namespace Neko::Skylar
         {
             Neko::Platform::DestroySharedMemory(mutableName);
             Mutex.Unlock();
-            LogError.log("Skylar") << "Could not write data to shared memory!";
+            LogError.log("Skylar") << "Could not write Data to shared memory!";
 
             return EXIT_FAILURE;
         }
@@ -629,9 +626,9 @@ namespace Neko::Skylar
             code = Run();
         }
         while (Controls.Active or Controls.Restart);
-        
         // cleanup
         Neko::Platform::DestroySharedMemory(mutableName);
+
         return code;
     }
     

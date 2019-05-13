@@ -116,7 +116,7 @@ namespace Neko::Nova
                 uint32 cacheLifetime = 1000;
                 
                 auto expiryDate = DateTime::UtcNow();
-                TimeValue lifeTimeValue((int64)cacheLifetime);
+                TimeSpan lifeTimeValue((int64)cacheLifetime);
                 
                 auto expireDate = expiryDate - lifeTimeValue;
                 

@@ -45,15 +45,13 @@ namespace Neko::Skylar
     {
         //Net::Endpoint address;
         //bool succeeded = Socket.GetAddress(address);
-        
         return Socket.SendAllPacketsWait(nullptr, buffer, length, timeout);
     }
     
     void SocketDefault::Close()
     {
-        // Send all data to client
+        // send all Data to a client
         Socket.WaitForAnyData(-1, true);
-        
         Socket.Close();
     }
 }

@@ -41,11 +41,10 @@ namespace Neko::Skylar
     public:
         // See comments in Protocol.
         ProtocolHttp(class ISocket& socket, IAllocator& allocator);
-        
+
         Protocol* Process() override;
-        
+
         long SendData(const void* source, ulong size, const int32& timeout, Http::DataCounter* dataCounter) const override;
-        
         bool SendHeaders(Http::StatusCode status, ListOfHeaderPair& headers, const int32& timeout,
                 bool end/* = true*/) const override;
         
@@ -53,12 +52,11 @@ namespace Neko::Skylar
                 const PoolApplicationSettings& applicationSettings) const override;
         
         void ReadResponse(Http::Request& request, const Http::ResponseData& responseData) const override;
-        
         void Close() override;
         
     private:
         const PoolApplicationSettings* GetApplicationSettingsForRequest(Http::Request& request, bool secure) const;
-        
+
         Http::StatusCode GetRequestData(Http::Request& request, String& buffer,
                 const PoolApplicationSettings& applicationSettings) const;
         

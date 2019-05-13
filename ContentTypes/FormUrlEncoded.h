@@ -30,13 +30,11 @@
 
 namespace Neko::Skylar
 {
-    class FormUrlencoded : public IContentType
+    /** application/x-www-form-urlencoded */
+    struct FormUrlencoded : public IContentType
     {
-    public:
         FormUrlencoded(IAllocator& allocator);
-        
-    public:
-        virtual bool ParseFromBuffer(const String& buffer, Net::Http::RequestDataInternal& requestData, ContentDesc* contentDesc) const override;
+        bool ParseFromBuffer(const String& buffer, Net::Http::RequestDataInternal& requestData, ContentDesc* contentDesc) const override;
     };
 }
 

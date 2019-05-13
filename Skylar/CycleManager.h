@@ -80,12 +80,12 @@ namespace Neko::Skylar
         }
         
     public:
-        MT::Semaphore ProcessQueueSemaphore;
-        MT::Event UpdateModulesEvent;
+        Sync::Semaphore ProcessQueueSemaphore;
+        Sync::Event UpdateModulesEvent;
         
         //! Says whether the server is active and has active threads.
-        MT::ThreadSafeBool Active;
-        MT::ThreadSafeBool Restart;
+        Sync::ThreadSafeBool Active;
+        Sync::ThreadSafeBool Restart;
         
     private:
         NON_COPYABLE(CycleManager)
