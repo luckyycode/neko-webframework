@@ -32,20 +32,20 @@ namespace Neko::Skylar
         : Socket(socket)
     { }
     
-    long SocketDefault::GetPacketBlocking(void* buffer, const ulong length, const int32& timeout) const
+    long SocketDefault::GetPacketAsync(void *buffer, const ulong length, const int32 &timeout) const
     {
         long size = 0;
-        bool result = Socket.GetPacketBlocking(nullptr, buffer, size, length, timeout);
+        bool result = Socket.GetPacketAsync(nullptr, buffer, size, length, timeout);
         NEKO_UNUSED(result);
         
         return size;
     }
     
-    long SocketDefault::SendAllPacketsWait(const void* buffer, const ulong length, const int32& timeout) const
+    long SocketDefault::SendAllPacketsAsync(const void *buffer, const ulong length, const int32 &timeout) const
     {
         //Net::Endpoint address;
         //bool succeeded = Socket.GetAddress(address);
-        return Socket.SendAllPacketsWait(nullptr, buffer, length, timeout);
+        return Socket.SendAllPacketsAsync(nullptr, buffer, length, timeout);
     }
     
     void SocketDefault::Close()

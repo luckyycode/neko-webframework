@@ -36,9 +36,9 @@
 #include "Engine/Network/Http/HttpStatusCodesMap.h"
 
 #include "RouteMethodStringMap.h"
-#include "../ContentTypes/ContentDesc.h"
-#include "../Sockets/ISocket.h"
-#include "../Utils.h"
+#include "../../ContentTypes/ContentDesc.h"
+#include "../../Sockets/ISocket.h"
+#include "Nova/Utils.h"
 
 // Http 1.1 capable protocol
 
@@ -51,11 +51,11 @@ namespace Neko::Skylar
         const IContentType* ContentTypeData;
         const String& ContentTypeName;
         const uint32 ContentLength;
-        const THashMap<String, String>& ContentParams;
+        const THashMap<uint32, String>& ContentParams;
     };
     
-    ProtocolHttp::ProtocolHttp(ISocket& socket, IAllocator& allocator)
-        : Protocol(socket, allocator)
+    ProtocolHttp::ProtocolHttp(ISocket& socket, const ProtocolOptions& options, IAllocator& allocator)
+        : Protocol(socket, options, allocator)
     { }
     
     void ProtocolHttp::WriteRequest(char* buffer, const Http::Request& request,
@@ -80,10 +80,7 @@ namespace Neko::Skylar
         String buffer(Allocator);
         char data[RequestBufferSize]; // @todo  perhaps use memstack Allocator?
         
-        // profiling
-        TimeSpan start, end;
         Http::Request request(Allocator, Http::Version::Http_1); // this
-        start = Timer.GetAsyncTime();
         do
         {
             // protocol may change connection parameter under some circumstances (e.g. upgrade request)
@@ -95,12 +92,10 @@ namespace Neko::Skylar
         }
         while (request.IsConnectionInReuse());
         
-        end = Timer.GetAsyncTime();
-        LogInfo.log("Skylar") << "Request completed in " << (end - start).GetMilliSeconds() << "ms";
         // see docs
         if (request.IsConnectionLeaveOpen())
         {
-            LogInfo.log("Skylar") << "Switching to websocket..";
+            LogInfo("Skylar") << "Switching to websocket..";
             return NEKO_NEW(Allocator, ProtocolWebSocket)(*this);
         }
 
@@ -109,12 +104,13 @@ namespace Neko::Skylar
     
     const PoolApplicationSettings* ProtocolHttp::GetApplicationSettingsForRequest(Http::Request& request, const bool secure) const
     {
+        const uint32 HostKeyHash = Crc32("host");
         // Get domain or address from incoming request
-        auto hostIt = request.IncomingHeaders.Find("host");
+        auto hostIt = request.IncomingHeaders.Find(HostKeyHash);
         
         if (hostIt.IsValid() == false)
         {
-            LogWarning.log("Skylar") << "A request with no host header?!";
+            LogWarning("Skylar") << "A request with no host header?!";
             
             return nullptr;
         }
@@ -136,7 +132,7 @@ namespace Neko::Skylar
             : defaultPort;
         
         // get application settings by name
-        const auto* applicationSettings = SharedSettings->List.Find(request.Host) ;
+        const auto* applicationSettings = Modules->List.Find(request.Host) ;
         
         // lets hope app is found
         return applicationSettings != nullptr
@@ -145,7 +141,7 @@ namespace Neko::Skylar
                 : nullptr;
     }
     
-    static void ParseContentParameters(const String& headerValue, THashMap<String, String>& contentParameters,
+    static void ParseContentParameters(const String& headerValue, THashMap<uint32, String>& contentParameters,
         String& contentTypeName)
     {
         // check if request Data has additional parameters
@@ -169,7 +165,7 @@ namespace Neko::Skylar
                         .Mid(paramCur, (paramEnd != INDEX_NONE) ? paramEnd - paramCur : INT_MAX)
                         .Trim();
                     
-                    contentParameters.Insert(Neko::Move(paramName), Neko::String()
+                    contentParameters.Insert(Neko::Crc32(*paramName), Neko::String()
                                              );
                 }
                 else
@@ -181,7 +177,7 @@ namespace Neko::Skylar
                         .Mid(delimiter, (paramEnd != INDEX_NONE) ? paramEnd - delimiter : INT_MAX)
                         .Trim();
                     
-                    contentParameters.Insert(Neko::Move(paramName), Neko::Move(paramValue));
+                    contentParameters.Insert(Neko::Crc32(*paramName), Neko::Move(paramValue));
                 }
             }
         }
@@ -241,7 +237,7 @@ namespace Neko::Skylar
             
             buffer.Resize(hasData ? size : left); // todo possible optimization
             
-            const long sizeInBytes = socket.GetPacketBlocking(&buffer[0], buffer.GetSize(), request.Timeout);
+            const long sizeInBytes = socket.GetPacketAsync(&buffer[0], buffer.GetSize(), request.Timeout);
             if (sizeInBytes <= 0)
             {
                 result = false;
@@ -274,15 +270,16 @@ namespace Neko::Skylar
     Http::StatusCode ProtocolHttp::GetRequestData(Http::Request& request, String& stringBuffer,
         const PoolApplicationSettings& applicationSettings) const
     {
+        static uint32 ContentTypeKeyHash = Crc32("content-type");
         // get a content type and check if we have any Data
-        auto it = request.IncomingHeaders.Find("content-type");
+        auto it = request.IncomingHeaders.Find(ContentTypeKeyHash);
         
         if (not it.IsValid())
         {
             // hmm
             if (request.Method != Method::Get)
             {
-                LogWarning.log("Skylar") << "Request with no Content-Type";
+                LogWarning("Skylar") << "Request with no Content-Type";
             }
 
             return Http::StatusCode::Empty;
@@ -292,15 +289,15 @@ namespace Neko::Skylar
         
         String contentTypeName(Allocator);
         
-        THashMap<String, String> contentParams(Allocator);
+        THashMap<uint32, String> contentParams(Allocator);
         ParseContentParameters(headerValue, contentParams, contentTypeName);
         
         // Get variant-Data by name
-        const auto contentTypeIt = SharedSettings->ContentTypes.Find(contentTypeName);
+        const auto contentTypeIt = Options.ContentTypes.Find(Crc32(*contentTypeName));
         // Check if we support that one
         if (not contentTypeIt.IsValid())
         {
-            LogWarning.log("Skylar") << "Unsupported content-type " << *contentTypeName;
+            LogWarning("Skylar") << "Unsupported content-type " << *contentTypeName;
 
             return Http::StatusCode::NotImplemented;
         }
@@ -309,8 +306,9 @@ namespace Neko::Skylar
         
         // request length in bytes
         ulong contentLength = 0;
-        
-        auto contentLengthIt = request.IncomingHeaders.Find("content-length");
+
+        static uint32 ContentLengthKeyHash = Crc32("content-length");
+        auto contentLengthIt = request.IncomingHeaders.Find(ContentLengthKeyHash);
         // convert
         if (contentLengthIt.IsValid())
         {
@@ -320,7 +318,7 @@ namespace Neko::Skylar
         // check limits
         if (applicationSettings.RequestMaxSize > 0 /* if max size is set */ and applicationSettings.RequestMaxSize < contentLength)
         {
-            LogWarning.log("Skylar") << "Large request "
+            LogWarning("Skylar") << "Large request "
                 << (uint64)contentLength << "/" << applicationSettings.RequestMaxSize;
 
             return Http::StatusCode::RequestEntityTooLarge;
@@ -337,7 +335,7 @@ namespace Neko::Skylar
         const bool parsed = ParseRequestContentType(request, stringBuffer, info, Socket, Allocator);
         if (not parsed)
         {
-            LogError.log("Skylar") << "Couldn't parse Data of content-type " << contentTypeName;
+            LogError("Skylar") << "Couldn't parse Data of content-type " << contentTypeName;
             // eh
             
             // if content-type parser has created some
@@ -380,12 +378,12 @@ namespace Neko::Skylar
         }
         
         string += "\r\n";
-        return Socket.SendAllPacketsWait(*string, string.Length(), timeout) > 0;
+        return Socket.SendAllPacketsAsync(*string, string.Length(), timeout) > 0;
     }
     
     long ProtocolHttp::SendData(const void* source, ulong size, const int32& timeout, Http::DataCounter* dataCounter/* = nullptr*/) const
     {
-        const auto sendSize = Socket.SendAllPacketsWait(source, size, timeout);
+        const auto sendSize = Socket.SendAllPacketsAsync(source, size, timeout);
         // check if no error returned
         if (sendSize > 0 && dataCounter != nullptr)
         {
@@ -484,7 +482,7 @@ namespace Neko::Skylar
                     .Trim();
                 
                 // save
-                request.IncomingHeaders.Insert(Neko::Move(headerName), headerValue);
+                request.IncomingHeaders.Insert(Neko::Crc32(*headerName), headerValue);
             }
             
             // next line
@@ -499,7 +497,7 @@ namespace Neko::Skylar
     static bool GetRequest(const ISocket& socket, Http::Request& request, char* buffer, String& stringBuffer)
     {
         // Get request Data from client
-        const auto size = socket.GetPacketBlocking(reinterpret_cast<void* >(buffer), RequestBufferSize, request.Timeout);
+        const auto size = socket.GetPacketAsync(reinterpret_cast<void * >(buffer), RequestBufferSize, request.Timeout);
         
         // no content or error
         if (size < 0 and stringBuffer.IsEmpty())
@@ -531,13 +529,14 @@ namespace Neko::Skylar
         headers << " ";
         headers << it.value();  // status name
         headers << "\r\n\r\n";  // skip
-        
-        socket.SendAllPacketsWait(headers, (uint32) StringLength(headers), request.Timeout);
+
+        socket.SendAllPacketsAsync(headers, (uint32) StringLength(headers), request.Timeout);
     }
     
     static inline void CheckRequestUpgrade(Http::Request& request, bool secure)
     {
-        auto outUpgradeIt = request.OutgoingHeaders.Find("upgrade");
+        static uint32 UpgradeKeyHash = Crc32("upgrade");
+        auto outUpgradeIt = request.OutgoingHeaders.Find(UpgradeKeyHash);
         if (not outUpgradeIt.IsValid())
         {
             return;
@@ -546,7 +545,7 @@ namespace Neko::Skylar
         const auto& upgradeValue = outUpgradeIt.value();
         upgradeValue.ToLowerInline();
         
-        LogInfo.log("Skylar") << "Upgrade request to " << *upgradeValue;
+        LogInfo("Skylar") << "Upgrade request to " << *upgradeValue;
         
         if (upgradeValue == "h2")
         {
@@ -574,7 +573,7 @@ namespace Neko::Skylar
     
     static inline void CheckRequestKeepAlive(Http::Request& request)
     {
-        LogInfo.log("Skylar") << "keep-alive connection request";
+        LogInfo("Skylar") << "keep-alive connection request";
         
         --request.KeepAliveTimeout;
         if (request.KeepAliveTimeout > 0)
@@ -590,15 +589,17 @@ namespace Neko::Skylar
     
     static void GetConnectionParams(Http::Request& request, const bool secure, IAllocator& allocator)
     {
-        auto inConnectionIt = request.IncomingHeaders.Find("connection");
-        auto outConnectionIt = request.OutgoingHeaders.Find("connection");
+        static uint32 ConnectionKeyHash = Crc32("connection");
+
+        auto inConnectionIt = request.IncomingHeaders.Find(ConnectionKeyHash);
+        auto outConnectionIt = request.OutgoingHeaders.Find(ConnectionKeyHash);
         
         // check if incoming/outgoing connection parameters are set
         if (inConnectionIt.IsValid() and outConnectionIt.IsValid())
         {
             const auto& connectionIn = inConnectionIt.value();
             const auto& connectionOut = outConnectionIt.value();
-            
+
             connectionIn.ToLowerInline();
             connectionOut.ToLowerInline();
             
@@ -630,7 +631,7 @@ namespace Neko::Skylar
     void ProtocolHttp::RunProtocol(Http::Request& request, char* buffer, String& stringBuffer) const
     {
         // these can be null
-        assert(this->SharedSettings != nullptr);
+        assert(this->Modules != nullptr);
 
         if (not GetRequest(Socket, request, buffer, stringBuffer))
         {
@@ -651,7 +652,7 @@ namespace Neko::Skylar
         // if the application is not found
         if (applicationSettings == nullptr)
         {
-            LogWarning.log("Skylar") << "Couldn't find application for \"" << request.Host << "\"!";
+            LogWarning("Skylar") << "Couldn't find application for \"" << request.Host << "\"!";
             // send last set status
             SendStatus(Socket, request, Http::StatusCode::NotFound, Allocator);
 

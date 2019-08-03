@@ -18,34 +18,27 @@
 //                     _) )    `. \ /
 //                    (__/       ) )
 //
-//  IContentType.cpp
-//  Neko Framework
+//  WebHostBuilder.h
+//  Neko SDK
 //
-//  Copyright © 2018 Neko Vision. All rights reserved.
+//  Copyright © 2019 Neko Vision. All rights reserved.
 //
 
-#include "IContentType.h"
+#pragma once
 
-namespace Neko::Skylar
+namespace Neko
 {
-    IContentType::IContentType(IAllocator& allocator)
-        : Allocator(allocator)
+    struct WebHostBuilder
     {
-    }
-    
-    const String& IContentType::GetName() const
-    {
-        return this->Name;
-    }
-    
-    void* IContentType::CreateState(const Http::RequestDataInternal& requestData ,
-        const THashMap<uint32, String>& contentParams) const
-    {
-        return nullptr;
-    }
-    
-    void IContentType::DestroyState(void* state) const
-    {
-    }
+        WebHostBuilder AsStandalone()
+        {
+            IsStandalone = true;
+
+            return *this;
+        }
+
+
+        bool IsStandalone;
+    };
 }
 

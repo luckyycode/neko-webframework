@@ -25,13 +25,13 @@
 //
 
 #include "WebSocket.h"
-#include "../Sockets/ISocket.h"
+#include "../../Sockets/ISocket.h"
 
 namespace Neko::Skylar
 {
     // empty
-    ProtocolWebSocket::ProtocolWebSocket(ISocket& socket, IAllocator& allocator)
-    : Protocol(socket, allocator)
+    ProtocolWebSocket::ProtocolWebSocket(ISocket& socket, const ProtocolOptions& options, IAllocator& allocator)
+    : Protocol(socket, options, allocator)
     { }
     
     ProtocolWebSocket::ProtocolWebSocket(const Protocol& protocol)

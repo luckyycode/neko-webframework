@@ -18,36 +18,34 @@
 //                     _) )    `. \ /
 //                    (__/       ) )
 //
-//  ApplicationJson.cpp
-//  Neko Framework
+//  ConnectionManager.h
+//  Neko SDK
 //
-//  Copyright © 2018 Neko Vision. All rights reserved.
+//  Copyright © 2019 Neko Vision. All rights reserved.
 //
 
-#include "ApplicationJson.h"
-#include "ContentDesc.h"
+#pragma once
+
+#include "Engine/Containers/HashMap.h"
+#include "ConnectionContext.h"
 
 namespace Neko::Skylar
 {
-    ApplicationJson::ApplicationJson(IAllocator& allocator)
-    : IContentType(allocator)
+    // todo not used yet
+    class ConnectionManager
     {
-        Name = "application/json";
-    }
-    
-    bool ApplicationJson::ParseFromBuffer(const Neko::String& buffer, Http::RequestDataInternal& requestData, ContentDesc* contentDesc) const
-    {
-        if (buffer.IsEmpty())
+    public:
+        ConnectionManager(IAllocator& allocator)
+            : ConnectionReferences(allocator)
+        { }
+        
+        void AddConnection(uint64 key, SkylarConnection& connection)
         {
-            return EnsureContentLength(*contentDesc);
+            ConnectionReferences.Insert(key, connection);
         }
-        // todo not so cool inserting like that
-        requestData.IncomingData.Insert(Crc32("jsonData"), buffer);
         
-        contentDesc->LeftBytes = 0;
-        contentDesc->BytesReceived = contentDesc->FullSize;
-        
-        return true;
-    }
+    private:
+        THashMap<int64, SkylarConnection> ConnectionReferences;
+    };
 }
 

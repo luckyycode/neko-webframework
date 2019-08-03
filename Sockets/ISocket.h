@@ -37,23 +37,23 @@ namespace Neko::Skylar
     public:
         virtual ~ISocket() = default;
         
-        /** @copydoc NetSocketBase::GetPacketBlocking */
-        NEKO_FORCE_INLINE long GetPacketBlocking(TArray<String::value_type>& buffer, const int32& timeout) const
+        /** @copydoc NetSocketBase::GetPacketAsync */
+        NEKO_FORCE_INLINE long GetPacketAsync(TArray <String::value_type> &buffer, const int32 &timeout) const
         {
-            return GetPacketBlocking(&buffer[0], buffer.GetSize(), timeout);
+            return GetPacketAsync(&buffer[0], buffer.GetSize(), timeout);
         }
         
-        /** @copydoc NetSocketBase::SendAllPacketsWait */
-        NEKO_FORCE_INLINE long SendAllPacketsWait(const String& buffer, const int32& timeout) const
+        /** @copydoc NetSocketBase::SendAllPacketsAsync */
+        NEKO_FORCE_INLINE long SendAllPacketsAsync(const String &buffer, const int32 &timeout) const
         {
-            return SendAllPacketsWait(*buffer, buffer.Length(), timeout);
+            return SendAllPacketsAsync(*buffer, static_cast<uint32>(buffer.Length()), timeout);
         }
         
-        /** @copydoc NetSocketBase::GetPacketBlocking */
-        virtual long GetPacketBlocking(void* buffer, const ulong length, const int32& timeout) const = 0;
+        /** @copydoc NetSocketBase::GetPacketAsync */
+        virtual long GetPacketAsync(void *buffer, const ulong length, const int32 &timeout) const = 0;
         
-        /** @copydoc NetSocketBase::SendAllPacketsWait */
-        virtual long SendAllPacketsWait(const void* buffer, const ulong length, const int32& timeout) const = 0;
+        /** @copydoc NetSocketBase::SendAllPacketsAsync */
+        virtual long SendAllPacketsAsync(const void *buffer, const ulong length, const int32 &timeout) const = 0;
         
         /** @copydoc NetSocketBase::Close */
         virtual void Close() = 0;

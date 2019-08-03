@@ -34,6 +34,12 @@ namespace Neko::Skylar
 {
     struct PoolApplicationSettings;
 
+    struct InitSslOptions
+    {
+        String CertificateFile;
+        String KeyFile;
+    };
+
     /** Interface for the ssl contexts. */
     class ISsl
     {
@@ -44,7 +50,7 @@ namespace Neko::Skylar
         virtual bool Init() = 0;
 
         /** Initializes ssl session for the application. */
-        virtual void* InitSslFor(const PoolApplicationSettings& application) = 0;
+        virtual void* InitSslFor(const InitSslOptions& application) = 0;
 
         /** Tries to negotiate a protocol. Outputs the protocol name. */
         virtual bool NegotiateProtocol(void* context, char* protocol) = 0;

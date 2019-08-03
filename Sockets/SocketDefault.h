@@ -41,8 +41,8 @@ namespace Neko::Skylar
         SocketDefault() = delete;
         SocketDefault(const Net::NetSocketBase& socket);
         
-        virtual long GetPacketBlocking(void* buffer, const ulong length, const int32& timeout) const override;
-        virtual long SendAllPacketsWait(const void* buffer, const ulong length, const int32& timeout) const override;
+        virtual long GetPacketAsync(void *buffer, const ulong length, const int32 &timeout) const override;
+        virtual long SendAllPacketsAsync(const void *buffer, const ulong length, const int32 &timeout) const override;
         
         virtual void Close() override;
 

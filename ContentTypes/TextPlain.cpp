@@ -65,7 +65,7 @@ namespace Neko::Skylar
                 // param name
                 auto name = buffer.Mid(pos, (last != INT_MAX) ? end - pos : INT_MAX);
                 // save param
-                requestData.IncomingData.Insert(Neko::Move(name), Neko::String());
+                requestData.IncomingData.Insert(Neko::Crc32(*name), Neko::String());
             }
             else
             {
@@ -76,7 +76,7 @@ namespace Neko::Skylar
                 // param Value
                 auto value = buffer.Mid(delimiter, (end != INDEX_NONE) ? end - delimiter : INT_MAX);
                 // save both
-                requestData.IncomingData.Insert(Neko::Move(name), Neko::Move(value));
+                requestData.IncomingData.Insert(Neko::Crc32(*name), Neko::Move(value));
             }
         }
         

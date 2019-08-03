@@ -47,7 +47,7 @@ namespace Neko::Skylar
         
         /** Creates transient content data state. */
         virtual void* CreateState(const Net::Http::RequestDataInternal& requestData,
-            const Neko::THashMap< Neko::String, Neko::String >& contentParams) const;
+            const Neko::THashMap<uint32, Neko::String >& contentParams) const;
         /** Destroys transient content data state. */
         virtual void DestroyState(void* state) const;
         

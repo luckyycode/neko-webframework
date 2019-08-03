@@ -18,34 +18,25 @@
 //                     _) )    `. \ /
 //                    (__/       ) )
 //
-//  IContentType.cpp
-//  Neko Framework
+//  ServerState.h
+//  Neko SDK
 //
-//  Copyright © 2018 Neko Vision. All rights reserved.
+//  Copyright © 2019 Neko Vision. All rights reserved.
 //
 
-#include "IContentType.h"
+#pragma once
+
+#include "Engine/Utilities/Date.h"
 
 namespace Neko::Skylar
 {
-    IContentType::IContentType(IAllocator& allocator)
-        : Allocator(allocator)
+    /** Skylar server state. */
+    enum struct ServerState : uint8
     {
-    }
-    
-    const String& IContentType::GetName() const
-    {
-        return this->Name;
-    }
-    
-    void* IContentType::CreateState(const Http::RequestDataInternal& requestData ,
-        const THashMap<uint32, String>& contentParams) const
-    {
-        return nullptr;
-    }
-    
-    void IContentType::DestroyState(void* state) const
-    {
-    }
+        Stopped = 0,
+        Starting = 0x1,
+        Started = 0x2,
+        ShuttingDown = 0x4
+    };
 }
 

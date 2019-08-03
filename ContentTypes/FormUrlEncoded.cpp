@@ -26,7 +26,7 @@
 
 #include "Engine/Utilities/Utilities.h"
 
-#include "../Utils.h"
+#include "Nova/Utils.h"
 #include "ContentDesc.h"
 #include "FormUrlEncoded.h"
 
@@ -74,7 +74,7 @@ namespace Neko::Skylar
                 String name(Allocator);
                 Util::DecodeUrl(stringToDecode, name);
                 // empty Value
-                requestData.IncomingData.Insert(Neko::Move(name), String());
+                requestData.IncomingData.Insert(Neko::Crc32(*name), String());
             }
             else
             {
@@ -89,7 +89,7 @@ namespace Neko::Skylar
                 String value(Allocator);
                 Util::DecodeUrl(stringToDecode, value);
                 // Store parameter and Value
-                requestData.IncomingData.Insert(Neko::Move(name), Neko::Move(value));
+                requestData.IncomingData.Insert(Neko::Crc32(*name), Neko::Move(value));
             }
         }
         

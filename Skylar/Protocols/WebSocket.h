@@ -35,7 +35,7 @@ namespace Neko::Skylar
     {
     public:
         // @see comments in Protocol
-        ProtocolWebSocket(class ISocket& socket, class IAllocator& allocator);
+        ProtocolWebSocket(class ISocket& socket, const ProtocolOptions& options, class IAllocator& allocator);
         ProtocolWebSocket(const Protocol& protocol);
         
         virtual bool SendHeaders(const Http::StatusCode status, ListOfHeaderPair& headers, const int32& timeout, bool end) const override;

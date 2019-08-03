@@ -47,19 +47,16 @@ namespace Neko::Skylar
         StaticString<MAX_PATH_LENGTH - 1> TempDirectory;
         
         // Ssl
-        
         String CertificateFile;
         String KeyFile;
         
         // Module
-        
         String ServerModulePath;
         String ServerModuleUpdatePath;
         
         int32 ModuleIndex;
         
         // Request settings
-        
         uint32 RequestMaxSize;
         
         /** Called on early server initialization. */

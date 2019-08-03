@@ -19,7 +19,7 @@
 //                    (__/       ) )
 //
 //  OpenSsl.cpp
-//  Neko Framework
+//  Neko SDK
 //
 //  Copyright © 2018 Neko Vision. All rights reserved.
 //
@@ -36,7 +36,9 @@ namespace Neko::Skylar
     class OpenSslImpl : public ISsl
     {
     public:
-        OpenSslImpl(IAllocator& allocator) : TlsData(allocator) { }
+        OpenSslImpl(IAllocator& allocator)
+            : TlsData(allocator)
+        { }
         
         bool Init() override
         {
@@ -71,32 +73,32 @@ namespace Neko::Skylar
             return SSL_TLSEXT_ERR_NOACK;
         }
         
-        void* InitSslFor(const PoolApplicationSettings& application) override
+        void* InitSslFor(const InitSslOptions& application) override
         {
             ::SSL_CTX* context = nullptr;
             
             const auto& certificate = application.CertificateFile;
             const auto& privateKey = application.KeyFile;
             
-            LogInfo.log("Skylar") << "Configuring ssl configuration for the application..";
+            LogInfo("Skylar") << "Configuring ssl configuration for the application..";
             
             context = ::SSL_CTX_new(SSLv23_server_method());
             
             if (::SSL_CTX_use_certificate_file(context, *certificate, SSL_FILETYPE_PEM) <= 0)
             {
-                LogError.log("Skylar") << "Couldn't load SSL certificate..  ";
+                LogError("Skylar") << "Couldn't load SSL certificate..  ";
                 goto cleanupSsl;
             }
             
             if (::SSL_CTX_use_PrivateKey_file(context, privateKey.IsEmpty() ? *certificate : *privateKey, SSL_FILETYPE_PEM) <= 0)
             {
-                LogError.log("Skylar") << "Couldn't load SSL private key (or certificate pair)..";
+                LogError("Skylar") << "Couldn't load SSL private key (or certificate pair)..";
                 goto cleanupSsl;
             }
             
             if (::SSL_CTX_check_private_key(context) == 0)
             {
-                LogError.log("Skylar") << "Couldn't verify SSL private key!";
+                LogError("Skylar") << "Couldn't verify SSL private key!";
                 goto cleanupSsl;
             }
             
@@ -158,13 +160,13 @@ namespace Neko::Skylar
         }
         
     private:
-        //! Ssl contexts map.
+        /** Ssl contexts map. */
         TlsMap TlsData;
     };
-    
+
     ISsl* ISsl::Create(IAllocator& allocator)
     {
-        LogInfo.log("Skylar") << "Initializing ssl settings";
+        LogInfo("Skylar") << "Initializing ssl settings";
         
         static OpenSslImpl impl(allocator);
         return impl.Init()

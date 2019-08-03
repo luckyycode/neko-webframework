@@ -25,9 +25,9 @@
 //
 
 #include "Protocol.h"
-#include "../Sockets/ISocket.h"
-#include "../ContentTypes/ContentDesc.h"
-#include "../Utils.h"
+#include "../../Sockets/ISocket.h"
+#include "../../ContentTypes/ContentDesc.h"
+#include "../../Utilities.h"
 
 #include "Engine/Core/Profiler.h"
 #include "Engine/Network/Http/Response.h"
@@ -38,18 +38,18 @@
 
 namespace Neko::Skylar
 {
-    Protocol::Protocol(ISocket& socket, IAllocator& allocator)
-    : Socket(socket)
-    , SharedSettings(nullptr)
-    , Allocator(allocator)
-    , Timer()
+    Protocol::Protocol(ISocket& socket, const ProtocolOptions& options, IAllocator& allocator)
+        : Socket(socket)
+        , Modules(nullptr)
+        , Allocator(allocator)
+        , Options(options)
     { }
 
     Protocol::Protocol(const Protocol& protocol)
-    : Socket(protocol.Socket)
-    , SharedSettings(protocol.SharedSettings)
-    , Allocator(protocol.Allocator)
-    , Timer()
+        : Socket(protocol.Socket)
+        , Modules(protocol.Modules)
+        , Allocator(protocol.Allocator)
+        , Options(protocol.Options)
     { }
 
     bool Protocol::SendResponse(Http::Response& response, const uint32 timeout) const
@@ -132,23 +132,24 @@ namespace Neko::Skylar
         }
         else
         {
-            LogWarning.log("Skylar") << "Application " << *applicationSettings.ServerModulePath << " exited with a error.";
+            LogWarning("Skylar") << "Application " << *applicationSettings.ServerModulePath << " exited with a error.";
         }
     }
     
-    ContentDesc* Protocol::CreateContentDescriptor(const Http::RequestDataInternal& requestData, const THashMap<String, IContentType* >& contentTypes, IAllocator& allocator)
+    ContentDesc* Protocol::CreateContentDescriptor(const Http::RequestDataInternal& requestData, const THashMap<uint32, IContentType* >& contentTypes, IAllocator& allocator)
     {
-        auto it = requestData.IncomingHeaders.Find("content-type");
+        static uint32 ContentTypeKeyHash = Crc32("content-type");
+        auto it = requestData.IncomingHeaders.Find(ContentTypeKeyHash);
         if (not it.IsValid())
         {
-            LogInfo.log("Skylar") << "CreateContentDescriptor: No content-type header set.";
+            LogInfo("Skylar") << "CreateContentDescriptor: No content-type header set.";
             return nullptr;
         }
         
         const auto& header = it.value();
         
         String contentTypeName(allocator);
-        THashMap<String, String> contentParams(allocator);
+        THashMap<uint32, String> contentParams(allocator);
         // Check if request content type has additional Data
         int32 delimiter = header.Find(";");
         
@@ -168,7 +169,7 @@ namespace Neko::Skylar
                         .Mid(paramCur, (paramEnd != INDEX_NONE) ? paramEnd - paramCur : INT_MAX)
                         .Trim();
                     
-                    contentParams.Insert(Neko::Move(paramName), Neko::String());
+                    contentParams.Insert(Neko::Crc32(*paramName), Neko::String());
                 }
                 else
                 {
@@ -182,7 +183,7 @@ namespace Neko::Skylar
                         .Mid(delimiter, (paramEnd != INDEX_NONE) ? paramEnd - delimiter : INT_MAX)
                         .Trim();
                     
-                    contentParams.Insert(Neko::Move(paramName), Neko::Move(paramValue)
+                    contentParams.Insert(Neko::Crc32(*paramName), Neko::Move(paramValue)
                                          );
                 }
             }
@@ -192,16 +193,17 @@ namespace Neko::Skylar
             contentTypeName = header;
         }
         
-        const auto contentTypeIt = contentTypes.Find(contentTypeName);
+        const auto contentTypeIt = contentTypes.Find(Crc32(*contentTypeName));
         if (not contentTypeIt.IsValid())
         {
             return nullptr;
         }
         
         ulong dataLength = 0;
-        
+
+        static uint32 ContentLengthKeyHash = Crc32("content-length");
         const auto* contentType = contentTypeIt.value();
-        if (const auto contentLengthIt = requestData.IncomingHeaders.Find("content-length"); contentLengthIt.IsValid())
+        if (const auto contentLengthIt = requestData.IncomingHeaders.Find(ContentLengthKeyHash); contentLengthIt.IsValid())
         {
             dataLength = StringToUnsignedLong(*contentLengthIt.value());
         }
@@ -239,16 +241,16 @@ namespace Neko::Skylar
         const ulong fileSize, String* resultRangeHeader, ulong* contentLength, IAllocator& allocator)
     {
         // supported range units
-        static const THashMap< String, uint32 > rangesUnits({ { "bytes", 1 } }, allocator);
+        static const THashMap<uint32, uint32> rangesUnits({ { Crc32("bytes"), 1 } }, allocator);
         TArray< Tuple<ulong, ulong> > ranges(allocator);
         
         int32 delimiter = valueOffset;
         const String rangeUnitString(rangeHeader, 0, delimiter);
         
-        const auto unitIt = rangesUnits.Find(rangeUnitString);
+        const auto unitIt = rangesUnits.Find(Crc32(*rangeUnitString));
         if (not unitIt.IsValid())
         {
-            LogWarning.log("Skylar") << "Unsupported range unit type \"" << *rangeUnitString << "\".";
+            LogWarning("Skylar") << "Unsupported range unit type \"" << *rangeUnitString << "\".";
 
             return ranges;
         }
@@ -358,7 +360,7 @@ namespace Neko::Skylar
     
     static bool SendPartial(const Protocol& protocol, const Http::Request& request, const String& fileName,
         DateTime fileTime, const ulong fileSize, const String& rangeHeader, ListOfHeaderPair& extraHeaders,
-        const THashMap<String, String>& mimeTypes, const bool headersOnly, IAllocator& allocator)
+        const THashMap<uint32, String>& mimeTypes, const bool headersOnly, IAllocator& allocator)
     {
         const int32 valueOffset = rangeHeader.Find("=");
         
@@ -386,11 +388,11 @@ namespace Neko::Skylar
         }
         
         // Range(s) transfer
-        FileSystem::PlatformFile file;
-        if (not file.Open(*fileName, FileSystem::Mode::Read))
+        FileSystem::PlatformReadFile file;
+        if (not file.Open(*fileName))
         {
             file.Close();
-            LogError.log("Skylar") << "SendPartial: Couldn't open file for transfer.";
+            LogError("Skylar") << "SendPartial: Couldn't open file for transfer.";
             protocol.SendHeaders(Http::StatusCode::InternalServerError, extraHeaders, request.Timeout);
 
             return false;
@@ -413,7 +415,7 @@ namespace Neko::Skylar
         if (not protocol.SendHeaders(Http::StatusCode::PartialContent, extraHeaders, request.Timeout, headersOnly))
         {
             file.Close();
-            LogError.log("Skylar") << "SendPartial: Couldn't send headers";
+            LogError("Skylar") << "SendPartial: Couldn't send headers";
 
             return false;
         }
@@ -463,7 +465,7 @@ namespace Neko::Skylar
     }
     
     static bool Sendfile(const Protocol& protocol, const Http::Request &request, ListOfHeaderPair& extraHeaders,
-         const String& fileName, const ServerSharedSettings& settings, IAllocator& allocator)
+         const String& fileName, const ProtocolOptions& options, IAllocator& allocator)
     {
         // maybe we only need the info
         const bool headersOnly = request.Method == Method::Head;
@@ -480,7 +482,7 @@ namespace Neko::Skylar
         // File is not found or not valid
         if (not fileInfo.IsValid)
         {
-            LogInfo.log("Skylar") << "Requested file " << *fileName << " not found.";
+            LogInfo("Skylar") << "Requested file " << *fileName << " not found.";
             protocol.SendHeaders(Http::StatusCode::NotFound, extraHeaders, request.Timeout);
 
             return false;
@@ -495,13 +497,14 @@ namespace Neko::Skylar
                 return false;
             }
             
-            LogInfo.log("Skylar") << "Requested file " << *fileName << " - " << (fileSize / 1024ULL) << " kb.";
+            LogInfo("Skylar") << "Requested file " << *fileName << " - " << (fileSize / 1024ULL) << " kb.";
         }
         
         // If-Modified header
-        
+
+        static uint32 IfModifiedSinceKeyHash = Crc32("if-modified-since");
         // if its valid, check file modification time
-        if (const auto modifiedIt = request.IncomingHeaders.Find("if-modified-since");
+        if (const auto modifiedIt = request.IncomingHeaders.Find(IfModifiedSinceKeyHash);
             modifiedIt.IsValid())
         {
             const auto time = DateTime::FromRfc822(*modifiedIt.value());
@@ -520,23 +523,24 @@ namespace Neko::Skylar
             }
         }
         
-        const auto& mimeTypes = settings.SupportedMimeTypes;
-        
+        const auto& mimeTypes = options.SupportedMimeTypes;
+        static uint32 RangeKeyHash = Crc32("range");
+
         // range transfer
-        if (const auto rangeIt = request.IncomingHeaders.Find("range"); rangeIt.IsValid())
+        if (const auto rangeIt = request.IncomingHeaders.Find(RangeKeyHash); rangeIt.IsValid())
         {
-            LogInfo.log("Skylar") << "Range header found, partial transfer...";
+            LogInfo("Skylar") << "Range header found, partial transfer...";
 
             return SendPartial(protocol, request, fileName, fileModificationTime, fileSize,
                rangeIt.value(), extraHeaders, mimeTypes, headersOnly, allocator);
         }
         
         // file transfer
-        FileSystem::PlatformFile file;
-        if (not file.Open(*fileName, FileSystem::Mode::Read))
+        FileSystem::PlatformReadFile file;
+        if (not file.Open(*fileName))
         {
             file.Close();
-            LogError.log("Skylar") << "Unable open the requested file.";
+            LogError("Skylar") << "Unable open the requested file.";
             protocol.SendHeaders(Http::StatusCode::InternalServerError, extraHeaders, request.Timeout);
 
             return false;
@@ -560,7 +564,7 @@ namespace Neko::Skylar
         if (not protocol.SendHeaders(Http::StatusCode::Ok, extraHeaders, request.Timeout, end))
         {
             file.Close();
-            LogError.log("Skylar") << "Unable to send headers";
+            LogError("Skylar") << "Unable to send headers";
 
             return false;
         }
@@ -593,9 +597,10 @@ namespace Neko::Skylar
     
     bool Protocol::Sendfile(Http::Request& request) const
     {
-        assert(this->SharedSettings != nullptr);
-        
-        auto sendfileIt = request.OutgoingHeaders.Find("x-sendfile");
+        assert(this->Modules != nullptr);
+
+        static uint32 SendFileKeyHash = Crc32("x-sendfile");
+        auto sendfileIt = request.OutgoingHeaders.Find(SendFileKeyHash);
         if (not sendfileIt.IsValid())
         {
             return false;
@@ -620,12 +625,12 @@ namespace Neko::Skylar
         }
 
         // doesnt assume that file is sent successfully
-        return Skylar::Sendfile(*this, request, headers, sendfileIt.value(), *SharedSettings, Allocator);
+        return Skylar::Sendfile(*this, request, headers, sendfileIt.value(), Options, Allocator);
     }
     
-    void Protocol::SetSettingsSource(const ServerSharedSettings& settings)
+    void Protocol::SetSettingsSource(const ModuleManager& moduleManager)
     {
-        this->SharedSettings = &settings;
+        this->Modules = &moduleManager;
     }
 }
 

@@ -50,7 +50,7 @@ namespace Neko::Skylar
         return ::SSL_connect(this->Connection);
     }
     
-    long SocketSSL::GetPacketBlocking(void* buffer, const ulong length, const int32& timeout) const
+    long SocketSSL::GetPacketAsync(void *buffer, const ulong length, const int32 &timeout) const
     {
         long result;
         int32 innerError;
@@ -59,7 +59,7 @@ namespace Neko::Skylar
         socket.Init(this->GetNativeHandle(), Net::SocketType::Tcp);
         do
         {
-            if (not socket.WaitForData(timeout, false))
+            if (not socket.PollInternal(timeout, false))
             {
                 // timeout
                 result = -1;
@@ -75,7 +75,7 @@ namespace Neko::Skylar
         return result;
     }
     
-    long SocketSSL::SendAllPacketsWait(const void* buffer, const ulong length, const int32& timeout) const
+    long SocketSSL::SendAllPacketsAsync(const void *buffer, const ulong length, const int32 &timeout) const
     {
         ulong checkSize = length;
         

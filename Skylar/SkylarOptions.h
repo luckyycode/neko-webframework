@@ -18,36 +18,35 @@
 //                     _) )    `. \ /
 //                    (__/       ) )
 //
-//  ApplicationJson.cpp
-//  Neko Framework
+//  SkylarOptions.h
+//  Neko SDK
 //
-//  Copyright © 2018 Neko Vision. All rights reserved.
+//  Copyright © 2019 Neko Vision. All rights reserved.
 //
 
-#include "ApplicationJson.h"
-#include "ContentDesc.h"
+#pragma once
+
+#include "SkylarLimits.h"
 
 namespace Neko::Skylar
 {
-    ApplicationJson::ApplicationJson(IAllocator& allocator)
-    : IContentType(allocator)
+    struct PoolApplicationSettings;
+
+    /** Skylar server options. */
+    struct SkylarOptions
     {
-        Name = "application/json";
-    }
-    
-    bool ApplicationJson::ParseFromBuffer(const Neko::String& buffer, Http::RequestDataInternal& requestData, ContentDesc* contentDesc) const
-    {
-        if (buffer.IsEmpty())
-        {
-            return EnsureContentLength(*contentDesc);
-        }
-        // todo not so cool inserting like that
-        requestData.IncomingData.Insert(Crc32("jsonData"), buffer);
+        TArray<ListenOptions> ListenOptions;
+
+        bool AddServerHeader;
         
-        contentDesc->LeftBytes = 0;
-        contentDesc->BytesReceived = contentDesc->FullSize;
+        bool AllowSynchronousIo;
         
-        return true;
-    }
+        SkylarLimits Limits;
+        
+        SkylarOptions(IAllocator& allocator)
+            : Limits()
+            , ListenOptions(allocator)
+        { }
+    };
 }
 

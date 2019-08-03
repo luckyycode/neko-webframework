@@ -33,15 +33,28 @@
 #include "Engine/Platform/SocketPooler.h"
 
 #include "CycleManager.h"
-#include "../SharedSettings.h"
+#include "ServerState.h"
+#include "ModuleManager.h"
 
 #include "../Tls.h"
 #include "IServer.h"
+#include "ListenOptions.h"
+#include "SkylarOptions.h"
+#include "AddressBinder.h"
 
 namespace Neko::Skylar
 {
     static const char* DEFAULT_SERVER_NAME = "Skylar";
 
+    enum struct ServerRole : uint8
+    {
+        /** Internet-facing mode */
+        Edge = 0x0,
+        
+        /** Reverse proxy role */
+        ReverseProxy = 0x1,
+    };
+    
     /** Server instance. */
     class Server : public IServer
     {
@@ -50,9 +63,6 @@ namespace Neko::Skylar
 
         virtual ~Server() { }
 
-        /** Prepares applications. Binds found application ports. */
-        void PrepareApplications();
-        
         /** Manages worker threads. */
         uint16 ProcessWorkerThreads();
 
@@ -67,20 +77,16 @@ namespace Neko::Skylar
         /** Gets server process id (if multiple are running). */
         uint32 GetServerProcessId(const String& serverName) const override;
 
+        const char* GetServerRole() const override
+        {
+            return Role == ServerRole::ReverseProxy ? "Reverse Proxy" : "Edge";
+        }
+        
     private:
         bool Init() override;
         uint16 Run() override;
         void Shutdown() override;
 
-        bool BindPort(const uint16 port, TArray<uint16>& ports) override;
-
-        /** Updates all server modules. */
-        void UpdateApplications();
-        
-        /** Updates the specified server module. */
-        bool UpdateApplication(Module& module, TArray< PoolApplicationSettings* >& applications, const uint32 moduleIndex);
-
-        void* InitSslFor(const PoolApplicationSettings& application);
         void CloseListeners();
         
     public:
@@ -93,38 +99,40 @@ namespace Neko::Skylar
         uint16 RestartCommand(const String& serverName) const;
         uint16 ExitCommand(const String& serverName) const;
         uint16 UpdateModulesCommand(const String& serverName) const;
-        
-    protected:
-        /** Shared server settings */
-        ServerSharedSettings Settings;
-        
+
     public:
         /** Shared external server controls. */
         mutable CycleManager Controls;
         
     protected:
         SocketPooler Pooler;
+
+        /** Address binder for Skylar server. */
+        AddressBinder Binder;
+
+        /** Modules. Server can act as a reverse proxy for another applications. */
+        ModuleManager Modules;
         
         /** List of active sockets which listen for incoming connections. */
-        TArray< Net::NetSocketBase > Listeners;
-        /** Loaded server modules. */
-        TArray< Module > Modules;
+        TArray< Net::NetSocketBase* > Transports;
         
         Sync::Event QueueNotFullEvent;
         
         /** Global server mutex. */
         mutable Sync::SpinMutex Mutex;
 
-        class ISsl* Ssl;
-        
+        ServerRole Role;
     public:
+        SkylarOptions Options;
         Net::SocketPool Sockets;
 
+        friend class ConnectionDispatcher;
+        friend class ModuleManager;
     private:
+
         IAllocator& Allocator;
         FileSystem::IFileSystem& FileSystem;
-        
-        friend class RequestPoolHandler;
+
     private:
         NON_COPYABLE(Server)
     };

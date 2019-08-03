@@ -18,10 +18,10 @@
 //                     _) )    `. \ /
 //                    (__/       ) )
 //
-//  Utils.h
-//  Neko Framework
+//  Utilities.h
+//  Neko SDK
 //
-//  Copyright © 2018 Neko Vision. All rights reserved.
+//  Copyright © 2019 Neko Vision. All rights reserved.
 //
 
 #pragma once
@@ -45,7 +45,7 @@ namespace Neko::Skylar
      * @param fileName  File name with extension.
      * @param mimes     Supported mime types.
      */
-    String GetMimeByFileName(const String& fileName, const THashMap<String, String>& mimes);
+    String GetMimeByFileName(const String& fileName, const THashMap<uint32, String>& mimes);
     
     /**
      * Parser url with a query to hashmap (e.g. /get?fileId=14&access=read..).
@@ -53,20 +53,6 @@ namespace Neko::Skylar
      * @param incomingData  Query parameters will be saved in that map.
      * @param uri           Url to parse.
      */
-    void GetIncomingQueryVars(THashMap<String, String>& incomingData, const String& uri, IAllocator& allocator);
-    
-    /**
-     * Removes the query params from url.
-     *
-     * @param path  Input path.
-     * @param clean Output.
-     */
-    void ClearRequestUri(const String& path, String& clean);
-    
-    /**
-     * Shows directory representation in html.
-     */
-    void ShowDirectoryList(const String& documentRoot, const Net::Http::Request& request, Net::Http::Response& response,
-        bool secure, IAllocator& allocator);
+    void GetIncomingQueryVars(THashMap<uint32, String>& incomingData, const String& uri, IAllocator& allocator);
 }
 

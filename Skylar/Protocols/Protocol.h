@@ -26,7 +26,7 @@
 
 #pragma once
 
-#include "../SharedSettings.h"
+#include "../ModuleManager.h"
 
 #include "Engine/Network/Http/Request.h"
 #include "Engine/Network/Http/Response.h"
@@ -34,8 +34,10 @@
 
 #include "Engine/Containers/HashMap.h"
 #include "Engine/Utilities/Timer.h"
-#include "IProtocol.h"
-#include "ISocket.h"
+#include "../../Sockets/ISocket.h"
+#include "../IProtocol.h"
+
+#include "ProtocolOptions.h"
 
 namespace Neko::Skylar
 {
@@ -60,7 +62,7 @@ namespace Neko::Skylar
          * @param settings  Shared server settings.
          * @param controls  Shared server controls.
          */
-        Protocol(class ISocket& socket, class IAllocator& allocator);
+        Protocol(class ISocket& socket, const ProtocolOptions& options, class IAllocator& allocator);
         Protocol(const Protocol& protocol);
 
         /** Virtual destructor. */
@@ -102,7 +104,7 @@ namespace Neko::Skylar
     public:
         /** Creates transient content data. Request content (type, length, params) */
         static ContentDesc* CreateContentDescriptor(const Http::RequestDataInternal& requestData,
-            const THashMap< String, IContentType* >& contentTypes, IAllocator& allocator);
+            const THashMap< uint32, IContentType* >& contentTypes, IAllocator& allocator);
         
         /** Destroys created content info description. */
         static void DestroyContentDescriptor(void* source, IAllocator& allocator);
@@ -117,11 +119,9 @@ namespace Neko::Skylar
         void RunApplication(Http::Request& request, const PoolApplicationSettings& applicationSettings) const;
         
     protected:
-        //! Used for various timings
-        Timer Timer;
-        
         //! This server settings.
-        const ServerSharedSettings* SharedSettings;
+        const ModuleManager* Modules;
+        const ProtocolOptions& Options;
         
         IAllocator& Allocator;
         
@@ -129,7 +129,7 @@ namespace Neko::Skylar
         ISocket& Socket;
         
     public:
-        void SetSettingsSource(const ServerSharedSettings& settings) override;
+        void SetSettingsSource(const ModuleManager& moduleManager) override;
         
         /**
          * Sends a file. Can use partial send.

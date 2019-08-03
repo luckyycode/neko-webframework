@@ -40,7 +40,7 @@ namespace Neko::Skylar
     {
     public:
         // See comments in Protocol.
-        ProtocolHttp(class ISocket& socket, IAllocator& allocator);
+        ProtocolHttp(class ISocket& socket, const ProtocolOptions& options, IAllocator& allocator);
 
         Protocol* Process() override;
 
