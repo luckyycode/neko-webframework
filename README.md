@@ -1,4 +1,5 @@
 update 2020: It's slowly in wip state for now due to my another projects.
+update 2023: it is being heavily developed and used under some other project, may release production-proof version soon, i hope
 
 # Overview
 
